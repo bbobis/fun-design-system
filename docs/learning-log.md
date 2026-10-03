@@ -58,3 +58,12 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Remember: heading level is structure, not size.** Screen-reader users jump between headings by level. A big title under an existing `<h1>` is still an `<h2>`; set `size="2xl"` for the look. That's why `level` is required and `size` is optional.
 - **Remember: Badge text carries the meaning.** Color only reinforces "Paid" / "Overdue"; some users can't tell the tones apart. Badges aren't interactive; clickable things are Buttons.
 - **Read:** https://www.w3.org/WAI/tutorials/page-structure/headings/
+
+## 2026-10-03 — DataGrid (TanStack Table v9 + Virtual)
+
+- **Built:** `DataGrid<TData>`: client-side grid for large data (10,000 × 20 measured), sorting, global search, row selection with select-all and Shift-range, sticky header, compact/standard density. `createDataGridColumnHelper<TData>()` for typed columns with `meta: { align, mono }`. 11 tests (53 total). Deps added with Ben's OK: `@tanstack/react-table` **9.2.4 (pinned exact)**, `@tanstack/react-virtual` ^3.14.13.
+- **Remember: virtualization = render only what's visible.** 10k rows × 20 columns would be 200,000 cells. The grid keeps ~25–34 rows (≈525 cells) in the DOM and positions them with `translateY`. Fixed row heights mean no measuring, which is the biggest single performance win.
+- **Remember: TanStack Table v9 ≠ v8 tutorials.** `useTable({ features, columns, data })`, features registered explicitly with `tableFeatures({...})`, `table.FlexRender`, generics `ColumnDef<TFeatures, TData, TValue>`. Most blog posts and AI snippets are v8 and won't compile.
+- **Remember: `memo` per row + `useDeferredValue` for search.** Rows that stay on screen keep the same props, so React skips them while scrolling. Search text updates instantly; the 10k-row filter uses the deferred value, so typing never waits.
+- **Gotcha:** TanStack sorts number/date columns *descending* on the first click by default. We set `sortDescFirst: false` so every column starts ascending, like Excel.
+- **Read:** https://tanstack.com/table/latest/docs/framework/react/guide/virtualization
