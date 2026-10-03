@@ -1,0 +1,66 @@
+{
+  "name": "@fun-design-system/source",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Fun Design System: React + TypeScript + Tailwind component library",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bbobis/fun-design-system.git"
+  },
+  "bugs": {
+    "url": "https://github.com/bbobis/fun-design-system/issues"
+  },
+  "homepage": "https://github.com/bbobis/fun-design-system#readme",
+  "scripts": {},
+  "workspaces": [
+    "packages/*"
+  ],
+  "dependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.8.0",
+    "@nx/eslint": "23.2.1",
+    "@nx/eslint-plugin": "23.2.1",
+    "@nx/js": "23.2.1",
+    "@nx/react": "^23.2.1",
+    "@nx/storybook": "^23.2.1",
+    "@nx/vite": "23.2.1",
+    "@nx/vitest": "23.2.1",
+    "@nx/web": "23.2.1",
+    "@storybook/addon-docs": "^10.6.1",
+    "@storybook/react-vite": "^10.5.0",
+    "@swc/helpers": "~0.5.18",
+    "@tailwindcss/vite": "^4.3.3",
+    "@testing-library/dom": "10.4.0",
+    "@testing-library/react": "16.3.0",
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^6.0.0",
+    "@vitest/coverage-v8": "~4.1.0",
+    "@vitest/ui": "~4.1.0",
+    "ajv": "^8.0.0",
+    "eslint": "^9.8.0",
+    "eslint-config-prettier": "^10.0.0",
+    "eslint-plugin-import": "2.31.0",
+    "eslint-plugin-jsx-a11y": "6.10.1",
+    "eslint-plugin-react": "^7.35.0",
+    "eslint-plugin-react-hooks": "5.0.0",
+    "jiti": "2.4.2",
+    "jsdom": "^27.1.0",
+    "nx": "23.2.1",
+    "prettier": "~3.6.2",
+    "storybook": "^10.5.0",
+    "tailwindcss": "^4.3.3",
+    "ts-node": "10.9.1",
+    "tslib": "^2.3.0",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.58.0",
+    "vite": "^8.0.0",
+    "vite-plugin-dts": "~4.5.0",
+    "vitest": "~4.1.0"
+  }
+}

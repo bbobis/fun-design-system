@@ -1,0 +1,9 @@
+/*
+ * Web fonts for the Fun Design System.
+ * The font files ship inside the npm packages, so users don't need them installed.
+ * - IBM Plex Sans: variable font, every weight in one file. CSS name: "IBM Plex Sans Variable".
+ * - IBM Plex Mono: no variable version, so import only the weights we use.
+ */
+@import '@fontsource-variable/ibm-plex-sans';
+@import '@fontsource/ibm-plex-mono/400.css';
+@import '@fontsource/ibm-plex-mono/600.css';
