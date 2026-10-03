@@ -31,6 +31,7 @@
     "@nx/vitest": "23.2.1",
     "@nx/web": "23.2.1",
     "@storybook/addon-docs": "^10.6.1",
+    "@storybook/addon-themes": "^10.6.1",
     "@storybook/react-vite": "^10.5.0",
     "@swc/helpers": "~0.5.18",
     "@tailwindcss/vite": "^4.3.3",

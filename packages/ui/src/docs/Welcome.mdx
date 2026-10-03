@@ -5,16 +5,26 @@ import { Meta, Unstyled } from '@storybook/addon-docs/blocks';
 {/* <Unstyled> turns off Storybook's own docs styling, so our fonts and Tailwind classes apply. */}
 
 <Unstyled>
-  <div className="font-sans text-gray-900 flex flex-col gap-3 max-w-prose">
+  <div className="font-sans text-fg flex flex-col gap-3 max-w-prose">
     <h1 className="text-3xl font-bold">Fun Design System</h1>
     <p>React + TypeScript + Tailwind component library.</p>
     <p className="font-mono text-sm">
-      If this line is in IBM Plex Mono and the heading is in IBM Plex Sans, fonts and Tailwind are working.
+      If this line is in IBM Plex Mono and the heading is in IBM Plex Sans,
+      fonts and Tailwind are working.
     </p>
     <h2 className="text-xl font-semibold mt-2">Status</h2>
     <ul className="list-disc pl-5">
-      <li><b>Phase 1, Skeleton:</b> done. Nx, Vite, Vitest, Storybook, Tailwind and fonts are wired up.</li>
-      <li><b>Phase 2, Tokens:</b> next. Brand colors and semantic tokens.</li>
+      <li>
+        <b>Phase 1, Skeleton:</b> done. Nx, Vite, Vitest, Storybook, Tailwind
+        and fonts are wired up.
+      </li>
+      <li>
+        <b>Phase 2, Tokens:</b> done. See <i>Foundations / Tokens</i> and flip
+        the theme in the toolbar.
+      </li>
+      <li>
+        <b>Phase 3, First components:</b> next. Button first.
+      </li>
     </ul>
   </div>
 </Unstyled>

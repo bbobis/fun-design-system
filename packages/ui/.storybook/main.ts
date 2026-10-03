@@ -5,7 +5,10 @@ import type { StorybookConfig } from '@storybook/react-vite';
 
 const config: StorybookConfig = {
   stories: ['../src/**/*.@(mdx|stories.@(ts|tsx))'],
-  addons: [getAbsolutePath('@storybook/addon-docs')],
+  addons: [
+    getAbsolutePath('@storybook/addon-docs'),
+    getAbsolutePath('@storybook/addon-themes'),
+  ],
   framework: {
     name: getAbsolutePath('@storybook/react-vite'),
     options: {
