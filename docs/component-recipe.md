@@ -45,6 +45,14 @@ src/index.ts          export * from './components/<name>'
 10. **Explicit props win over context.** `<Input invalid={false} />` inside an invalid Field
     stays valid; the Field's values are defaults.
 
+11. **Polymorphic `as` for content components** (`Text`, `Card`): a small union of allowed
+    tags, a generic `T`, and `Omit<ComponentProps<T>, 'as'>`, so `<Text as="span">` gets span
+    props and a span ref. Inside, cast once: `const Component = (as ?? 'p') as ElementType;`
+    (TS can't prove `rest` fits every tag). Add a `@ts-expect-error` test so the public type
+    stays strict. Don't make *interactive* components polymorphic; a Button is a `<button>`.
+12. **Structure ≠ looks.** `Heading` takes a required `level` (the tag) and an optional `size`
+    (the look). Pick the level from the page outline, never from the visual size.
+
 ## Tests to write for every component
 
 - renders the right element and role
