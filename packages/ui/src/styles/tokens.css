@@ -111,6 +111,9 @@
   --fds-on-warning: var(--color-gray-900);
   --fds-danger: var(--color-cherry-500);
   --fds-on-danger: var(--color-white);
+  --fds-danger-hover: var(
+    --color-cherry-600
+  ); /* same in dark: 8:1 with white */
   --fds-success: var(--color-leaf-700);
   --fds-on-success: var(--color-white);
   --fds-info: var(--color-sky-800);
@@ -195,6 +198,7 @@
   --color-on-warning: var(--fds-on-warning);
   --color-danger: var(--fds-danger);
   --color-on-danger: var(--fds-on-danger);
+  --color-danger-hover: var(--fds-danger-hover);
   --color-success: var(--fds-success);
   --color-on-success: var(--fds-on-success);
   --color-info: var(--fds-info);
