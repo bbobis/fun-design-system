@@ -108,6 +108,7 @@ const PAIRS = [
     fgClass: 'text-fg-muted',
   },
   { bg: 'bg', fg: 'link', bgClass: 'bg-bg', fgClass: 'text-link' },
+  { bg: 'bg', fg: 'fg-danger', bgClass: 'bg-bg', fgClass: 'text-fg-danger' },
 ] as const;
 
 /** Non-text pairs: WCAG asks for 3:1 for these, not 4.5:1. */

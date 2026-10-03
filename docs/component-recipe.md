@@ -36,9 +36,20 @@ src/index.ts          export * from './components/<name>'
    Keep `@example` out of the component's own JSDoc; it renders as stray text in the docs
    header. Put examples in stories instead.
 
+8. **Primitives vs composites.** A primitive is one element (`Input`, `Label`). A composite
+   wires primitives together (`Field` = Label + control + description + error). Composites
+   share wiring through React context (`FieldContext`), so the app writes
+   `<Field label="Email"><Input /></Field>` and never handles ids itself.
+9. **State in ARIA, style from ARIA.** Error state is `aria-invalid`, and the style is
+   `aria-invalid:border-danger`. Styling and accessibility can't drift apart.
+10. **Explicit props win over context.** `<Input invalid={false} />` inside an invalid Field
+    stays valid; the Field's values are defaults.
+
 ## Tests to write for every component
 
 - renders the right element and role
+- query by role and accessible name: `getByRole('textbox', { name: 'Email' })`. It computes the
+  name the way a screen reader does (skips `aria-hidden`), unlike `getByLabelText`
 - the default that prevents a footgun (e.g. `type="button"`)
 - each state blocks or allows interaction as intended
 - `className` override wins over the component's own class
