@@ -10,10 +10,14 @@ This project has two goals of equal weight:
 Never sacrifice goal 2 for speed. A component Ben can't explain is not done.
 
 ## Commands
-<!-- Replace with whatever your Nx workspace actually uses -->
-- Dev: `npx nx serve`
-- Test: `npx nx test`
-- Lint: `npx nx lint`
+The component library is the `ui` project in `packages/ui` (npm package `@fun-design-system/ui`).
+- Storybook (dev): `npx nx storybook ui`
+- Test: `npx nx test ui`
+- Lint: `npx nx lint ui`
+- Typecheck: `npx nx typecheck ui`
+- Build: `npx nx build ui`
+- Everything: `npx nx run-many -t lint typecheck test build build-storybook`
+- Requires npm 11+ (npm 10 crashes installing this workspace) and Node 22.12+.
 
 ## Task briefs
 Ben gives tasks using these five fields. If one is missing, ask once, then proceed.

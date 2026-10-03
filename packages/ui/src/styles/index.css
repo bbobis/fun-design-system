@@ -1,0 +1,17 @@
+/*
+ * Entry stylesheet for @fun-design-system/ui.
+ * Apps import this once: import '@fun-design-system/ui/styles.css';
+ */
+@import './fonts.css';
+@import 'tailwindcss';
+
+/* Font tokens. Brand colors and semantic tokens are added in Phase 2. */
+@theme {
+  --font-sans:
+    'IBM Plex Sans Variable', 'IBM Plex Sans', ui-sans-serif, system-ui,
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial,
+    sans-serif;
+  --font-mono:
+    'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    'Liberation Mono', 'Courier New', monospace;
+}

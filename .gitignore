@@ -141,3 +141,16 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
+
+# Nx
+.nx/cache
+.nx/workspace-data
+.nx/migrate-runs
+tmp
+out-tsc
+
+# Vite / Vitest / Storybook
+vite.config.*.timestamp*
+vitest.config.*.timestamp*
+storybook-static
+test-output
