@@ -46,8 +46,6 @@ export default defineConfig(() => ({
   test: {
     name: 'ui',
     watch: false,
-    // TODO(Phase 3): remove once Button has the first real test.
-    passWithNoTests: true,
     globals: true,
     environment: 'jsdom',
     include: ['{src,tests}/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}'],

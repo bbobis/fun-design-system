@@ -1,0 +1,225 @@
+/*
+ * Design tokens for @fun-design-system/ui.
+ *
+ * Three layers, top to bottom:
+ *   1. Primitives  — raw brand values (yellow-500 = #ffb81c). Replaces Tailwind's palette.
+ *   2. Theme values — which primitive each role uses, in light and in dark.
+ *   3. Semantic     — the names components use (bg-primary, text-fg, border-border).
+ *
+ * Rule: components only ever use layer 3. Nobody writes `bg-yellow-500` in a component.
+ */
+
+/* ---------- 1. Primitives ---------- */
+/* `--color-*: initial` wipes Tailwind's built-in palette, so `bg-blue-500` no longer exists.
+ * `static` makes every variable appear in the output CSS, even if no class uses it yet,
+ * so the Tokens page (and custom CSS in apps) can read them. */
+@theme static {
+  --color-*: initial;
+
+  --color-white: #ffffff;
+  --color-black: #000000;
+
+  --color-clementine-50: #fff0e5;
+  --color-clementine-100: #ffe1cc;
+  --color-clementine-200: #ffc499;
+  --color-clementine-300: #ffa666;
+  --color-clementine-400: #ff8833;
+  --color-clementine-500: #ff6900;
+  --color-clementine-600: #cc5500;
+  --color-clementine-700: #994000;
+  --color-clementine-800: #662b00;
+  --color-clementine-900: #331500;
+
+  --color-cherry-50: #fde3e7;
+  --color-cherry-100: #fac6cf;
+  --color-cherry-200: #f692a3;
+  --color-cherry-300: #f25a73;
+  --color-cherry-400: #ee2647;
+  --color-cherry-500: #c8102e;
+  --color-cherry-600: #a10d25;
+  --color-cherry-700: #76091c;
+  --color-cherry-800: #500613;
+  --color-cherry-900: #260309;
+
+  --color-gray-50: #ededed;
+  --color-gray-100: #dedede;
+  --color-gray-200: #bababa;
+  --color-gray-300: #999999;
+  --color-gray-400: #787878;
+  --color-gray-500: #555555;
+  --color-gray-600: #454545;
+  --color-gray-700: #333333;
+  --color-gray-800: #212121;
+  --color-gray-900: #121212;
+
+  --color-leaf-50: #f0f9ec;
+  --color-leaf-100: #e3f3dd;
+  --color-leaf-200: #c4e7b7;
+  --color-leaf-300: #a8db94;
+  --color-leaf-400: #89ce6e;
+  --color-leaf-500: #6cc24a;
+  --color-leaf-600: #54a036;
+  --color-leaf-700: #407a29;
+  --color-leaf-800: #2a501b;
+  --color-leaf-900: #162a0e;
+
+  --color-sky-50: #edf9fd;
+  --color-sky-100: #e0f5fb;
+  --color-sky-200: #bceaf6;
+  --color-sky-300: #9ce0f1;
+  --color-sky-400: #79d5ec;
+  --color-sky-500: #59cbe8;
+  --color-sky-600: #1fb9e0;
+  --color-sky-700: #188daa;
+  --color-sky-800: #0f5d70;
+  --color-sky-900: #08303a;
+
+  --color-yellow-50: #fff9eb;
+  --color-yellow-100: #fff0d1;
+  --color-yellow-200: #ffe2a3;
+  --color-yellow-300: #ffd375;
+  --color-yellow-400: #ffc547;
+  --color-yellow-500: #ffb81c;
+  --color-yellow-600: #e09900;
+  --color-yellow-700: #a87300;
+  --color-yellow-800: #704d00;
+  --color-yellow-900: #382600;
+
+  --font-sans:
+    'IBM Plex Sans Variable', 'IBM Plex Sans', ui-sans-serif, system-ui,
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial,
+    sans-serif;
+  --font-mono:
+    'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    'Liberation Mono', 'Courier New', monospace;
+}
+
+/* ---------- 2. Theme values ---------- */
+/* Light is the default. Dark only lists what changes; everything else is inherited.
+ * The app switches themes by setting data-theme="dark" on <html>. */
+:root {
+  /* brand */
+  --fds-primary: var(--color-yellow-500);
+  --fds-on-primary: var(--color-gray-900);
+  --fds-primary-hover: var(--color-yellow-600);
+  --fds-secondary: var(--color-gray-900);
+  --fds-on-secondary: var(--color-white);
+  --fds-secondary-hover: var(--color-gray-700);
+
+  /* status (solid) */
+  --fds-warning: var(--color-clementine-500);
+  --fds-on-warning: var(--color-gray-900);
+  --fds-danger: var(--color-cherry-500);
+  --fds-on-danger: var(--color-white);
+  --fds-success: var(--color-leaf-700);
+  --fds-on-success: var(--color-white);
+  --fds-info: var(--color-sky-800);
+  --fds-on-info: var(--color-white);
+
+  /* status (soft, for alerts and badges) */
+  --fds-warning-soft: var(--color-clementine-50);
+  --fds-on-warning-soft: var(--color-clementine-800);
+  --fds-danger-soft: var(--color-cherry-50);
+  --fds-on-danger-soft: var(--color-cherry-700);
+  --fds-success-soft: var(--color-leaf-50);
+  --fds-on-success-soft: var(--color-leaf-800);
+  --fds-info-soft: var(--color-sky-50);
+  --fds-on-info-soft: var(--color-sky-800);
+
+  /* surfaces and text */
+  --fds-bg: var(--color-white);
+  --fds-surface: var(--color-gray-50);
+  --fds-fg: var(--color-gray-900);
+  --fds-fg-muted: var(--color-gray-500);
+  --fds-border: var(
+    --color-gray-100
+  ); /* decorative dividers, no contrast requirement */
+  --fds-border-strong: var(
+    --color-gray-400
+  ); /* input and control outlines, must reach 3:1 */
+
+  /* interaction */
+  --fds-link: var(--color-gray-900);
+  --fds-link-underline: var(
+    --color-yellow-700
+  ); /* yellow-500 is 1.7:1 on white, too faint to see */
+  --fds-focus-ring: var(--color-gray-900);
+}
+
+[data-theme='dark'] {
+  color-scheme: dark; /* native scrollbars and form controls go dark too */
+
+  --fds-primary-hover: var(--color-yellow-400);
+  --fds-secondary: var(--color-gray-50);
+  --fds-on-secondary: var(--color-gray-900);
+  --fds-secondary-hover: var(--color-gray-200);
+
+  --fds-success: var(--color-leaf-500);
+  --fds-on-success: var(--color-gray-900);
+  --fds-info: var(--color-sky-400);
+  --fds-on-info: var(--color-gray-900);
+
+  --fds-warning-soft: var(--color-clementine-900);
+  --fds-on-warning-soft: var(--color-clementine-300);
+  --fds-danger-soft: var(--color-cherry-900);
+  --fds-on-danger-soft: var(--color-cherry-200);
+  --fds-success-soft: var(--color-leaf-900);
+  --fds-on-success-soft: var(--color-leaf-300);
+  --fds-info-soft: var(--color-sky-900);
+  --fds-on-info-soft: var(--color-sky-300);
+
+  --fds-bg: var(--color-gray-900);
+  --fds-surface: var(--color-gray-800);
+  --fds-fg: var(--color-gray-50);
+  --fds-fg-muted: var(--color-gray-300);
+  --fds-border: var(--color-gray-700);
+  /* border-strong stays gray-400: 4.2:1 on gray-900 */
+
+  --fds-link: var(--color-gray-50);
+  --fds-link-underline: var(--color-yellow-500);
+  --fds-focus-ring: var(--color-yellow-500);
+}
+
+/* ---------- 3. Semantic tokens ---------- */
+/* `inline` makes `bg-primary` compile to `background: var(--fds-primary)` instead of
+ * `var(--color-primary)`. That is what lets [data-theme='dark'] swap the value. */
+@theme inline static {
+  --color-primary: var(--fds-primary);
+  --color-on-primary: var(--fds-on-primary);
+  --color-primary-hover: var(--fds-primary-hover);
+  --color-secondary: var(--fds-secondary);
+  --color-on-secondary: var(--fds-on-secondary);
+  --color-secondary-hover: var(--fds-secondary-hover);
+
+  --color-warning: var(--fds-warning);
+  --color-on-warning: var(--fds-on-warning);
+  --color-danger: var(--fds-danger);
+  --color-on-danger: var(--fds-on-danger);
+  --color-success: var(--fds-success);
+  --color-on-success: var(--fds-on-success);
+  --color-info: var(--fds-info);
+  --color-on-info: var(--fds-on-info);
+
+  --color-warning-soft: var(--fds-warning-soft);
+  --color-on-warning-soft: var(--fds-on-warning-soft);
+  --color-danger-soft: var(--fds-danger-soft);
+  --color-on-danger-soft: var(--fds-on-danger-soft);
+  --color-success-soft: var(--fds-success-soft);
+  --color-on-success-soft: var(--fds-on-success-soft);
+  --color-info-soft: var(--fds-info-soft);
+  --color-on-info-soft: var(--fds-on-info-soft);
+
+  --color-bg: var(--fds-bg);
+  --color-surface: var(--fds-surface);
+  --color-fg: var(--fds-fg);
+  --color-fg-muted: var(--fds-fg-muted);
+  --color-border: var(--fds-border);
+  --color-border-strong: var(--fds-border-strong);
+
+  --color-link: var(--fds-link);
+  --color-link-underline: var(--fds-link-underline);
+  --color-focus-ring: var(--fds-focus-ring);
+}
+
+/* Tailwind's `dark:` prefix follows the same attribute, for the rare one-off. */
+@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));

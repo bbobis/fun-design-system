@@ -1,0 +1,9 @@
+/* Storybook-only stylesheet. Apps import src/styles/index.css directly. */
+@import '../src/styles/index.css';
+
+/*
+ * The Tokens page builds primitive swatch classes like `bg-yellow-500` from data, which
+ * Tailwind can't see as literal strings. `@source inline` tells it to generate them anyway.
+ * This lives here, not in tokens.css, so apps don't pay for 60 unused classes.
+ */
+@source inline("bg-{yellow,clementine,cherry,leaf,sky,gray}-{50,{100..900..100}}");
