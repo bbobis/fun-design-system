@@ -58,3 +58,11 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Remember: heading level is structure, not size.** Screen-reader users jump between headings by level. A big title under an existing `<h1>` is still an `<h2>`; set `size="2xl"` for the look. That's why `level` is required and `size` is optional.
 - **Remember: Badge text carries the meaning.** Color only reinforces "Paid" / "Overdue"; some users can't tell the tones apart. Badges aren't interactive; clickable things are Buttons.
 - **Read:** https://www.w3.org/WAI/tutorials/page-structure/headings/
+
+## 2026-10-03 — Phase 4, step 1: hand-built Dialog (lab)
+
+- **Built:** `src/lab/dialog-handmade/` — a modal with no headless library, 7 tests, 2 stories under *Lab/*. Not exported from the package (confirmed: 0 references in `dist`). A reference for comparing libraries, not a component to use.
+- **Remember: the 10 jobs a modal has.** ① remember the opener ② move focus in ③ lock page scroll ④ make the page behind `inert` ⑤ return focus on close ⑥ Esc closes ⑦ trap Tab ⑧ portal to `<body>` ⑨ backdrop click ⑩ `role="dialog"` + `aria-modal` + `aria-labelledby`/`describedby`. ~100 lines, and the file ends with 8 things it still gets wrong (nested dialogs, scrollbar jump, iOS scroll, exit animations, choosing the initial focus…).
+- **Remember: return focus to the opener.** Otherwise a keyboard or screen-reader user lands at the top of the page and has to Tab all the way back. Cleanup order matters: remove `inert` *before* calling `.focus()`, or the opener can't receive it.
+- **Remember: `inert` > `aria-modal`.** `aria-modal="true"` is a hint some screen readers ignore. `inert` on everything outside actually removes it from clicks, Tab and the accessibility tree.
+- **Read:** https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/
