@@ -10,8 +10,10 @@ import { invoiceColumns } from './fixtures/invoice-columns';
 import { makeInvoices, type Invoice } from './fixtures/invoices';
 
 // jsdom has no layout: give the virtualizer a viewport so rows render (see data-grid.spec).
+// Tall enough for all 30 rows + the "add a row" row: jsdom can't scroll, so a row that
+// starts off screen would never mount, and focus or paste tests near the bottom would fail.
 beforeAll(() => {
-  vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockReturnValue(600);
+  vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockReturnValue(1200);
   vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockReturnValue(1000);
 });
 afterAll(() => vi.restoreAllMocks());
@@ -458,7 +460,9 @@ describe('DataGrid edit mode: Excel feel', () => {
     enterEdit();
     goTo(1, 1);
     press('Delete');
-    expect(cellText('inv-2', 'customer')).toBe('');
+    // Cleared, and Customer is required, so the cell now carries its error (sr-only text).
+    expect(cellText('inv-2', 'customer')).toBe('Customer is required');
+    expect(active().getAttribute('aria-invalid')).toBe('true');
     press('ArrowDown');
     press('Backspace');
     const input = screen.getByRole('textbox', {
@@ -475,5 +479,215 @@ describe('DataGrid edit mode: Excel feel', () => {
     press('Enter');
     act(() => fireEvent.click(screen.getByRole('button', { name: 'Undo' })));
     expect(cellText('inv-2', 'customer')).toBe('Customer 2');
+  });
+});
+
+describe('DataGrid edit mode: validation, save results, new rows', () => {
+  function goTo(row: number, col: number) {
+    press('Home', { ctrlKey: true });
+    for (let i = 0; i < row; i++) press('ArrowDown');
+    for (let i = 0; i < col; i++) press('ArrowRight');
+  }
+  const cell = (rowId: string, columnId: string) =>
+    grid().querySelector<HTMLElement>(`[data-cell-key="${rowId}:${columnId}"]`);
+  const saveAll = async () => {
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Save all' }));
+    });
+  };
+  const typeInto = (value: string) => {
+    typeKey(value[0] ?? 'x');
+    setEditorValue(value);
+    press('Enter');
+  };
+
+  it('flags rule breaks per cell, with the message wired to the cell', () => {
+    setup();
+    enterEdit();
+    goTo(1, 5); // inv-2 Subtotal
+    typeInto('-5');
+    const bad = cell('inv-2', 'subtotal');
+    expect(bad?.getAttribute('aria-invalid')).toBe('true');
+    const describedBy = bad?.getAttribute('aria-describedby') ?? '';
+    expect(document.getElementById(describedBy)?.textContent).toBe(
+      'Must be more than 0',
+    );
+    expect(screen.getByText('1 error')).toBeTruthy();
+    expect(bad?.closest('tr')?.getAttribute('data-state')).toBe('error');
+  });
+
+  it('Save all is blocked by errors and jumps to the first one', async () => {
+    const { onSave } = setup();
+    enterEdit();
+    goTo(3, 1);
+    press('Delete'); // inv-4 Customer: required
+    goTo(0, 0);
+    await saveAll();
+    expect(onSave).not.toHaveBeenCalled();
+    expect(active().getAttribute('data-cell-key')).toBe('inv-4:customer');
+    expect(screen.getByText('Fix 1 error before saving.')).toBeTruthy();
+  });
+
+  it('pins server validation messages to cells, and clears one when that cell is edited', async () => {
+    setup({
+      onSave: async () => ({
+        ok: false,
+        kind: 'validation',
+        rows: {
+          'inv-2': { fields: { customer: ['Customer is on credit hold'] } },
+        },
+      }),
+    });
+    enterEdit();
+    goTo(1, 1);
+    typeInto('Acme');
+    await saveAll();
+    expect(cell('inv-2', 'customer')?.getAttribute('aria-invalid')).toBe(
+      'true',
+    );
+    expect(active().getAttribute('data-cell-key')).toBe('inv-2:customer');
+    expect(
+      screen.getAllByText(/rejected by the server/).length,
+    ).toBeGreaterThan(0);
+    press('ArrowUp'); // focus moves to inv-1; edit inv-2 again
+    press('ArrowDown');
+    typeInto('Globex');
+    expect(cell('inv-2', 'customer')?.hasAttribute('aria-invalid')).toBe(false);
+  });
+
+  it('conflict → Keep mine resends with the server version', async () => {
+    let call = 0;
+    const onSave = vi.fn(async (): Promise<SaveResult> => {
+      call++;
+      return call === 1
+        ? {
+            ok: false,
+            kind: 'conflict',
+            rows: [
+              {
+                id: 'inv-2',
+                version: 9,
+                current: { customer: 'Dana Co' },
+                by: 'Dana',
+              },
+            ],
+          }
+        : { ok: true };
+    });
+    setup({ onSave });
+    enterEdit();
+    goTo(1, 1);
+    typeInto('Mine Inc');
+    await saveAll();
+    expect(screen.getByText(/INV-10002 was changed by Dana/)).toBeTruthy();
+    act(() =>
+      fireEvent.click(screen.getByRole('button', { name: 'Keep mine' })),
+    );
+    await saveAll();
+    expect(onSave).toHaveBeenLastCalledWith({
+      operations: [
+        {
+          op: 'update',
+          id: 'inv-2',
+          version: 9,
+          changes: { customer: 'Mine Inc' },
+        },
+      ],
+    });
+  });
+
+  it("conflict → Use theirs drops my change and shows the server's value", async () => {
+    setup({
+      onSave: async () => ({
+        ok: false,
+        kind: 'conflict',
+        rows: [{ id: 'inv-2', version: 9, current: { customer: 'Dana Co' } }],
+      }),
+    });
+    enterEdit();
+    goTo(1, 1);
+    typeInto('Mine Inc');
+    await saveAll();
+    act(() =>
+      fireEvent.click(screen.getByRole('button', { name: 'Use theirs' })),
+    );
+    expect(cell('inv-2', 'customer')?.textContent).toBe('Dana Co');
+    expect(screen.queryByRole('button', { name: 'Save all' })).toBeNull();
+  });
+
+  it('typing in the "add a row" row creates a new row, saved as a create', async () => {
+    const { onSave } = setup({
+      allowAdd: true,
+      newRow: () => ({ status: 'Draft' }),
+    });
+    enterEdit();
+    press('End', { ctrlKey: true });
+    press('Home');
+    press('ArrowRight'); // the Customer cell of the trailing row
+    expect(active().textContent).toBe('Type here to add a row…');
+    typeKey('N');
+    setEditorValue('New Co');
+    press('Tab'); // stays on the new row, next column
+    expect(active().getAttribute('data-cell-key')).toBe('tmp_1:status');
+    // Subtotal is required on rows you add.
+    press('ArrowRight');
+    press('ArrowRight');
+    press('ArrowRight');
+    typeInto('250');
+    await saveAll();
+    expect(onSave).toHaveBeenCalledWith({
+      operations: [
+        {
+          op: 'create',
+          tempId: 'tmp_1',
+          values: { status: 'Draft', customer: 'New Co', subtotal: 250 },
+        },
+      ],
+    });
+  });
+
+  it('pasting past the last row adds rows when allowAdd is on', () => {
+    setup({ allowAdd: true });
+    enterEdit();
+    press('End', { ctrlKey: true });
+    press('ArrowUp'); // last real row (inv-30)
+    press('Home');
+    press('ArrowRight');
+    act(() => {
+      fireEvent.paste(active(), {
+        clipboardData: { getData: () => 'Row A\nRow B\nRow C' },
+      });
+    });
+    expect(cell('inv-30', 'customer')?.textContent).toBe('Row A');
+    expect(cell('tmp_1', 'customer')?.textContent).toBe('Row B');
+    expect(cell('tmp_2', 'customer')?.textContent).toBe('Row C');
+    expect(screen.getByText('Pasted 3 cells · 2 new rows.')).toBeTruthy();
+  });
+
+  it('checkbox cells toggle with Space and Enter', () => {
+    setup();
+    enterEdit();
+    goTo(1, 0);
+    press('End');
+    press('ArrowLeft'); // Emailed (inv-2: index 1 → 1 % 3 !== 0 → true)
+    expect(active().getAttribute('data-cell-key')).toBe('inv-2:emailed');
+    const box = () =>
+      within(active()).getByRole('checkbox', {
+        name: 'Emailed',
+      }) as HTMLInputElement;
+    expect(box().checked).toBe(true);
+    press(' ');
+    expect(box().checked).toBe(false);
+    press('Enter');
+    expect(box().checked).toBe(true);
+    expect(screen.queryByText(/change/)).toBeNull(); // back to the saved value
+  });
+
+  it('empty values render empty, whatever the column renderer does', () => {
+    setup();
+    enterEdit();
+    goTo(1, 6); // Tax (money format would show "NaN" or "0.00")
+    press('Delete');
+    expect(cell('inv-2', 'tax')?.textContent).toBe('');
   });
 });

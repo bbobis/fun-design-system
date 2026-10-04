@@ -63,22 +63,36 @@ export function applyDraft<TData extends RowData>(
   });
 }
 
-/** Builds the backend-neutral payload for `onSave`. */
+/**
+ * Builds the backend-neutral payload for `onSave`. Rows in `newRows` (temp id →
+ * default values) become `create` operations with their defaults plus what the user
+ * typed; every other changed row is an `update` with only its changed fields.
+ */
 export function toChangeSet<TData extends RowData>(
   draft: Draft,
   rowsById: ReadonlyMap<string, TData>,
-  getRowVersion?: (row: TData) => number | string | undefined,
+  getRowVersion?: (id: string, row: TData) => number | string | undefined,
+  newRows: ReadonlyMap<string, Readonly<Record<string, unknown>>> = new Map(),
 ): ChangeSet {
-  return {
-    operations: Object.entries(draft).map(([id, changes]) => {
-      const row = rowsById.get(id);
-      const version = row && getRowVersion ? getRowVersion(row) : undefined;
-      return {
-        op: 'update' as const,
-        id,
-        ...(version === undefined ? {} : { version }),
-        changes: { ...changes },
-      };
-    }),
-  };
+  const operations: ChangeSet['operations'] = [];
+  for (const [id, changes] of Object.entries(draft)) {
+    const defaults = newRows.get(id);
+    if (defaults) {
+      operations.push({
+        op: 'create',
+        tempId: id,
+        values: { ...defaults, ...changes },
+      });
+      continue;
+    }
+    const row = rowsById.get(id);
+    const version = row && getRowVersion ? getRowVersion(id, row) : undefined;
+    operations.push({
+      op: 'update',
+      id,
+      ...(version === undefined ? {} : { version }),
+      changes: { ...changes },
+    });
+  }
+  return { operations };
 }

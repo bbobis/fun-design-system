@@ -71,4 +71,18 @@ export type DataGridEditing<TData extends RowData> = {
   getRowVersion?: (row: TData) => number | string | undefined;
   /** Locked rows can't be edited at all (e.g. paid invoices). Receives the saved row, not the draft. */
   isRowLocked?: (row: TData) => boolean;
+  /**
+   * Shows a "Type here to add a row…" row at the bottom, and lets a paste run past the
+   * last row (extra rows are added). New rows are sent as `create` operations.
+   * @default false
+   */
+  allowAdd?: boolean;
+  /** Starting values for a new row (e.g. `{ status: 'Draft' }`). Sent with the row. */
+  newRow?: () => Partial<TData>;
 };
+
+/** One row the server says changed since the user's version (`SaveResult` kind `conflict`). */
+export type SaveConflict = Extract<
+  SaveResult,
+  { kind: 'conflict' }
+>['rows'][number];

@@ -3,7 +3,7 @@ import { useState } from 'react';
 import type { RowSelectionState } from '@tanstack/react-table';
 import { Button } from '../button';
 import { DataGrid } from './data-grid';
-import type { ChangeSet } from './editing/contract';
+import type { ChangeSet, SaveResult } from './editing/contract';
 import { invoiceColumns } from './fixtures/invoice-columns';
 import { makeInvoices, type Invoice } from './fixtures/invoices';
 
@@ -120,10 +120,34 @@ function applyChanges(rows: Invoice[], changes: ChangeSet): Invoice[] {
       op.op === 'update' ? [[op.id, op.changes] as const] : [],
     ),
   );
-  return rows.map((row) =>
+  const updated = rows.map((row) =>
     byId.has(row.id) ? { ...row, ...byId.get(row.id) } : row,
   );
+  // New rows get a real id and number, as a server would assign.
+  const created = changes.operations.flatMap((op, i) =>
+    op.op === 'create'
+      ? [
+          {
+            ...blankInvoice,
+            ...op.values,
+            id: `new-${rows.length + i + 1}`,
+            number: `INV-${20_000 + rows.length + i + 1}`,
+          } as Invoice,
+        ]
+      : [],
+  );
+  return [...updated, ...created];
 }
+
+/** What a server fills in for a new invoice the user didn't type. */
+const blankInvoice: Partial<Invoice> = {
+  issued: new Date(Date.UTC(2026, 9, 4)),
+  due: new Date(Date.UTC(2026, 10, 3)),
+  tax: 0,
+  total: 0,
+  currency: 'CAD',
+  emailed: false,
+};
 
 const isPaid = (row: Invoice) => row.status === 'Paid';
 
@@ -131,6 +155,8 @@ const isPaid = (row: Invoice) => row.status === 'Paid';
  * Click **Edit table**, then work like a spreadsheet: arrows, type to replace,
  * Enter/F2 to edit, Enter/Tab to commit and move, Esc to cancel. Nothing is saved until
  * **Save all** (the request is logged to the browser console). Paid rows are locked.
+ * Type in the last row (or paste past it) to add invoices. Customer and Subtotal are
+ * required, Subtotal must be above 0: break a rule to see the error states.
  */
 export const Editable: Story = {
   render: () => {
@@ -147,6 +173,11 @@ export const Editable: Story = {
           className="h-[36rem]"
           editing={{
             isRowLocked: isPaid,
+            allowAdd: true,
+            newRow: (): Partial<Invoice> => ({
+              status: 'Draft',
+              terms: 'Net 30',
+            }),
             onSave: async (changes) => {
               console.info('onSave', changes);
               await new Promise((r) => setTimeout(r, 600));
@@ -179,4 +210,75 @@ export const SaveFails: Story = {
       }}
     />
   ),
+};
+
+type ServerReply = 'ok' | 'validation' | 'conflict' | 'network error';
+
+/**
+ * Choose what the fake server answers, then edit a row or two and **Save all**:
+ * - **validation**: the first changed row is rejected with a message on its Customer cell.
+ * - **conflict**: the first changed row "was changed by Dana"; pick Use theirs or Keep mine.
+ * - **network error**: the save throws; your changes stay.
+ */
+export const SaveResults: StoryObj<{ reply: ServerReply }> = {
+  args: { reply: 'conflict' },
+  argTypes: {
+    reply: {
+      control: 'radio',
+      options: ['ok', 'validation', 'conflict', 'network error'],
+    },
+  },
+  render: ({ reply }) => {
+    function Example() {
+      const [rows, setRows] = useState(() => tenThousand.slice(0, 50));
+      return (
+        <DataGrid
+          aria-label="Invoices"
+          title={`Server replies: ${reply}`}
+          data={rows}
+          columns={invoiceColumns}
+          getRowId={getRowId}
+          className="h-[30rem]"
+          editing={{
+            isRowLocked: isPaid,
+            getRowVersion: () => 1,
+            onSave: async (changes): Promise<SaveResult> => {
+              console.info('onSave', changes);
+              await new Promise((r) => setTimeout(r, 500));
+              const first = changes.operations[0];
+              const id = first?.op === 'update' ? first.id : undefined;
+              if (reply === 'network error') throw new Error('503');
+              if (reply === 'validation' && id)
+                return {
+                  ok: false,
+                  kind: 'validation',
+                  rows: {
+                    [id]: {
+                      fields: { customer: ['Customer is on credit hold'] },
+                    },
+                  },
+                };
+              if (reply === 'conflict' && id)
+                return {
+                  ok: false,
+                  kind: 'conflict',
+                  rows: [
+                    {
+                      id,
+                      version: 2,
+                      current: { customer: 'Changed by Dana' },
+                      by: 'Dana',
+                      at: new Date().toISOString(),
+                    },
+                  ],
+                };
+              setRows((prev) => applyChanges(prev, changes));
+              return { ok: true };
+            },
+          }}
+        />
+      );
+    }
+    return <Example />;
+  },
 };

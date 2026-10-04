@@ -101,3 +101,10 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Remember: one output folder per task.** In Nx, two targets with no `dependsOn` between them can run at the same time. If they write the same folder, you get flaky failures that pass when each runs alone.
 - **Remember: fix the cause, not the order.** `dependsOn: ["build"]` on typecheck would also have "fixed" it, by making every typecheck wait for a full build. Separate folders keep both fast and independent.
 - **Read:** https://nx.dev/docs/concepts/task-pipeline-configuration
+
+## 2026-10-04 — PR D: validation, save results, new rows, checkbox
+- **Built:** `required` / `validate` column rules with error cells (ring, corner flag, `aria-invalid` + `aria-describedby`), a red row rail, "N errors · Go to error", Save blocked by errors; server `validation` messages pinned to cells (cleared when edited); `conflict` → Use theirs / Keep mine; new rows ("Type here to add a row…", paste past the bottom) sent as `create`; checkbox editor; empty values render empty; `docs/data-grid-editing.md`. Also split `data-grid.tsx` into row / utils / icons.
+- **Remember: why "Keep mine" changes the version.** The server rejected the save because the user's `version` was stale. Keeping your values but re-sending the old version would just conflict again, so both choices adopt the server's version; "mine" then overwrites on purpose.
+- **Remember: don't disable a button you can explain.** Save stays clickable with errors and jumps to the first one. A disabled button gives no reason and can't be focused.
+- **Gotcha:** jsdom can't scroll, so virtualized rows below the fake viewport never mount. Make the test viewport tall enough for the rows the test touches.
+- **Read:** https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Reference/Attributes/aria-invalid

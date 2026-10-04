@@ -58,7 +58,7 @@ describe('draft', () => {
     let d = setDraftValue(EMPTY_DRAFT, 'b', 'total', 99, 20);
     d = setDraftValue(d, 'b', 'name', 'Globex Ltd', 'Globex');
     const byId = new Map(rows.map((r) => [r.id, r]));
-    expect(toChangeSet(d, byId, (r) => r.version)).toEqual({
+    expect(toChangeSet(d, byId, (_id, r) => r.version)).toEqual({
       operations: [
         {
           op: 'update',
@@ -69,5 +69,16 @@ describe('draft', () => {
       ],
     });
     expect(toChangeSet(d, byId).operations[0]).not.toHaveProperty('version');
+  });
+
+  it('new rows become create operations with their defaults', () => {
+    const d = setDraftValue(EMPTY_DRAFT, 'tmp_1', 'name', 'New Co', undefined);
+    const byId = new Map(rows.map((r) => [r.id, r]));
+    const newRows = new Map([['tmp_1', { total: 0 }]]);
+    expect(toChangeSet(d, byId, undefined, newRows)).toEqual({
+      operations: [
+        { op: 'create', tempId: 'tmp_1', values: { total: 0, name: 'New Co' } },
+      ],
+    });
   });
 });

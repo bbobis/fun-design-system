@@ -25,6 +25,8 @@ export type Invoice = {
   items: number;
   marginPct: number;
   daysOutstanding: number;
+  /** Sent to the customer by email. */
+  emailed: boolean;
 };
 
 /** Small deterministic PRNG (mulberry32). Same seed → same sequence. */
@@ -144,6 +146,8 @@ export function makeInvoices(count: number, seed = 42): Invoice[] {
         0,
         Math.round((today - due.getTime()) / 86_400_000),
       ),
+      // Derived from the index, not rand(), so adding it didn't change any other value.
+      emailed: i % 3 !== 0,
     };
   });
 }
