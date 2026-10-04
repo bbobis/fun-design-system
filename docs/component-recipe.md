@@ -94,6 +94,10 @@ src/index.ts          export * from './components/<name>'
       hidden pass; a bare TagGroup gets rendered there too and crashes.
     - The field box is React Aria's `Group`: the dropdown then anchors to, and is as
       wide as, the whole box (not just the text input).
+    - Dates cross our API as ISO day strings (`'2026-10-04'`), never JS `Date` or
+      React Aria's `CalendarDate`. A `Date` is a moment, so it can be a different day in
+      another time zone; a string is a calendar day and survives JSON and forms as is.
+      Convert to `CalendarDate` only inside the component (`parseDate`).
 
 ## Tests to write for every component
 
