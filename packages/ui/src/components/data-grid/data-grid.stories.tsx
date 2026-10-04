@@ -3,6 +3,7 @@ import { useState } from 'react';
 import type { RowSelectionState } from '@tanstack/react-table';
 import { Button } from '../button';
 import { DataGrid } from './data-grid';
+import type { ChangeSet } from './editing/contract';
 import { invoiceColumns } from './fixtures/invoice-columns';
 import { makeInvoices, type Invoice } from './fixtures/invoices';
 
@@ -110,4 +111,72 @@ export const Empty: Story = {
     emptyMessage: 'No invoices yet. New invoices appear here.',
     className: 'h-48',
   },
+};
+
+/** Applies a ChangeSet to the demo rows, the way a real API response would. */
+function applyChanges(rows: Invoice[], changes: ChangeSet): Invoice[] {
+  const byId = new Map(
+    changes.operations.flatMap((op) =>
+      op.op === 'update' ? [[op.id, op.changes] as const] : [],
+    ),
+  );
+  return rows.map((row) =>
+    byId.has(row.id) ? { ...row, ...byId.get(row.id) } : row,
+  );
+}
+
+const isPaid = (row: Invoice) => row.status === 'Paid';
+
+/**
+ * Click **Edit table**, then work like a spreadsheet: arrows, type to replace,
+ * Enter/F2 to edit, Enter/Tab to commit and move, Esc to cancel. Nothing is saved until
+ * **Save all** (the request is logged to the browser console). Paid rows are locked.
+ */
+export const Editable: Story = {
+  render: () => {
+    function Example() {
+      const [rows, setRows] = useState(() => tenThousand.slice(0, 500));
+      return (
+        <DataGrid
+          aria-label="Invoices"
+          title="Invoices"
+          data={rows}
+          columns={invoiceColumns}
+          getRowId={getRowId}
+          density="standard"
+          className="h-[36rem]"
+          editing={{
+            isRowLocked: isPaid,
+            onSave: async (changes) => {
+              console.info('onSave', changes);
+              await new Promise((r) => setTimeout(r, 600));
+              setRows((prev) => applyChanges(prev, changes));
+              return { ok: true };
+            },
+          }}
+        />
+      );
+    }
+    return <Example />;
+  },
+};
+
+/** The server is down: Save fails, the draft is kept, and the bar says so. */
+export const SaveFails: Story = {
+  render: () => (
+    <DataGrid
+      aria-label="Invoices"
+      title="Invoices"
+      data={twentyFive}
+      columns={invoiceColumns}
+      getRowId={getRowId}
+      className="h-96"
+      editing={{
+        onSave: async () => {
+          await new Promise((r) => setTimeout(r, 400));
+          throw new Error('503 Service Unavailable');
+        },
+      }}
+    />
+  ),
 };

@@ -51,6 +51,14 @@ const customers = [
   'Boreal Timber',
   'Aurora Software',
 ];
+/** Every status once, in workflow order: the choices for the Status editor. */
+export const invoiceStatuses: readonly Invoice['status'][] = [
+  'Draft',
+  'Pending',
+  'Overdue',
+  'Paid',
+];
+// Weighted: Paid appears 3× as often as Draft.
 const statuses: Invoice['status'][] = [
   'Paid',
   'Paid',
@@ -72,7 +80,7 @@ const places = [
   ['EMEA', 'Germany', 'Berlin'],
   ['EMEA', 'Ireland', 'Dublin'],
 ] as const;
-const reps = [
+export const salesReps = [
   'A. Okafor',
   'B. Nguyen',
   'C. Tremblay',
@@ -80,7 +88,13 @@ const reps = [
   'E. Larsen',
   'F. Morales',
 ];
-const terms = ['Net 15', 'Net 30', 'Net 45', 'Net 60', 'Due on receipt'];
+export const paymentTerms = [
+  'Net 15',
+  'Net 30',
+  'Net 45',
+  'Net 60',
+  'Due on receipt',
+];
 const categories = [
   'Software',
   'Hardware',
@@ -99,7 +113,7 @@ export function makeInvoices(count: number, seed = 42): Invoice[] {
 
   return Array.from({ length: count }, (_, i) => {
     const issued = new Date(start + Math.floor(rand() * 640) * 86_400_000);
-    const term = pick(terms);
+    const term = pick(paymentTerms);
     const termDays = term === 'Due on receipt' ? 0 : Number(term.split(' ')[1]);
     const due = new Date(issued.getTime() + termDays * 86_400_000);
     const subtotal = Math.round((50 + rand() * 49_950) * 100) / 100;
@@ -120,7 +134,7 @@ export function makeInvoices(count: number, seed = 42): Invoice[] {
       region,
       country,
       city,
-      salesRep: pick(reps),
+      salesRep: pick(salesReps),
       terms: term,
       poNumber: `PO-${Math.floor(100_000 + rand() * 899_999)}`,
       category: pick(categories),
