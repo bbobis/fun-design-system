@@ -85,6 +85,9 @@ src/index.ts          export * from './components/<name>'
       CSS variables, e.g. `w-(--trigger-width)`. Our code stays Tailwind-only.
     - Field wiring: `aria-labelledby` = the Field's `labelId` for controls `htmlFor`
       can't name; `aria-describedby` merges the Field's ids with the caller's.
+    - Control the *value*, not the internal mechanics. Combobox controls the selected
+      key but leaves the input text to React Aria: controlled text switches off its
+      "show the picked label / reset on blur" logic. Apps listen with `onInputChange`.
 
 ## Tests to write for every component
 

@@ -127,3 +127,10 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Remember: a library imports, an app bundles.** A component library's build should only contain *its own* code. Its dependencies are installed and bundled once, by the app. Copies inside the library mean two React Arias (or Reacts) in one page, and context-based libraries break.
 - **Remember: peerDependencies = "the app must provide this".** React is the classic one: there must be exactly one React in a page, the app's.
 - **Read:** https://vite.dev/guide/build.html#library-mode
+
+## 2026-10-04 — Combobox: type to search, 10k options, server search
+- **Built:** `Combobox` on React Aria's `ComboBox`: browser filtering (`contains` / `startsWith`, ignores case and accents via `useFilter`), server search (`filter="none"` + `onInputChange` + `loading`), a virtualized list (`Virtualizer` + `ListLayout`, ~12 rows in the DOM for 10,000 options), Field wiring, and form posts of the option value (`formValue="key"`).
+- **Remember: `aria-activedescendant`.** In a combobox, DOM focus never leaves the input (you must be able to keep typing). The highlighted option is pointed at by id: `<input aria-activedescendant="opt-7">`, and the screen reader reads that option. Select is different: there focus really moves into the list.
+- **Remember: control the result, not the mechanics.** A first version let apps control the input text (`inputValue`). React Aria then stopped putting the picked label in the box and stopped resetting half-typed text on blur (found in the browser, not in tests). Fix: no `inputValue` prop; apps only *listen* (`onInputChange`).
+- **Gotcha:** `defaultItems` = "React Aria filters these"; `items` = "already filtered by you". Pass the wrong one and filtering silently stops.
+- **Read:** https://react-aria.adobe.com/ComboBox
