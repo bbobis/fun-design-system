@@ -7,4 +7,5 @@ export * from './components/field';
 export * from './components/heading';
 export * from './components/input';
 export * from './components/label';
+export * from './components/select';
 export * from './components/text';

@@ -4,6 +4,11 @@ import { createContext, useContext } from 'react';
 export type FieldContextValue = {
   /** id for the control; the label's `htmlFor` points at it. */
   controlId: string;
+  /**
+   * id of the visible label. Controls that `htmlFor` can't name (a listbox trigger, a
+   * custom widget) use it as `aria-labelledby`.
+   */
+  labelId: string;
   /** Space-separated ids of the description and error, for `aria-describedby`. */
   describedBy: string | undefined;
   invalid: boolean;
