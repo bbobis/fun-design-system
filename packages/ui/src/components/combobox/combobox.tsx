@@ -1,25 +1,19 @@
 import { cva, type VariantProps } from 'class-variance-authority';
-import { useMemo, useRef, useState, type SVGProps } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import {
   Button,
   ComboBox as AriaComboBox,
+  Group,
   Input,
-  ListBox,
-  ListBoxItem,
-  ListLayout,
-  Popover,
   useFilter,
-  Virtualizer,
 } from 'react-aria-components';
 import { cn } from '../../utils/cn';
 import { useFieldContext } from '../field/field-context';
 import type { SelectOption } from '../select';
+import { ChevronIcon, ComboboxPopover, SpinnerIcon } from './combobox-parts';
 
 /** One choice in a Combobox. Same shape as a Select option. */
 export type ComboboxOption = SelectOption;
-
-/** Row height in px. Fixed, so the virtualizer can place 10,000 rows without measuring. */
-const ROW_HEIGHT = 32;
 
 // Same heights as Input / Select / Button. The wrapper draws the box; the input inside
 // is borderless, so the toggle button sits inside the same border.
@@ -187,7 +181,8 @@ export function Combobox({
       aria-describedby={describedBy}
       className={cn('group flex w-full flex-col', className)}
     >
-      <div className={fieldVariants({ size })}>
+      {/* Group = the field box. React Aria anchors and sizes the dropdown to it. */}
+      <Group className={fieldVariants({ size })}>
         <Input
           id={id ?? field?.controlId}
           placeholder={placeholder}
@@ -200,98 +195,8 @@ export function Combobox({
         <Button className="flex h-full shrink-0 items-center px-2 text-fg-muted hover:text-fg">
           <ChevronIcon className="size-4" />
         </Button>
-      </div>
-      <Popover
-        offset={4}
-        className="w-(--trigger-width) min-w-40 rounded-md border border-border bg-bg shadow-lg"
-      >
-        {/*
-          React Aria's own virtualizer: only the visible rows are in the DOM. Rows must be
-          ROW_HEIGHT tall (h-8 below) so the layout's maths matches what's drawn.
-        */}
-        <Virtualizer
-          layout={ListLayout}
-          layoutOptions={{ rowHeight: ROW_HEIGHT, padding: 4 }}
-        >
-          <ListBox<ComboboxOption>
-            className="max-h-72 overflow-auto outline-hidden"
-            renderEmptyState={() => (
-              <p className="px-3 py-2 text-sm text-fg-muted">
-                {loading ? 'Loading…' : emptyMessage}
-              </p>
-            )}
-          >
-            {(option) => (
-              <ListBoxItem
-                id={option.value}
-                textValue={option.label}
-                className={cn(
-                  'mx-1 flex h-8 cursor-default items-center justify-between gap-2 rounded px-2 text-sm text-fg outline-hidden',
-                  'data-focused:bg-surface data-selected:font-medium',
-                  'data-disabled:cursor-not-allowed data-disabled:text-fg-muted data-disabled:opacity-60',
-                )}
-              >
-                {({ isSelected }) => (
-                  <>
-                    <span className="truncate">{option.label}</span>
-                    {isSelected && <CheckIcon className="size-4 shrink-0" />}
-                  </>
-                )}
-              </ListBoxItem>
-            )}
-          </ListBox>
-        </Virtualizer>
-      </Popover>
+      </Group>
+      <ComboboxPopover loading={loading} emptyMessage={emptyMessage} />
     </AriaComboBox>
-  );
-}
-
-function ChevronIcon(props: SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      aria-hidden="true"
-      viewBox="0 0 16 16"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.5}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      {...props}
-    >
-      <path d="m4 6 4 4 4-4" />
-    </svg>
-  );
-}
-
-function CheckIcon(props: SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      aria-hidden="true"
-      viewBox="0 0 16 16"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      {...props}
-    >
-      <path d="m3.5 8.5 3 3 6-7" />
-    </svg>
-  );
-}
-
-function SpinnerIcon(props: SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      aria-hidden="true"
-      viewBox="0 0 16 16"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      strokeLinecap="round"
-      {...props}
-    >
-      <path d="M8 2a6 6 0 1 0 6 6" />
-    </svg>
   );
 }

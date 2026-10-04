@@ -88,6 +88,12 @@ src/index.ts          export * from './components/<name>'
     - Control the *value*, not the internal mechanics. Combobox controls the selected
       key but leaves the input text to React Aria: controlled text switches off its
       "show the picked label / reset on blur" logic. Apps listen with `onInputChange`.
+    - Inside a React Aria `ComboBox`/`Select`, anything that is itself a collection
+      (TagGroup, a second ListBox) must sit in a *hideable* wrapper such as
+      `ComboBoxValue`. React Aria builds the option list by rendering the children in a
+      hidden pass; a bare TagGroup gets rendered there too and crashes.
+    - The field box is React Aria's `Group`: the dropdown then anchors to, and is as
+      wide as, the whole box (not just the text input).
 
 ## Tests to write for every component
 
