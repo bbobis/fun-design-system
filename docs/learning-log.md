@@ -88,3 +88,10 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Remember: keep logic pure, keep React thin.** `getGridKeyAction(event, state)` is a plain function (one-line tests per key); `draft.ts` is plain functions over immutable objects. The component only wires them up.
 - **Gotcha:** jsdom has no `CSS.escape` or `scrollIntoView`; guard or avoid them, or every test crashes in a layout effect.
 - **Read:** https://www.w3.org/WAI/ARIA/apg/patterns/grid/#keyboardinteraction-settingfocusandnavigatinginsidecells
+
+## 2026-10-04 — PR C: DataGrid Excel feel (ranges, clipboard, fill, undo)
+- **Built:** range selection (Shift+keys, Shift+click, mouse drag via TanStack's selection handlers, Ctrl+A), copy/cut/paste as Excel TSV (+ HTML table), paste tiling and per-column parsing ("pending" → "Pending", "$1,234.50" → 1234.5), read-only skip, Ctrl+D, Delete, Backspace, Ctrl+Z / Ctrl+Y and an Undo button.
+- **Remember: the command pattern for undo.** One user gesture = one history entry holding `{ rowId, columnId, before, after }` for every cell it touched. A 200-cell paste is one entry, so one Ctrl+Z undoes it. Undo replays `before`, redo replays `after`; a new gesture drops the redo trail.
+- **Remember: clipboard events, not the Clipboard API.** `copy` / `cut` / `paste` events are synchronous, need no permission prompt and work in every browser; `navigator.clipboard` is async and Firefox/Safari prompt for reads.
+- **Gotcha:** a generic `Cell<F, TData>` doesn't assign to `Cell<F, any>` in every position. When a function only needs a few members, type it structurally (`{ row: { id: string }; … }`).
+- **Read:** https://developer.mozilla.org/en-US/docs/Web/API/Element/paste_event

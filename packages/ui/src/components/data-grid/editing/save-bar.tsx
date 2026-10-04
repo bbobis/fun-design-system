@@ -11,6 +11,9 @@ type SaveBarProps = {
   message?: string;
   onSave: () => void;
   onDiscard: () => void;
+  /** Shows an Undo button (Ctrl+Z does the same). */
+  canUndo?: boolean;
+  onUndo?: () => void;
 };
 
 /**
@@ -24,6 +27,8 @@ export function SaveBar({
   message,
   onSave,
   onDiscard,
+  canUndo = false,
+  onUndo,
 }: SaveBarProps) {
   const [confirming, setConfirming] = useState(false);
   const discardRef = useRef<HTMLButtonElement>(null);
@@ -86,6 +91,17 @@ export function SaveBar({
       </span>
       {message && <span className="text-fg-danger">{message}</span>}
       <span className="flex-1" />
+      {onUndo && (
+        <Button
+          intent="ghost"
+          size="sm"
+          disabled={saving || !canUndo}
+          title="Undo (Ctrl+Z)"
+          onClick={onUndo}
+        >
+          Undo
+        </Button>
+      )}
       <Button
         ref={discardRef}
         intent="ghost"

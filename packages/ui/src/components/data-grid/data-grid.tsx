@@ -23,6 +23,7 @@ import {
   useMemo,
   useRef,
   useState,
+  type ClipboardEvent,
   type CSSProperties,
   type FocusEvent,
   type KeyboardEvent,
@@ -51,12 +52,23 @@ import {
   applyDraft,
   countChanges,
   EMPTY_DRAFT,
+  sameValue,
   setDraftValue,
   toChangeSet,
   type Draft,
 } from './editing/draft';
+import {
+  EMPTY_HISTORY,
+  record,
+  takeRedo,
+  takeUndo,
+  type CellChange,
+  type History,
+} from './editing/history';
 import { getGridKeyAction } from './editing/keyboard';
+import { boundsOf, cellCount, planPaste, type Bounds } from './editing/range';
 import { SaveBar } from './editing/save-bar';
+import { parseTsv, toTsv } from './editing/tsv';
 
 /** Row heights in px. Fixed heights are what keep 10k+ rows fast: no measuring. */
 const ROW_HEIGHT = { compact: 32, standard: 40 } as const;
@@ -75,6 +87,25 @@ function cssVars(vars: Record<`--${string}`, string | number>): CSSProperties {
 
 /** Identifies one cell in the DOM: `data-cell-key="rowId:columnId"`. */
 const cellKey = (rowId: string, columnId: string) => `${rowId}:${columnId}`;
+
+/** Finds a rendered cell by key (null if its row is virtualized away). */
+function findCell(root: HTMLElement | null, key: string) {
+  // Escape quotes and backslashes for the attribute selector (jsdom has no CSS.escape).
+  const safe = key.replace(/["\\]/g, '\\$&');
+  return root?.querySelector<HTMLElement>(`[data-cell-key="${safe}"]`) ?? null;
+}
+
+function escapeHtml(text: string) {
+  return text.replace(/[&<>"]/g, (c) => `&#${c.charCodeAt(0)};`);
+}
+
+/** The row isn't in the selected range. One shared object, so memo sees "no change". */
+const NO_RANGE = {
+  rangeStart: -1,
+  rangeEnd: -1,
+  rangeTop: false,
+  rangeBottom: false,
+} as const;
 
 /** What `renderBulkActions` receives. */
 export type DataGridBulkActionsContext = {
@@ -183,10 +214,13 @@ export function DataGrid<TData extends RowData>({
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string>();
   const [announcement, setAnnouncement] = useState('');
+  const [history, setHistory] = useState<History>(EMPTY_HISTORY);
   const editorRef = useRef<CellEditorElement | null>(null);
   const editButtonRef = useRef<HTMLButtonElement>(null);
   // The cell that should receive DOM focus once it is rendered (see the layout effect).
   const pendingFocus = useRef<string | null>(null);
+  // A cell to scroll into view without focusing it (the moving corner of a Shift+range).
+  const pendingReveal = useRef<string | null>(null);
 
   const rowsById = useMemo(
     () => new Map(data.map((row) => [getRowId(row), row])),
@@ -257,6 +291,8 @@ export function DataGrid<TData extends RowData>({
     onCellSelectionChange: setCellSelection,
     // Every draft change creates new `data`; don't let that reset the active cell.
     autoResetCellSelection: false,
+    // One rectangle at a time. Ctrl+click "add another range" isn't worth its confusion here.
+    enableMultiCellRangeSelection: false,
     enableRowSelection,
     // TanStack's default sorts number/date columns descending on the first click and
     // text ascending. Enterprise users expect the same first click everywhere (like
@@ -275,6 +311,7 @@ export function DataGrid<TData extends RowData>({
     () => new Map(rows.map((row, i) => [row.id, i])),
     [rows],
   );
+  const colIndexById = new Map(leafColumns.map((c, i) => [c.id, i]));
 
   // ---- Virtualization -------------------------------------------------------
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -324,11 +361,17 @@ export function DataGrid<TData extends RowData>({
   // render first contains it. This effect runs after every render; it is a cheap
   // no-op when nothing is pending.
   useLayoutEffect(() => {
+    const reveal = pendingReveal.current;
+    if (reveal) {
+      const target = findCell(scrollRef.current, reveal);
+      if (target) {
+        pendingReveal.current = null;
+        target.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
+      }
+    }
     const key = pendingFocus.current;
     if (!key) return;
-    const el = scrollRef.current?.querySelector<HTMLElement>(
-      `[data-cell-key="${key.replace(/["\\]/g, '\\$&')}"]`,
-    );
+    const el = findCell(scrollRef.current, key);
     if (!el) return;
     pendingFocus.current = null;
     if (!el.contains(document.activeElement)) el.focus({ preventScroll: true });
@@ -348,6 +391,186 @@ export function DataGrid<TData extends RowData>({
   const changeCount = countChanges(draft);
   const changedRowCount = Object.keys(draft).length;
   const isDirty = changeCount > 0;
+
+  const isRowLocked = (rowId: string) => {
+    if (!isEditing || !editing?.isRowLocked) return false;
+    const saved = rowsById.get(rowId);
+    return saved ? editing.isRowLocked(saved) : false;
+  };
+  const canEdit = (rowId: string, columnId: string) =>
+    Boolean(table.getColumn(columnId)?.columnDef.meta?.editor) &&
+    !isRowLocked(rowId);
+  /** What the cell shows now: the draft value if there is one (even null), else saved. */
+  const shownValue = (rowId: string, columnId: string) => {
+    const rowDraft = draft[rowId];
+    return rowDraft && columnId in rowDraft
+      ? rowDraft[columnId]
+      : fieldValue(rowsById.get(rowId), columnId);
+  };
+
+  // ---- The selected range ---------------------------------------------------
+  // TanStack stores ranges as two corners by id: the anchor (the active cell, where
+  // typing goes) and the focus (the corner Shift+arrows move). We read them as indexes.
+  const range = isEditing ? cellSelection.at(-1) : undefined;
+  const anchorPos = range && {
+    row: rowIndexById.get(range.anchorRowId) ?? 0,
+    col: colIndexById.get(range.anchorColumnId) ?? 0,
+  };
+  const endPos = range && {
+    row: rowIndexById.get(range.focusRowId) ?? 0,
+    col: colIndexById.get(range.focusColumnId) ?? 0,
+  };
+  const bounds: Bounds | undefined =
+    anchorPos && endPos ? boundsOf(anchorPos, endPos) : undefined;
+  const hasRange = bounds !== undefined && cellCount(bounds) > 1;
+
+  /** Every (rowId, columnId) in a rectangle, row by row. */
+  const cellsIn = (b: Bounds) => {
+    const out: { rowId: string; columnId: string; row: number; col: number }[] =
+      [];
+    for (let r = b.r1; r <= b.r2; r++) {
+      const rowId = rows[r]?.id;
+      if (rowId === undefined) continue;
+      for (let c = b.c1; c <= b.c2; c++) {
+        const columnId = leafColumns[c]?.id;
+        if (columnId !== undefined)
+          out.push({ rowId, columnId, row: r, col: c });
+      }
+    }
+    return out;
+  };
+
+  const selectRange = (
+    anchor: { row: number; col: number },
+    end: { row: number; col: number },
+  ) => {
+    const a = rows[anchor.row];
+    const ac = leafColumns[anchor.col];
+    const e = rows[end.row];
+    const ec = leafColumns[end.col];
+    if (!a || !ac || !e || !ec) return;
+    setCellSelection([
+      {
+        anchorRowId: a.id,
+        anchorColumnId: ac.id,
+        focusRowId: e.id,
+        focusColumnId: ec.id,
+      },
+    ]);
+  };
+
+  /**
+   * The one way values enter the draft (typing, paste, fill, clear). Records ONE
+   * history entry for the whole gesture, so one Ctrl+Z undoes it. Returns how many
+   * cells actually changed.
+   */
+  const applyValues = (
+    label: string,
+    items: readonly { rowId: string; columnId: string; value: unknown }[],
+  ) => {
+    let next = draft;
+    const changes: CellChange[] = [];
+    for (const { rowId, columnId, value } of items) {
+      const before = shownValue(rowId, columnId);
+      if (sameValue(before, value)) continue;
+      changes.push({ rowId, columnId, before, after: value });
+      next = setDraftValue(
+        next,
+        rowId,
+        columnId,
+        value,
+        fieldValue(rowsById.get(rowId), columnId),
+      );
+    }
+    if (changes.length === 0) return 0;
+    setDraft(next);
+    setHistory((h) => record(h, { label, changes }));
+    return changes.length;
+  };
+
+  /** Undo/redo: put each changed cell back to `before` (or `after`), then show them. */
+  const replay = (changes: readonly CellChange[], use: 'before' | 'after') => {
+    let next = draft;
+    for (const c of changes)
+      next = setDraftValue(
+        next,
+        c.rowId,
+        c.columnId,
+        c[use],
+        fieldValue(rowsById.get(c.rowId), c.columnId),
+      );
+    setDraft(next);
+    // Select what changed, like Excel, so the user sees what was undone.
+    const positions = changes
+      .map((c) => ({
+        row: rowIndexById.get(c.rowId),
+        col: colIndexById.get(c.columnId),
+      }))
+      .filter(
+        (p): p is { row: number; col: number } =>
+          p.row !== undefined && p.col !== undefined,
+      );
+    const first = positions[0];
+    if (!first) return;
+    const box = positions.reduce(
+      (b, p) => ({
+        r1: Math.min(b.r1, p.row),
+        r2: Math.max(b.r2, p.row),
+        c1: Math.min(b.c1, p.col),
+        c2: Math.max(b.c2, p.col),
+      }),
+      { r1: first.row, r2: first.row, c1: first.col, c2: first.col },
+    );
+    focusCell(box.r1, box.c1);
+    selectRange({ row: box.r1, col: box.c1 }, { row: box.r2, col: box.c2 });
+  };
+
+  const undo = () => {
+    const step = takeUndo(history);
+    if (!step) return announce('Nothing to undo.');
+    setHistory(step.history);
+    replay(step.entry.changes, 'before');
+    announce(`Undid ${step.entry.label}.`);
+  };
+  const redo = () => {
+    const step = takeRedo(history);
+    if (!step) return announce('Nothing to redo.');
+    setHistory(step.history);
+    replay(step.entry.changes, 'after');
+    announce(`Redid ${step.entry.label}.`);
+  };
+
+  const clearRange = (label: string) => {
+    if (!bounds) return;
+    const items = cellsIn(bounds)
+      .filter((c) => canEdit(c.rowId, c.columnId))
+      .map((c) => ({
+        ...c,
+        // Text clears to "", numbers and choices to empty (null).
+        value:
+          table.getColumn(c.columnId)?.columnDef.meta?.editor === 'text'
+            ? ''
+            : null,
+      }));
+    const n = applyValues(label, items);
+    announce(n ? `Cleared ${plural(n, 'cell')}.` : 'Nothing to clear here.');
+  };
+
+  const fillDown = () => {
+    if (!bounds) return;
+    const items: { rowId: string; columnId: string; value: unknown }[] = [];
+    // One cell: copy the cell above (Excel). A range: copy its top row down.
+    const sourceRow = bounds.r1 === bounds.r2 ? bounds.r1 - 1 : bounds.r1;
+    const fromRow = rows[sourceRow];
+    if (!fromRow) return announce('Nothing above to fill from.');
+    const firstTarget = bounds.r1 === bounds.r2 ? bounds.r1 : bounds.r1 + 1;
+    for (const c of cellsIn({ ...bounds, r1: firstTarget })) {
+      if (!canEdit(c.rowId, c.columnId)) continue;
+      items.push({ ...c, value: shownValue(fromRow.id, c.columnId) });
+    }
+    const n = applyValues('fill down', items);
+    announce(n ? `Filled ${plural(n, 'cell')}.` : 'Nothing to fill.');
+  };
 
   const focusCell = (rowIndex: number, columnIndex: number) => {
     const row = rows[rowIndex];
@@ -388,6 +611,7 @@ export function DataGrid<TData extends RowData>({
     setFrozenIds(null);
     setEditingCell(null);
     setCellSelection([]);
+    setHistory(EMPTY_HISTORY);
     focusedIndex.current = null;
     setAnnouncement('');
     requestAnimationFrame(() => editButtonRef.current?.focus());
@@ -408,8 +632,7 @@ export function DataGrid<TData extends RowData>({
       announce('This row is locked.');
       return;
     }
-    const shown = draft[rowId]?.[columnId] ?? fieldValue(row, columnId);
-    const current = toEditorText(shown);
+    const current = toEditorText(shownValue(rowId, columnId));
     let initial = seed ?? current;
     if (meta.editor === 'select' && seed !== undefined) {
       // Type-to-replace in a list: jump to the first option starting with that letter.
@@ -430,16 +653,17 @@ export function DataGrid<TData extends RowData>({
     if (!editingCell) return true;
     const { rowId, columnId } = editingCell;
     const column = table.getColumn(columnId);
-    const kind = column?.columnDef.meta?.editor ?? 'text';
+    const meta = column?.columnDef.meta;
     const raw = editorRef.current?.value ?? editingCell.initial;
-    const parsed = parseEditorValue(kind, raw);
+    const parsed = parseEditorValue(meta?.editor ?? 'text', raw, meta?.options);
     if (!parsed.ok) {
       announce(`${headerLabel(column)}: ${parsed.message}.`);
       if (refocus) editorRef.current?.focus();
       return false;
     }
-    const original = fieldValue(rowsById.get(rowId), columnId);
-    setDraft((d) => setDraftValue(d, rowId, columnId, parsed.value, original));
+    applyValues(`edit ${headerLabel(column)}`, [
+      { rowId, columnId, value: parsed.value },
+    ]);
     setEditingCell(null);
     if (!refocus) return true;
     const rowIndex = rowIndexById.get(rowId) ?? 0;
@@ -471,8 +695,10 @@ export function DataGrid<TData extends RowData>({
       },
       {
         editing: editingCell !== null,
-        row: rowIndexById.get(focused.row.id) ?? 0,
-        col: leafColumns.findIndex((c) => c.id === focused.column.id),
+        row: anchorPos?.row ?? rowIndexById.get(focused.row.id) ?? 0,
+        col: anchorPos?.col ?? colIndexById.get(focused.column.id) ?? 0,
+        endRow: endPos?.row ?? rowIndexById.get(focused.row.id) ?? 0,
+        endCol: endPos?.col ?? colIndexById.get(focused.column.id) ?? 0,
         rowCount: rows.length,
         colCount: leafColumns.length,
       },
@@ -494,7 +720,150 @@ export function DataGrid<TData extends RowData>({
         event.preventDefault();
         cancelEdit();
         return;
+      case 'extend': {
+        event.preventDefault();
+        if (!anchorPos) return;
+        selectRange(anchorPos, { row: action.row, col: action.col });
+        // The active cell keeps focus; scroll the moving corner into view.
+        const corner = rows[action.row];
+        const column = leafColumns[action.col];
+        if (corner && column)
+          pendingReveal.current = cellKey(corner.id, column.id);
+        virtualizer.scrollToIndex(action.row, { align: 'auto' });
+        return;
+      }
+      case 'selectAll':
+        event.preventDefault();
+        focusCell(0, 0);
+        selectRange(
+          { row: 0, col: 0 },
+          { row: rows.length - 1, col: leafColumns.length - 1 },
+        );
+        announce(
+          `Selected all ${plural(rows.length * leafColumns.length, 'cell')}.`,
+        );
+        return;
+      case 'collapse':
+        event.preventDefault();
+        if (anchorPos) focusCell(anchorPos.row, anchorPos.col);
+        return;
+      case 'clear':
+        event.preventDefault();
+        clearRange('clear');
+        return;
+      case 'fillDown':
+        event.preventDefault();
+        fillDown();
+        return;
+      case 'undo':
+        event.preventDefault();
+        undo();
+        return;
+      case 'redo':
+        event.preventDefault();
+        redo();
+        return;
     }
+  };
+
+  // ---- Clipboard -------------------------------------------------------------
+  // The copy/cut/paste DOM events are synchronous and need no permission prompt
+  // (unlike navigator.clipboard). While a cell editor is open we do nothing, so the
+  // input's own copy and paste work normally.
+  const clipboardActive =
+    isEditing && !editingCell && !saving && bounds !== undefined;
+
+  const handleCopy = (event: ClipboardEvent<HTMLTableElement>) => {
+    if (!clipboardActive || !bounds) return;
+    event.preventDefault();
+    const matrix: string[][] = [];
+    for (let r = bounds.r1; r <= bounds.r2; r++) {
+      const rowId = rows[r]?.id;
+      if (rowId === undefined) continue;
+      const line: string[] = [];
+      for (let c = bounds.c1; c <= bounds.c2; c++) {
+        const columnId = leafColumns[c]?.id;
+        // Raw-ish values ("1500.5", "2026-03-01"), so a round trip through Excel is lossless.
+        line.push(columnId ? toEditorText(shownValue(rowId, columnId)) : '');
+      }
+      matrix.push(line);
+    }
+    event.clipboardData.setData('text/plain', toTsv(matrix));
+    // An HTML table too: Outlook, Word and Google Sheets keep the columns from this one.
+    event.clipboardData.setData(
+      'text/html',
+      `<table>${matrix
+        .map(
+          (r) =>
+            `<tr>${r.map((v) => `<td>${escapeHtml(v)}</td>`).join('')}</tr>`,
+        )
+        .join('')}</table>`,
+    );
+    announce(`Copied ${plural(cellCount(bounds), 'cell')}.`);
+  };
+
+  const handleCut = (event: ClipboardEvent<HTMLTableElement>) => {
+    if (!clipboardActive) return;
+    handleCopy(event);
+    clearRange('cut');
+  };
+
+  const handlePaste = (event: ClipboardEvent<HTMLTableElement>) => {
+    if (!clipboardActive || !bounds) return;
+    const text = event.clipboardData.getData('text/plain');
+    if (!text) return;
+    event.preventDefault();
+    const matrix = parseTsv(text);
+    const width = Math.max(...matrix.map((r) => r.length));
+    const plan = planPaste(
+      matrix.length,
+      width,
+      bounds,
+      rows.length,
+      leafColumns.length,
+    );
+
+    const items: { rowId: string; columnId: string; value: unknown }[] = [];
+    let skipped = 0;
+    let rejected = 0;
+    for (const t of plan.targets) {
+      const rowId = rows[t.row]?.id;
+      const column = leafColumns[t.col];
+      if (rowId === undefined || !column) continue;
+      if (!canEdit(rowId, column.id)) {
+        skipped++;
+        continue;
+      }
+      const meta = column.columnDef.meta;
+      const parsed = parseEditorValue(
+        meta?.editor ?? 'text',
+        matrix[t.srcRow]?.[t.srcCol] ?? '',
+        meta?.options,
+      );
+      if (!parsed.ok) {
+        rejected++;
+        continue;
+      }
+      items.push({ rowId, columnId: column.id, value: parsed.value });
+    }
+    applyValues('paste', items);
+    // Count what was pasted, not what changed: pasting a value a cell already had is still a paste.
+    const pasted = items.length;
+    // Select the pasted area so the user sees where it went (and can Ctrl+Z it).
+    selectRange(
+      { row: plan.area.r1, col: plan.area.c1 },
+      { row: plan.area.r2, col: plan.area.c2 },
+    );
+    announce(
+      [
+        `Pasted ${plural(pasted, 'cell')}`,
+        skipped && `${skipped} skipped (read-only)`,
+        rejected && `${rejected} rejected (wrong type)`,
+        plan.clippedRows && `${plural(plan.clippedRows, 'row')} didn't fit`,
+      ]
+        .filter(Boolean)
+        .join(' · ') + '.',
+    );
   };
 
   const save = async () => {
@@ -506,6 +875,7 @@ export function DataGrid<TData extends RowData>({
       const result = await editing.onSave(changes);
       if (!result || result.ok) {
         setDraft(EMPTY_DRAFT);
+        setHistory(EMPTY_HISTORY);
         refocusActiveCell(); // the bar (and its button) disappears; keep the keyboard in the grid
         announce(`Saved ${plural(changeCount, 'change')}.`);
       } else {
@@ -527,6 +897,7 @@ export function DataGrid<TData extends RowData>({
 
   const discard = () => {
     setDraft(EMPTY_DRAFT);
+    setHistory(EMPTY_HISTORY);
     setEditingCell(null);
     setSaveMessage(undefined);
     refocusActiveCell();
@@ -551,11 +922,17 @@ export function DataGrid<TData extends RowData>({
   const cellApi = useMemo<CellApi>(
     () => ({
       editorRef,
-      onCellMouseDown: (rowId, columnId, event) => {
+      onCellMouseDown: (cell, event) => {
         if ((event.target as HTMLElement).closest('[data-editor]')) return;
-        table.setFocusedCell(rowId, columnId);
-        pendingFocus.current = cellKey(rowId, columnId);
+        // TanStack's handler does click, Shift+click (extend) and starts a drag.
+        cell.getSelectionStartHandler()(event);
+        const anchor = event.shiftKey ? table.getFocusedCell() : undefined;
+        pendingFocus.current = anchor
+          ? cellKey(anchor.row.id, anchor.column.id)
+          : cellKey(cell.row.id, cell.column.id);
       },
+      onCellMouseEnter: (cell, event) =>
+        cell.getSelectionExtendHandler()(event),
       onCellDoubleClick: (rowId, columnId) =>
         latest.current.startEdit(rowId, columnId),
       onEditorBlur: (event) => {
@@ -568,11 +945,16 @@ export function DataGrid<TData extends RowData>({
     [table],
   );
 
-  const isRowLocked = (rowId: string) => {
-    if (!isEditing || !editing?.isRowLocked) return false;
-    const saved = rowsById.get(rowId);
-    return saved ? editing.isRowLocked(saved) : false;
-  };
+  /** Per-row slice of the range, as primitives so memoized rows can compare them. */
+  const rowRange = (index: number) =>
+    hasRange && bounds && index >= bounds.r1 && index <= bounds.r2
+      ? {
+          rangeStart: bounds.c1,
+          rangeEnd: bounds.c2,
+          rangeTop: index === bounds.r1,
+          rangeBottom: index === bounds.r2,
+        }
+      : NO_RANGE;
 
   const selectedRowIds = Object.keys(rowSelection);
   const selectedCount = selectedRowIds.length;
@@ -677,9 +1059,17 @@ export function DataGrid<TData extends RowData>({
           aria-label={ariaLabel}
           aria-rowcount={rows.length + 1}
           aria-colcount={columnCount}
-          className="grid w-max min-w-full w-(--table-w) border-collapse text-sm"
+          aria-multiselectable={isEditing || undefined}
+          className={cn(
+            'grid w-max min-w-full w-(--table-w) border-collapse text-sm',
+            // Dragging a range shouldn't also highlight text.
+            isEditing && 'select-none',
+          )}
           style={cssVars({ '--table-w': `${totalWidth}px` })}
           onKeyDown={handleGridKeyDown}
+          onCopy={handleCopy}
+          onCut={handleCut}
+          onPaste={handlePaste}
         >
           {/* eslint-disable-next-line jsx-a11y/no-redundant-roles -- display:grid can strip implicit table roles */}
           <thead role="rowgroup" className="sticky top-0 z-10 grid bg-bg">
@@ -804,6 +1194,7 @@ export function DataGrid<TData extends RowData>({
                     editingColumnId={isEditingRow ? editingCell.columnId : null}
                     editingInitial={isEditingRow ? editingCell.initial : ''}
                     cellApi={cellApi}
+                    {...rowRange(item.index)}
                   />
                 );
               })
@@ -820,6 +1211,8 @@ export function DataGrid<TData extends RowData>({
           message={saveMessage}
           onSave={() => void save()}
           onDiscard={discard}
+          canUndo={history.undo.length > 0}
+          onUndo={undo}
         />
       ) : (
         enableRowSelection &&
@@ -858,7 +1251,12 @@ export function DataGrid<TData extends RowData>({
           sighted users get the same feedback; aria-live so screen readers hear it.
           Always rendered: a live region must exist before its text changes.
         */}
-        <p aria-live="polite" className="truncate text-end">
+        {hasRange && bounds && (
+          <p className="shrink-0 tabular-nums">
+            {bounds.r2 - bounds.r1 + 1} × {bounds.c2 - bounds.c1 + 1} selected
+          </p>
+        )}
+        <p aria-live="polite" className="ms-auto truncate text-end">
           {isEditing ? announcement : ''}
         </p>
       </div>
@@ -965,10 +1363,23 @@ function SortIndicator({ direction }: { direction: false | 'asc' | 'desc' }) {
   );
 }
 
+/**
+ * The few parts of a TanStack cell the mouse handlers use. A small structural type
+ * instead of `Cell<Features, TData>`: a generic Cell<TData> won't assign to Cell<any>
+ * in every position, and these handlers don't care about the row type at all.
+ */
+type GridCell = {
+  row: { id: string };
+  column: { id: string };
+  getSelectionStartHandler: () => (event: unknown) => void;
+  getSelectionExtendHandler: () => (event: unknown) => void;
+};
+
 /** Stable callbacks the memoized rows use in edit mode. */
 type CellApi = {
   editorRef: RefObject<CellEditorElement | null>;
-  onCellMouseDown: (rowId: string, columnId: string, event: MouseEvent) => void;
+  onCellMouseDown: (cell: GridCell, event: MouseEvent) => void;
+  onCellMouseEnter: (cell: GridCell, event: MouseEvent) => void;
   onCellDoubleClick: (rowId: string, columnId: string) => void;
   onEditorBlur: (event: FocusEvent<CellEditorElement>) => void;
 };
@@ -991,6 +1402,12 @@ type DataGridRowProps<TData extends RowData> = {
   editingColumnId: string | null;
   editingInitial: string;
   cellApi: CellApi;
+  /** The selected range's columns in this row (-1 when the row is outside it). */
+  rangeStart: number;
+  rangeEnd: number;
+  /** First / last row of the range: draws the outline's top / bottom edge. */
+  rangeTop: boolean;
+  rangeBottom: boolean;
 };
 
 /**
@@ -1014,6 +1431,10 @@ const DataGridRow = memo(function DataGridRow<TData extends RowData>({
   editingColumnId,
   editingInitial,
   cellApi,
+  rangeStart,
+  rangeEnd,
+  rangeTop,
+  rangeBottom,
 }: DataGridRowProps<TData>) {
   return (
     <tr
@@ -1070,6 +1491,7 @@ const DataGridRow = memo(function DataGridRow<TData extends RowData>({
         const isEditor = editingColumnId === column.id;
         const readOnly = locked || !meta?.editor;
         const dirty = rowDraft !== undefined && column.id in rowDraft;
+        const inRange = cellIndex >= rangeStart && cellIndex <= rangeEnd;
         return (
           <td
             key={cell.id}
@@ -1080,7 +1502,9 @@ const DataGridRow = memo(function DataGridRow<TData extends RowData>({
             data-focused={focused || undefined}
             // Roving tabindex: only the active cell is in the tab order.
             tabIndex={focused ? 0 : -1}
-            onMouseDown={(e) => cellApi.onCellMouseDown(row.id, column.id, e)}
+            aria-selected={inRange || undefined}
+            onMouseDown={(e) => cellApi.onCellMouseDown(cell, e)}
+            onMouseEnter={(e) => cellApi.onCellMouseEnter(cell, e)}
             onDoubleClick={() => cellApi.onCellDoubleClick(row.id, column.id)}
             className={cn(
               base,
@@ -1091,6 +1515,16 @@ const DataGridRow = memo(function DataGridRow<TData extends RowData>({
               !readOnly &&
                 'hover:shadow-[inset_0_0_0_1px_var(--color-border-strong)]',
               'data-focused:shadow-[inset_0_0_0_2px_var(--color-fg)]',
+              // Range: a light tint, plus an outline drawn by a ::before layer (borders on
+              // the cell itself would shift the layout; one box-shadow is already the ring).
+              inRange && [
+                'bg-primary/10',
+                'before:pointer-events-none before:absolute before:inset-0 before:border-primary',
+                rangeTop && 'before:border-t-2',
+                rangeBottom && 'before:border-b-2',
+                cellIndex === rangeStart && 'before:border-s-2',
+                cellIndex === rangeEnd && 'before:border-e-2',
+              ],
               readOnly && !locked && 'text-fg-muted',
             )}
             style={style}

@@ -328,3 +328,152 @@ describe('DataGrid edit mode', () => {
     expect(event()).toBe(true);
   });
 });
+
+describe('DataGrid edit mode: Excel feel', () => {
+  /** Puts the active cell on (row index, column index) from the top-left. */
+  function goTo(row: number, col: number) {
+    press('Home', { ctrlKey: true });
+    for (let i = 0; i < row; i++) press('ArrowDown');
+    for (let i = 0; i < col; i++) press('ArrowRight');
+  }
+  const cellText = (rowId: string, columnId: string) =>
+    grid().querySelector(`[data-cell-key="${rowId}:${columnId}"]`)?.textContent;
+  const selected = () =>
+    [...grid().querySelectorAll('[aria-selected="true"]')].map((c) =>
+      c.getAttribute('data-cell-key'),
+    );
+  const paste = (text: string) =>
+    act(() => {
+      fireEvent.paste(active(), { clipboardData: { getData: () => text } });
+    });
+  const copy = () => {
+    const data: Record<string, string> = {};
+    act(() => {
+      fireEvent.copy(active(), {
+        clipboardData: {
+          setData: (type: string, v: string) => (data[type] = v),
+        },
+      });
+    });
+    return data;
+  };
+
+  it('Shift+arrows select a range; the active cell keeps focus; Esc collapses', () => {
+    setup();
+    enterEdit();
+    goTo(1, 1); // inv-2 Customer
+    press('ArrowDown', { shiftKey: true });
+    press('ArrowRight', { shiftKey: true });
+    expect(selected()).toEqual([
+      'inv-2:customer',
+      'inv-2:status',
+      'inv-3:customer',
+      'inv-3:status',
+    ]);
+    expect(active().getAttribute('data-cell-key')).toBe('inv-2:customer');
+    expect(screen.getByText('2 × 2 selected')).toBeTruthy();
+    press('Escape');
+    expect(selected()).toEqual([]);
+  });
+
+  it('copies the range as Excel TSV (and an HTML table)', () => {
+    setup();
+    enterEdit();
+    goTo(1, 1);
+    press('ArrowDown', { shiftKey: true });
+    press('ArrowRight', { shiftKey: true });
+    const data = copy();
+    expect(data['text/plain']).toBe('Customer 2\tPending\nCustomer 3\tPending');
+    expect(data['text/html']).toContain('<td>Customer 2</td>');
+  });
+
+  it('pastes a block from Excel at the active cell, parsing each value', () => {
+    setup();
+    enterEdit();
+    goTo(1, 1);
+    paste('Acme\tdraft\r\nGlobex\tOVERDUE\r\n');
+    expect(cellText('inv-2', 'customer')).toBe('Acme');
+    expect(cellText('inv-2', 'status')).toBe('Draft'); // matched to the option
+    expect(cellText('inv-3', 'status')).toBe('Overdue');
+    expect(screen.getByText('4 changes')).toBeTruthy();
+    expect(screen.getByText('Pasted 4 cells.')).toBeTruthy();
+  });
+
+  it('one value pasted onto a range fills the range', () => {
+    setup();
+    enterEdit();
+    goTo(1, 1);
+    press('ArrowDown', { shiftKey: true });
+    press('ArrowDown', { shiftKey: true });
+    paste('Same Co');
+    expect(
+      ['inv-2', 'inv-3', 'inv-4'].map((r) => cellText(r, 'customer')),
+    ).toEqual(['Same Co', 'Same Co', 'Same Co']);
+  });
+
+  it('skips read-only cells and rejects values of the wrong type', () => {
+    setup();
+    enterEdit();
+    goTo(1, 4); // inv-2 Due (read-only), then Subtotal, Tax
+    paste('2026-01-01\t$1,234.50\tlots');
+    expect(cellText('inv-2', 'subtotal')).toBe('1,234.50');
+    expect(
+      screen.getByText(
+        'Pasted 1 cell · 1 skipped (read-only) · 1 rejected (wrong type).',
+      ),
+    ).toBeTruthy();
+  });
+
+  it('one Ctrl+Z undoes a whole paste; Ctrl+Y redoes it', () => {
+    setup();
+    enterEdit();
+    goTo(1, 1);
+    paste('A\nB\nC');
+    expect(screen.getByText('3 changes')).toBeTruthy();
+    press('z', { ctrlKey: true });
+    expect(screen.queryByText(/changes?$/)).toBeNull();
+    expect(cellText('inv-2', 'customer')).toBe('Customer 2');
+    press('y', { ctrlKey: true });
+    expect(screen.getByText('3 changes')).toBeTruthy();
+    expect(cellText('inv-4', 'customer')).toBe('C');
+  });
+
+  it('Ctrl+D fills the top row of the range down', () => {
+    setup();
+    enterEdit();
+    goTo(1, 2); // inv-2 Status
+    typeKey('d');
+    press('Enter'); // Draft, now on inv-3
+    press('ArrowUp');
+    press('ArrowDown', { shiftKey: true });
+    press('ArrowDown', { shiftKey: true });
+    press('d', { ctrlKey: true });
+    expect(
+      ['inv-2', 'inv-3', 'inv-4'].map((r) => cellText(r, 'status')),
+    ).toEqual(['Draft', 'Draft', 'Draft']);
+  });
+
+  it('Delete clears editable cells; Backspace clears and starts editing', () => {
+    setup();
+    enterEdit();
+    goTo(1, 1);
+    press('Delete');
+    expect(cellText('inv-2', 'customer')).toBe('');
+    press('ArrowDown');
+    press('Backspace');
+    const input = screen.getByRole('textbox', {
+      name: 'Customer',
+    }) as HTMLInputElement;
+    expect(input.value).toBe('');
+  });
+
+  it('the Undo button in the Save bar works too', () => {
+    setup();
+    enterEdit();
+    goTo(1, 1);
+    typeKey('X');
+    press('Enter');
+    act(() => fireEvent.click(screen.getByRole('button', { name: 'Undo' })));
+    expect(cellText('inv-2', 'customer')).toBe('Customer 2');
+  });
+});
