@@ -95,3 +95,9 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Remember: clipboard events, not the Clipboard API.** `copy` / `cut` / `paste` events are synchronous, need no permission prompt and work in every browser; `navigator.clipboard` is async and Firefox/Safari prompt for reads.
 - **Gotcha:** a generic `Cell<F, TData>` doesn't assign to `Cell<F, any>` in every position. When a function only needs a few members, type it structurally (`{ row: { id: string }; … }`).
 - **Read:** https://developer.mozilla.org/en-US/docs/Web/API/Element/paste_event
+
+## 2026-10-04 — Fix: typecheck/build race on packages/ui/dist
+- **Fixed:** `tsc --build` (typecheck) and `vite build` both used `packages/ui/dist`. Nx runs independent targets in parallel, and vite empties `dist/` first, so after a source change typecheck could lose its own `.d.ts` files mid-run (TS6305). `tsconfig.lib.json` now writes typecheck output to `out-tsc/lib`; `dist/` belongs to `vite build` only.
+- **Remember: one output folder per task.** In Nx, two targets with no `dependsOn` between them can run at the same time. If they write the same folder, you get flaky failures that pass when each runs alone.
+- **Remember: fix the cause, not the order.** `dependsOn: ["build"]` on typecheck would also have "fixed" it, by making every typecheck wait for a full build. Separate folders keep both fast and independent.
+- **Read:** https://nx.dev/docs/concepts/task-pipeline-configuration
