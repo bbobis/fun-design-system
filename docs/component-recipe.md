@@ -53,6 +53,26 @@ src/index.ts          export * from './components/<name>'
 12. **Structure ≠ looks.** `Heading` takes a required `level` (the tag) and an optional `size`
     (the look). Pick the level from the page outline, never from the visual size.
 
+13. **Styling exception: runtime geometry via CSS variables only.** Values that exist only
+    at runtime (column widths, virtual row offsets) are passed as CSS custom properties
+    and read by Tailwind classes: `style={{ '--w': '120px' }}` + `className="w-(--w)"`.
+    Never put real CSS properties in `style`. (Approved by Ben, 2026-10-03, for DataGrid.)
+
+14. **Inverse surfaces with `data-inverse`, not new colours.** A bar that must stand out
+    (bulk actions, unsaved changes) gets `data-inverse`: it takes the opposite theme's
+    tokens, so put `bg-bg text-fg` on it and use normal components inside. A
+    `<Button intent="secondary">` re-themes itself with no code change. Don't use `dark:`
+    utilities inside an inverse; they follow `<html>`, not the inverse.
+
+15. **Slots vs render props.** Static extra content is a `ReactNode` slot
+    (`toolbarActions`). Content that depends on the component's state is a function
+    (`renderBulkActions({ selectedRowIds, clearSelection })`): the component calls it with
+    the data the caller needs.
+
+16. **Primitives don't hide inside composites.** If a composite needs a control another
+    screen would also need (DataGrid's checkbox), build the primitive (`Checkbox`) with
+    its own test and story, and use it from the composite.
+
 ## Tests to write for every component
 
 - renders the right element and role
@@ -62,6 +82,10 @@ src/index.ts          export * from './components/<name>'
 - each state blocks or allows interaction as intended
 - `className` override wins over the component's own class
 - native attributes pass through; `ref` reaches the DOM node
+
+- virtualized components: jsdom has no layout, so mock `offsetHeight`/`offsetWidth` and
+  assert rows actually rendered before asserting their order (an empty list "passes"
+  any sort check)
 
 ## Stories to write
 
