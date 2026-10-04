@@ -3,13 +3,6 @@ import { useState } from 'react';
 import { Field } from '../field';
 import { Select, type SelectOption } from './select';
 
-// jsdom has no CSS.escape (every real browser does); React Aria uses it to find options.
-beforeAll(() => {
-  globalThis.CSS ??= {} as typeof CSS;
-  CSS.escape ??= (value: string) =>
-    value.replace(/[^a-zA-Z0-9_-]/g, (ch) => `\\${ch}`);
-});
-
 const statuses: SelectOption[] = [
   { value: 'draft', label: 'Draft' },
   { value: 'pending', label: 'Pending' },

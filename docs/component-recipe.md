@@ -96,7 +96,9 @@ src/index.ts          export * from './components/<name>'
 - `className` override wins over the component's own class
 - native attributes pass through; `ref` reaches the DOM node
 
-- React Aria components: jsdom has no `CSS.escape` (polyfill it in the spec); focus is
+- jsdom gaps every real browser fills (e.g. `CSS.escape`, used by React Aria) go in
+  `src/test-setup.ts`, which Vitest runs before every spec. Not in individual specs.
+- React Aria components: focus is
   restored to the trigger on the next animation frame, so await one before asserting;
   focus the trigger first, as a keyboard user would
 - virtualized components: jsdom has no layout, so mock `offsetHeight`/`offsetWidth` and

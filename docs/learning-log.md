@@ -121,3 +121,9 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Remember: wrap, don't re-export.** Apps import our `Select`, never `react-aria-components`. Our props stay simple (`string | null`), and we can change the internals later without breaking apps.
 - **Gotcha:** jsdom lacks `CSS.escape`; React Aria needs it. Polyfilled in the spec (every real browser has it).
 - **Read:** https://react-aria.adobe.com/Select
+
+## 2026-10-04 — Fix: the library stopped bundling its dependencies
+- **Fixed:** `vite.config.mts` only kept React out of `dist/index.js`, so TanStack, cva, tailwind-merge and React Aria were copied in (477 KB → now 57 KB). Every `dependencies` / `peerDependencies` entry is now external, read from package.json. `react` and `react-dom` are now `peerDependencies`. jsdom gaps moved to `src/test-setup.ts` (Vitest `setupFiles`).
+- **Remember: a library imports, an app bundles.** A component library's build should only contain *its own* code. Its dependencies are installed and bundled once, by the app. Copies inside the library mean two React Arias (or Reacts) in one page, and context-based libraries break.
+- **Remember: peerDependencies = "the app must provide this".** React is the classic one: there must be exactly one React in a page, the app's.
+- **Read:** https://vite.dev/guide/build.html#library-mode
