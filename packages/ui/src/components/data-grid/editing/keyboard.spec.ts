@@ -10,7 +10,15 @@ const key = (k: string, mods: Partial<GridKeyEvent> = {}): GridKeyEvent => ({
   ...mods,
 });
 // A 100-row × 8-column grid, active cell at row 5, column 3.
-const nav = { editing: false, row: 5, col: 3, rowCount: 100, colCount: 8 };
+const nav = {
+  editing: false,
+  row: 5,
+  col: 3,
+  endRow: 5,
+  endCol: 3,
+  rowCount: 100,
+  colCount: 8,
+};
 const editing = { ...nav, editing: true };
 
 describe('getGridKeyAction: navigation mode', () => {
@@ -39,7 +47,7 @@ describe('getGridKeyAction: navigation mode', () => {
   });
 
   it('does not move past the edges', () => {
-    const corner = { ...nav, row: 0, col: 0 };
+    const corner = { ...nav, row: 0, col: 0, endRow: 0, endCol: 0 };
     expect(getGridKeyAction(key('ArrowUp'), corner)).toEqual({
       type: 'move',
       row: 0,
@@ -84,6 +92,78 @@ describe('getGridKeyAction: navigation mode', () => {
       type: 'none',
     });
     expect(getGridKeyAction(key('Shift'), nav)).toEqual({ type: 'none' });
+  });
+});
+
+describe('getGridKeyAction: ranges and commands', () => {
+  it('Shift extends from the range corner; the active cell stays', () => {
+    expect(getGridKeyAction(key('ArrowDown', { shiftKey: true }), nav)).toEqual(
+      {
+        type: 'extend',
+        row: 6,
+        col: 3,
+      },
+    );
+    // Range already reaches (8, 4): the next Shift+Down grows from there.
+    const ranged = { ...nav, endRow: 8, endCol: 4 };
+    expect(
+      getGridKeyAction(key('ArrowDown', { shiftKey: true }), ranged),
+    ).toEqual({
+      type: 'extend',
+      row: 9,
+      col: 4,
+    });
+    expect(
+      getGridKeyAction(key('End', { shiftKey: true, ctrlKey: true }), ranged),
+    ).toEqual({
+      type: 'extend',
+      row: 99,
+      col: 7,
+    });
+    // A plain arrow moves from the active cell and drops the range.
+    expect(getGridKeyAction(key('ArrowDown'), ranged)).toEqual({
+      type: 'move',
+      row: 6,
+      col: 3,
+    });
+  });
+
+  it('Esc collapses a range, and does nothing without one', () => {
+    expect(getGridKeyAction(key('Escape'), { ...nav, endRow: 7 })).toEqual({
+      type: 'collapse',
+    });
+    expect(getGridKeyAction(key('Escape'), nav)).toEqual({ type: 'none' });
+  });
+
+  it.each([
+    ['z', {}, 'undo'],
+    ['z', { shiftKey: true }, 'redo'],
+    ['Z', { shiftKey: true }, 'redo'], // some keyboards report the capital
+    ['y', {}, 'redo'],
+    ['d', {}, 'fillDown'],
+    ['a', {}, 'selectAll'],
+  ] as const)('Ctrl+%s %o → %s', (k, mods, type) => {
+    expect(getGridKeyAction(key(k, { ctrlKey: true, ...mods }), nav)).toEqual({
+      type,
+    });
+    expect(getGridKeyAction(key(k, { metaKey: true, ...mods }), nav)).toEqual({
+      type,
+    }); // Mac
+  });
+
+  it('Delete clears; Backspace clears and starts editing (Excel)', () => {
+    expect(getGridKeyAction(key('Delete'), nav)).toEqual({ type: 'clear' });
+    expect(getGridKeyAction(key('Backspace'), nav)).toEqual({
+      type: 'edit',
+      seed: '',
+    });
+  });
+
+  it('Ctrl+C / V / X are left to the copy and paste events', () => {
+    for (const k of ['c', 'v', 'x'])
+      expect(getGridKeyAction(key(k, { ctrlKey: true }), nav)).toEqual({
+        type: 'none',
+      });
   });
 });
 

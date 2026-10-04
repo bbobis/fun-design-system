@@ -97,14 +97,27 @@ export function CellEditor({
 }
 
 /**
- * Turns editor text into the column's value. Returns `{ ok: false }` when the text
- * can't be a value of that type, so the grid can keep the editor open.
+ * Turns typed or pasted text into the column's value. Returns `{ ok: false }` when the
+ * text can't be a value of that type, so the grid can keep the editor open (typing) or
+ * reject the cell (paste).
  */
 export function parseEditorValue(
   kind: DataGridEditorKind,
   raw: string,
+  options: readonly string[] = [],
 ): { ok: true; value: unknown } | { ok: false; message: string } {
+  if (kind === 'select') {
+    if (raw === '') return { ok: true, value: null };
+    // Pasted text is often a different case ("pending"): match it to the real option.
+    const match =
+      options.find((o) => o === raw) ??
+      options.find((o) => o.toLowerCase() === raw.trim().toLowerCase());
+    return match === undefined
+      ? { ok: false, message: 'Not one of the choices' }
+      : { ok: true, value: match };
+  }
   if (kind !== 'number') return { ok: true, value: raw };
+  // Excel copies what it displays: "$1,234.50". Strip the formatting before parsing.
   const cleaned = raw.replace(/[\s,$]/g, '');
   if (cleaned === '') return { ok: true, value: null };
   const n = Number(cleaned);
