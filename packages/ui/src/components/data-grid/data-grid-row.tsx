@@ -8,7 +8,15 @@ import {
 } from 'react';
 import { cn } from '../../utils/cn';
 import type { DataGridFeatures } from './data-grid-features';
-import { cellKey, cssVars, SELECT_COLUMN_ID } from './data-grid-utils';
+import { Checkbox } from '../checkbox';
+import {
+  cellKey,
+  cssVars,
+  isEmptyValue,
+  ROW_ERROR_KEY,
+  SELECT_COLUMN_ID,
+} from './data-grid-utils';
+import { CheckIcon } from './icons';
 import { CellEditor, type CellEditorElement } from './editing/cell-editor';
 
 /**
@@ -30,6 +38,8 @@ export type CellApi = {
   onCellMouseEnter: (cell: GridCell, event: MouseEvent) => void;
   onCellDoubleClick: (rowId: string, columnId: string) => void;
   onEditorBlur: (event: FocusEvent<CellEditorElement>) => void;
+  /** Checkbox cells: flip the value (click on the box). */
+  onToggle: (rowId: string, columnId: string) => void;
 };
 
 type DataGridRowProps<TData extends RowData> = {
@@ -56,6 +66,14 @@ type DataGridRowProps<TData extends RowData> = {
   /** First / last row of the range: draws the outline's top / bottom edge. */
   rangeTop: boolean;
   rangeBottom: boolean;
+  /** Messages for this row's invalid cells (`ROW_ERROR_KEY` for the whole row). */
+  rowErrors: Readonly<Record<string, string>> | undefined;
+  /** A row added in this session (not saved yet). */
+  isNew: boolean;
+  /** The "Type here to add a row…" row at the bottom. */
+  isTrailing: boolean;
+  /** Which column shows the "Type here to add a row…" hint. */
+  hintColumnId: string | null;
 };
 
 /**
@@ -83,7 +101,16 @@ export const DataGridRow = memo(function DataGridRow<TData extends RowData>({
   rangeEnd,
   rangeTop,
   rangeBottom,
+  rowErrors,
+  isNew,
+  isTrailing,
+  hintColumnId,
 }: DataGridRowProps<TData>) {
+  const rowState = rowErrors
+    ? 'error'
+    : rowDraft || isNew
+      ? 'changed'
+      : undefined;
   return (
     <tr
       role="row"
@@ -91,7 +118,7 @@ export const DataGridRow = memo(function DataGridRow<TData extends RowData>({
       aria-rowindex={index + 2}
       aria-selected={selectable ? selected : undefined}
       data-selected={selected || undefined}
-      data-changed={rowDraft ? true : undefined}
+      data-state={rowState}
       data-locked={locked || undefined}
       className={cn(
         'absolute top-0 left-0 flex h-(--row-h) w-full translate-y-(--y)',
@@ -101,8 +128,10 @@ export const DataGridRow = memo(function DataGridRow<TData extends RowData>({
         // so nothing shifts by a pixel).
         'data-selected:bg-primary/10 data-selected:shadow-[inset_2px_0_0_var(--color-primary)]',
         'data-selected:hover:bg-primary/15',
-        // Edit mode: a 3px rail marks rows with unsaved changes; locked rows are muted.
-        'data-changed:shadow-[inset_3px_0_0_var(--color-primary)]',
+        // Edit mode: a 3px rail marks rows with unsaved changes, red when the row has
+        // errors (the states are exclusive, so the two rules never fight).
+        'data-[state=changed]:shadow-[inset_3px_0_0_var(--color-primary)]',
+        'data-[state=error]:shadow-[inset_3px_0_0_var(--color-danger)]',
         'data-locked:text-fg-muted',
       )}
       style={cssVars({ '--y': `${start}px`, '--row-h': `${rowHeight}px` })}
@@ -118,6 +147,48 @@ export const DataGridRow = memo(function DataGridRow<TData extends RowData>({
           isSelectColumn && 'justify-center',
         );
         const style = cssVars({ '--w': `${column.getSize()}px` });
+        const label =
+          typeof column.columnDef.header === 'string'
+            ? column.columnDef.header
+            : column.id;
+        const value = cell.getValue();
+        const isAccessor =
+          'accessorKey' in column.columnDef || 'accessorFn' in column.columnDef;
+
+        // What the cell shows (when it isn't being edited).
+        let content: ReactNode;
+        if (meta?.editor === 'checkbox') {
+          content =
+            editMode && !locked ? (
+              <Checkbox
+                checked={value === true}
+                aria-label={label}
+                // The cell is the tab stop; the box is clicked, not tabbed to.
+                tabIndex={-1}
+                onChange={() => cellApi.onToggle(row.id, column.id)}
+              />
+            ) : (
+              <>
+                {value === true && <CheckIcon className="size-4" />}
+                <span className="sr-only">{value === true ? 'Yes' : 'No'}</span>
+              </>
+            );
+        } else if (isAccessor && isEmptyValue(value)) {
+          // Empty renders empty, whatever the column's own renderer would make of
+          // null ("NaN", "0.00", today's date…).
+          content =
+            isTrailing && column.id === hintColumnId ? (
+              <span className="truncate text-fg-muted">
+                Type here to add a row…
+              </span>
+            ) : null;
+        } else {
+          content = (
+            <span className="truncate">
+              <FlexRender cell={cell} />
+            </span>
+          );
+        }
 
         if (!editMode) {
           return (
@@ -128,9 +199,7 @@ export const DataGridRow = memo(function DataGridRow<TData extends RowData>({
               className={cn(base, !isSelectColumn && 'px-3')}
               style={style}
             >
-              <span className="truncate">
-                <FlexRender cell={cell} />
-              </span>
+              {content}
             </td>
           );
         }
@@ -140,6 +209,12 @@ export const DataGridRow = memo(function DataGridRow<TData extends RowData>({
         const readOnly = locked || !meta?.editor;
         const dirty = rowDraft !== undefined && column.id in rowDraft;
         const inRange = cellIndex >= rangeStart && cellIndex <= rangeEnd;
+        const error =
+          rowErrors?.[column.id] ??
+          (cellIndex === 0 ? rowErrors?.[ROW_ERROR_KEY] : undefined);
+        const errorId = error
+          ? `${cellKey(row.id, column.id)}-error`
+          : undefined;
         return (
           <td
             key={cell.id}
@@ -151,15 +226,24 @@ export const DataGridRow = memo(function DataGridRow<TData extends RowData>({
             // Roving tabindex: only the active cell is in the tab order.
             tabIndex={focused ? 0 : -1}
             aria-selected={inRange || undefined}
+            aria-invalid={error ? true : undefined}
+            aria-describedby={errorId}
+            title={error}
             onMouseDown={(e) => cellApi.onCellMouseDown(cell, e)}
             onMouseEnter={(e) => cellApi.onCellMouseEnter(cell, e)}
-            onDoubleClick={() => cellApi.onCellDoubleClick(row.id, column.id)}
+            onDoubleClick={(e) => {
+              // A double-click on a checkbox already toggled it twice; don't add a third.
+              if ((e.target as HTMLElement).closest('input')) return;
+              cellApi.onCellDoubleClick(row.id, column.id);
+            }}
             className={cn(
               base,
               !isEditor && 'px-3',
               // The active cell's ring replaces the browser outline. outline-hidden keeps a
               // transparent outline, which Windows High Contrast mode still draws.
               'outline-hidden',
+              // Invalid: a thin red ring (the focus ring, a data- rule, still wins).
+              error && 'shadow-[inset_0_0_0_1px_var(--color-danger)]',
               !readOnly &&
                 'hover:shadow-[inset_0_0_0_1px_var(--color-border-strong)]',
               'data-focused:shadow-[inset_0_0_0_2px_var(--color-fg)]',
@@ -194,9 +278,19 @@ export const DataGridRow = memo(function DataGridRow<TData extends RowData>({
                 />
               </span>
             ) : (
-              <span className="truncate">
-                <FlexRender cell={cell} />
-              </span>
+              content
+            )}
+            {error && (
+              <>
+                <span id={errorId} className="sr-only">
+                  {error}
+                </span>
+                {/* Red corner flag, top-left. The message is in title and aria-describedby. */}
+                <span
+                  aria-hidden="true"
+                  className="absolute start-0 top-0 border-e-[7px] border-t-[7px] border-e-transparent border-t-danger"
+                />
+              </>
             )}
             {dirty && (
               // Unsaved-change dot, top-right corner. aria-hidden: the Save bar and the

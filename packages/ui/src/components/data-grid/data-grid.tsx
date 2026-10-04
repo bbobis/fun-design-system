@@ -40,7 +40,11 @@ import {
   parseEditorValue,
   type CellEditorElement,
 } from './editing/cell-editor';
-import type { DataGridEditing } from './editing/contract';
+import type {
+  DataGridEditing,
+  SaveConflict,
+  SaveResult,
+} from './editing/contract';
 import {
   applyDraft,
   countChanges,
@@ -68,15 +72,34 @@ import {
   escapeHtml,
   fieldValue,
   findCell,
+  NEW_ROW_ID,
   NO_RANGE,
   noop,
   plural,
+  ROW_ERROR_KEY,
   SELECT_COLUMN_ID,
   toEditorText,
 } from './data-grid-utils';
 import { PencilIcon, SearchIcon, SortIndicator } from './icons';
 import { SaveBar } from './editing/save-bar';
 import { parseTsv, toTsv } from './editing/tsv';
+import {
+  clearErrors,
+  mergeErrors,
+  NO_ERRORS,
+  validateRows,
+  type CellErrors,
+} from './editing/validation';
+
+type NewRows = ReadonlyMap<string, Readonly<Record<string, unknown>>>;
+const NO_NEW_ROWS: NewRows = new Map();
+
+/** After a conflict: the server's newer values and versions, valid for one `data` only. */
+type Overrides<TData> = {
+  data: readonly TData[] | null;
+  rows: Readonly<Record<string, Readonly<Record<string, unknown>>>>;
+  versions: Readonly<Record<string, number | string>>;
+};
 
 /** Row heights in px. Fixed heights are what keep 10k+ rows fast: no measuring. */
 const ROW_HEIGHT = { compact: 32, standard: 40 } as const;
@@ -186,11 +209,36 @@ export function DataGrid<TData extends RowData>({
   const [cellSelection, setCellSelection] = useState<CellSelectionState>([]);
   // Row order is frozen while editing: the ids shown when "Edit table" was clicked.
   // Otherwise editing a sorted (or searched) column makes the row jump away.
-  const [frozenIds, setFrozenIds] = useState<string[] | null>(null);
+  const [frozen, setFrozen] = useState<{
+    order: string[];
+    known: ReadonlySet<string>;
+  } | null>(null);
   const [saving, setSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string>();
   const [announcement, setAnnouncement] = useState('');
   const [history, setHistory] = useState<History>(EMPTY_HISTORY);
+  // New rows: temp id → starting values (from editing.newRow). What the user types
+  // into them lives in the draft, like any other edit.
+  const [newRows, setNewRows] = useState<NewRows>(NO_NEW_ROWS);
+  const newRowsRef = useRef(
+    new Map<string, Readonly<Record<string, unknown>>>(),
+  );
+  const tempSeq = useRef(0);
+  const [serverErrors, setServerErrors] = useState<CellErrors>(NO_ERRORS);
+  const [conflicts, setConflicts] = useState<readonly SaveConflict[]>([]);
+  const [overrides, setOverrides] = useState<Overrides<TData>>({
+    data: null,
+    rows: {},
+    versions: {},
+  });
+  // Rows without a real id yet (new rows, the trailing "add" row) get their temp id here.
+  const [tempIdOf] = useState(() => new WeakMap<object, string>());
+  const allowAdd = isEditing && editing?.allowAdd === true;
+  const trailingRow = useMemo(() => {
+    const row = {} as TData;
+    tempIdOf.set(row as object, NEW_ROW_ID);
+    return row;
+  }, [tempIdOf]);
   const editorRef = useRef<CellEditorElement | null>(null);
   const editButtonRef = useRef<HTMLButtonElement>(null);
   // The cell that should receive DOM focus once it is rendered (see the layout effect).
@@ -198,21 +246,56 @@ export function DataGrid<TData extends RowData>({
   // A cell to scroll into view without focusing it (the moving corner of a Shift+range).
   const pendingReveal = useRef<string | null>(null);
 
-  const rowsById = useMemo(
-    () => new Map(data.map((row) => [getRowId(row), row])),
-    [data, getRowId],
+  // Overrides only count for the `data` they were made against; new data from the app
+  // (a refetch) is newer, so they are dropped automatically.
+  const activeOverrides = overrides.data === data ? overrides : null;
+  /** The saved rows by id (with any "Use theirs" values from a conflict). */
+  const rowsById = useMemo(() => {
+    const map = new Map(data.map((row) => [getRowId(row), row]));
+    if (activeOverrides)
+      for (const [id, current] of Object.entries(activeOverrides.rows)) {
+        const row = map.get(id);
+        if (row) map.set(id, { ...row, ...current } as TData);
+      }
+    return map;
+  }, [data, getRowId, activeOverrides]);
+  const getTableRowId = useCallback(
+    (row: TData) => tempIdOf.get(row as object) ?? getRowId(row),
+    [tempIdOf, getRowId],
   );
+
   const tableData = useMemo(() => {
-    if (!isEditing || !frozenIds) return data;
-    const frozen: TData[] = [];
-    for (const id of frozenIds) {
+    if (!isEditing || !frozen) return data;
+    const base: TData[] = [];
+    for (const id of frozen.order) {
       const row = rowsById.get(id);
-      if (row) frozen.push(row);
+      if (row) base.push(row);
     }
+    // Rows that appeared since "Edit table" (e.g. new rows you just saved) go last.
+    for (const [id, row] of rowsById) if (!frozen.known.has(id)) base.push(row);
     // The draft is applied to the data, not to the cells: edited rows become
     // { ...row, ...changes }, so every cell renderer shows draft values for free.
-    return applyDraft(frozen, draft, getRowId);
-  }, [isEditing, frozenIds, data, rowsById, draft, getRowId]);
+    const shown = applyDraft(base, draft, getRowId);
+    const out = shown === base ? [...base] : shown;
+    for (const [tempId, defaults] of newRows) {
+      const row = { ...defaults, ...draft[tempId] } as TData;
+      tempIdOf.set(row as object, tempId);
+      out.push(row);
+    }
+    if (allowAdd) out.push(trailingRow);
+    return out;
+  }, [
+    isEditing,
+    frozen,
+    data,
+    rowsById,
+    draft,
+    getRowId,
+    newRows,
+    tempIdOf,
+    allowAdd,
+    trailingRow,
+  ]);
 
   const columns = useMemo(() => {
     if (!enableRowSelection || isEditing) return userColumns;
@@ -250,7 +333,7 @@ export function DataGrid<TData extends RowData>({
     features: dataGridFeatures,
     columns,
     data: tableData,
-    getRowId,
+    getRowId: getTableRowId,
     state: {
       // In edit mode the frozen ids already carry the sort and search order.
       sorting: isEditing ? NO_SORTING : sorting,
@@ -373,6 +456,24 @@ export function DataGrid<TData extends RowData>({
     const saved = rowsById.get(rowId);
     return saved ? editing.isRowLocked(saved) : false;
   };
+  /** The saved row, or a new row's starting values. */
+  const originalRow = (rowId: string): unknown =>
+    rowsById.get(rowId) ?? newRowsRef.current.get(rowId);
+  /** Index of the trailing "add a row" row (= one past the last real row). */
+  const trailingIndex = allowAdd ? rows.length - 1 : rows.length;
+  const realRowCount = trailingIndex - newRows.size;
+
+  /** Creates `count` new rows (temp ids, starting values) and returns their ids. */
+  const addRows = (count: number) => {
+    const ids: string[] = [];
+    for (let i = 0; i < count; i++) {
+      const id = `tmp_${++tempSeq.current}`;
+      newRowsRef.current.set(id, { ...editing?.newRow?.() });
+      ids.push(id);
+    }
+    if (ids.length) setNewRows(new Map(newRowsRef.current));
+    return ids;
+  };
   const canEdit = (rowId: string, columnId: string) =>
     Boolean(table.getColumn(columnId)?.columnDef.meta?.editor) &&
     !isRowLocked(rowId);
@@ -381,7 +482,7 @@ export function DataGrid<TData extends RowData>({
     const rowDraft = draft[rowId];
     return rowDraft && columnId in rowDraft
       ? rowDraft[columnId]
-      : fieldValue(rowsById.get(rowId), columnId);
+      : fieldValue(originalRow(rowId), columnId);
   };
 
   // ---- The selected range ---------------------------------------------------
@@ -406,7 +507,8 @@ export function DataGrid<TData extends RowData>({
       [];
     for (let r = b.r1; r <= b.r2; r++) {
       const rowId = rows[r]?.id;
-      if (rowId === undefined) continue;
+      // The "add a row" row isn't data: clearing or filling it shouldn't create rows.
+      if (rowId === undefined || rowId === NEW_ROW_ID) continue;
       for (let c = b.c1; c <= b.c2; c++) {
         const columnId = leafColumns[c]?.id;
         if (columnId !== undefined)
@@ -455,12 +557,19 @@ export function DataGrid<TData extends RowData>({
         rowId,
         columnId,
         value,
-        fieldValue(rowsById.get(rowId), columnId),
+        fieldValue(originalRow(rowId), columnId),
       );
     }
     if (changes.length === 0) return 0;
     setDraft(next);
     setHistory((h) => record(h, { label, changes }));
+    // The user touched these cells: the server's old messages about them no longer apply.
+    setServerErrors((e) =>
+      clearErrors(e, [
+        ...changes,
+        ...changes.map((c) => ({ rowId: c.rowId, columnId: ROW_ERROR_KEY })),
+      ]),
+    );
     return changes.length;
   };
 
@@ -473,7 +582,7 @@ export function DataGrid<TData extends RowData>({
         c.rowId,
         c.columnId,
         c[use],
-        fieldValue(rowsById.get(c.rowId), c.columnId),
+        fieldValue(originalRow(c.rowId), c.columnId),
       );
     setDraft(next);
     // Select what changed, like Excel, so the user sees what was undone.
@@ -552,10 +661,71 @@ export function DataGrid<TData extends RowData>({
     const row = rows[rowIndex];
     const column = leafColumns[columnIndex];
     if (!row || !column) return;
-    table.setFocusedCell(row.id, column.id);
+    focusById(row.id, column.id, rowIndex);
+  };
+  /** Like focusCell, for a row that may only exist after the next render (a new row). */
+  const focusById = (rowId: string, columnId: string, rowIndex: number) => {
+    table.setFocusedCell(rowId, columnId);
     focusedIndex.current = rowIndex;
-    pendingFocus.current = cellKey(row.id, column.id);
-    virtualizer.scrollToIndex(rowIndex, { align: 'auto' });
+    pendingFocus.current = cellKey(rowId, columnId);
+    virtualizer.scrollToIndex(Math.min(rowIndex, rows.length - 1), {
+      align: 'auto',
+    });
+    // Landing on an invalid cell says why, for everyone (the footer is visible).
+    const message = errors[rowId]?.[columnId];
+    if (message) announce(message);
+  };
+
+  // ---- Validation ----------------------------------------------------------
+  // Every row the user touched is checked against the column rules; the server's
+  // messages (from a `validation` result) are layered underneath.
+  const errors = useMemo(() => {
+    if (!isEditing) return NO_ERRORS;
+    const cols = table.getAllLeafColumns().map((c) => ({
+      id: c.id,
+      label: headerLabel(c),
+      meta: c.columnDef.meta,
+    }));
+    const client = validateRows(
+      Object.keys(draft),
+      (id) => ({
+        ...(rowsById.get(id) ?? newRowsRef.current.get(id)),
+        ...draft[id],
+      }),
+      cols,
+    );
+    return mergeErrors(client, serverErrors);
+    // `columns` stands in for the table's columns; newRows for newRowsRef.
+  }, [isEditing, draft, serverErrors, rowsById, newRows, columns, table]);
+
+  /** Every error as a position, in reading order (row, then column). */
+  const errorList = Object.entries(errors)
+    .flatMap(([rowId, cells]) =>
+      Object.entries(cells).map(([key, message]) => {
+        const columnId =
+          key === ROW_ERROR_KEY ? (leafColumns[0]?.id ?? key) : key;
+        return {
+          rowId,
+          columnId,
+          message,
+          row: rowIndexById.get(rowId) ?? Number.MAX_SAFE_INTEGER,
+          col: colIndexById.get(columnId) ?? 0,
+        };
+      }),
+    )
+    .sort((a, b) => a.row - b.row || a.col - b.col);
+  const errorCount = errorList.length;
+
+  /** Moves to the next error after the active cell (wrapping round), or the first. */
+  const goToError = () => {
+    const here = anchorPos ?? { row: -1, col: -1 };
+    const next =
+      errorList.find(
+        (e) => e.row > here.row || (e.row === here.row && e.col > here.col),
+      ) ?? errorList[0];
+    if (!next) return;
+    focusById(next.rowId, next.columnId, next.row);
+    announce(next.message);
   };
 
   const refocusActiveCell = () => {
@@ -568,7 +738,10 @@ export function DataGrid<TData extends RowData>({
     const firstColumn = userColumns.length
       ? table.getAllLeafColumns().find((c) => c.id !== SELECT_COLUMN_ID)
       : undefined;
-    setFrozenIds(rows.map((r) => r.id));
+    setFrozen({
+      order: rows.map((r) => r.id),
+      known: new Set(rowsById.keys()),
+    });
     setSaveMessage(undefined);
     setMode('edit');
     if (first && firstColumn) {
@@ -584,10 +757,10 @@ export function DataGrid<TData extends RowData>({
 
   const exitEdit = () => {
     setMode('read');
-    setFrozenIds(null);
+    setFrozen(null);
     setEditingCell(null);
     setCellSelection([]);
-    setHistory(EMPTY_HISTORY);
+    resetEdits();
     focusedIndex.current = null;
     setAnnouncement('');
     requestAnimationFrame(() => editButtonRef.current?.focus());
@@ -596,16 +769,29 @@ export function DataGrid<TData extends RowData>({
   const startEdit = (rowId: string, columnId: string, seed?: string) => {
     if (saving) return;
     const column = table.getColumn(columnId);
-    const row = rowsById.get(rowId);
     const meta = column?.columnDef.meta;
-    if (!column || !row || !meta?.editor) {
+    if (!column || !meta?.editor) {
       announce(`${headerLabel(column)} is read-only.`);
       return;
     }
     // Lock on the *saved* row: changing Status to "Paid" in the draft shouldn't lock
     // the row halfway through an edit.
-    if (editing?.isRowLocked?.(row)) {
+    if (isRowLocked(rowId)) {
       announce('This row is locked.');
+      return;
+    }
+    if (meta.editor === 'checkbox') {
+      // No editor to open: Enter, F2, Space or a click flips the value.
+      if (seed !== undefined && seed !== ' ') return;
+      const target = rowId === NEW_ROW_ID ? addRows(1)[0] : rowId;
+      if (!target) return;
+      const value = shownValue(target, columnId) !== true;
+      applyValues(`toggle ${headerLabel(column)}`, [
+        { rowId: target, columnId, value },
+      ]);
+      if (target !== rowId)
+        focusById(target, columnId, rowIndexById.get(rowId) ?? 0);
+      announce(`${headerLabel(column)}: ${value ? 'yes' : 'no'}.`);
       return;
     }
     const current = toEditorText(shownValue(rowId, columnId));
@@ -637,10 +823,26 @@ export function DataGrid<TData extends RowData>({
       if (refocus) editorRef.current?.focus();
       return false;
     }
+    // Typing into the "add a row" row creates a real (new) row first.
+    const isAdding = rowId === NEW_ROW_ID;
+    const target = isAdding ? addRows(1)[0] : rowId;
+    if (target === undefined) return false;
     applyValues(`edit ${headerLabel(column)}`, [
-      { rowId, columnId, value: parsed.value },
+      { rowId: target, columnId, value: parsed.value },
     ]);
     setEditingCell(null);
+    if (isAdding && refocus) {
+      // Stay on the new row for Tab (fill in the next field); Enter goes back to the
+      // "add" row, now one lower, ready for the next record.
+      const index = rowIndexById.get(rowId) ?? 0;
+      const columnIndex = leafColumns.findIndex((c) => c.id === columnId);
+      const nextColumn =
+        leafColumns[clamp(columnIndex + dCol, leafColumns.length)]?.id ??
+        columnId;
+      if (dRow > 0) focusById(NEW_ROW_ID, nextColumn, index + 1);
+      else focusById(target, nextColumn, index);
+      return true;
+    }
     if (!refocus) return true;
     const rowIndex = rowIndexById.get(rowId) ?? 0;
     const columnIndex = leafColumns.findIndex((c) => c.id === columnId);
@@ -791,19 +993,26 @@ export function DataGrid<TData extends RowData>({
     event.preventDefault();
     const matrix = parseTsv(text);
     const width = Math.max(...matrix.map((r) => r.length));
+    // With allowAdd, a paste may run past the last row: the extra rows become new rows.
     const plan = planPaste(
       matrix.length,
       width,
       bounds,
-      rows.length,
+      allowAdd ? Number.MAX_SAFE_INTEGER : rows.length,
       leafColumns.length,
     );
+    const overflow = [...new Set(plan.targets.map((t) => t.row))].filter(
+      (r) => r >= trailingIndex,
+    );
+    const added = addRows(overflow.length);
+    const rowIdAt = (r: number) =>
+      r >= trailingIndex ? added[r - trailingIndex] : rows[r]?.id;
 
     const items: { rowId: string; columnId: string; value: unknown }[] = [];
     let skipped = 0;
     let rejected = 0;
     for (const t of plan.targets) {
-      const rowId = rows[t.row]?.id;
+      const rowId = rowIdAt(t.row);
       const column = leafColumns[t.col];
       if (rowId === undefined || !column) continue;
       if (!canEdit(rowId, column.id)) {
@@ -826,13 +1035,23 @@ export function DataGrid<TData extends RowData>({
     // Count what was pasted, not what changed: pasting a value a cell already had is still a paste.
     const pasted = items.length;
     // Select the pasted area so the user sees where it went (and can Ctrl+Z it).
-    selectRange(
-      { row: plan.area.r1, col: plan.area.c1 },
-      { row: plan.area.r2, col: plan.area.c2 },
-    );
+    const firstRow = rowIdAt(plan.area.r1);
+    const lastRow = rowIdAt(plan.area.r2);
+    const firstCol = leafColumns[plan.area.c1]?.id;
+    const lastCol = leafColumns[plan.area.c2]?.id;
+    if (firstRow && lastRow && firstCol && lastCol)
+      setCellSelection([
+        {
+          anchorRowId: firstRow,
+          anchorColumnId: firstCol,
+          focusRowId: lastRow,
+          focusColumnId: lastCol,
+        },
+      ]);
     announce(
       [
         `Pasted ${plural(pasted, 'cell')}`,
+        added.length && `${plural(added.length, 'new row')}`,
         skipped && `${skipped} skipped (read-only)`,
         rejected && `${rejected} rejected (wrong type)`,
         plan.clippedRows && `${plural(plan.clippedRows, 'row')} didn't fit`,
@@ -842,26 +1061,28 @@ export function DataGrid<TData extends RowData>({
     );
   };
 
+  /** The row's version to send: the one from a resolved conflict wins. */
+  const versionOf = (id: string, row: TData) =>
+    activeOverrides?.versions[id] ?? editing?.getRowVersion?.(row);
+
+  /** A human name for a row in messages: its first column ("INV-10004"). */
+  const rowLabel = (id: string) =>
+    toEditorText(fieldValue(originalRow(id), leafColumns[0]?.id ?? '')) || id;
+
   const save = async () => {
     if (!editing || saving) return;
-    const changes = toChangeSet(draft, rowsById, editing.getRowVersion);
+    if (errorCount > 0) {
+      // Blocked, but not with a disabled button: a disabled button can't say why.
+      goToError();
+      announce(`Fix ${plural(errorCount, 'error')} before saving.`);
+      return;
+    }
+    const changes = toChangeSet(draft, rowsById, versionOf, newRows);
     setSaving(true);
     setSaveMessage(undefined);
     try {
       const result = await editing.onSave(changes);
-      if (!result || result.ok) {
-        setDraft(EMPTY_DRAFT);
-        setHistory(EMPTY_HISTORY);
-        refocusActiveCell(); // the bar (and its button) disappears; keep the keyboard in the grid
-        announce(`Saved ${plural(changeCount, 'change')}.`);
-      } else {
-        const message =
-          result.kind === 'conflict'
-            ? 'Some rows changed on the server. Nothing was saved.'
-            : 'Some changes were rejected. Nothing was saved.';
-        setSaveMessage(message);
-        announce(message);
-      }
+      handleSaveResult(result ?? { ok: true });
     } catch {
       const message = "Couldn't save. Your changes are kept.";
       setSaveMessage(message);
@@ -871,11 +1092,117 @@ export function DataGrid<TData extends RowData>({
     }
   };
 
-  const discard = () => {
+  const resetEdits = () => {
     setDraft(EMPTY_DRAFT);
     setHistory(EMPTY_HISTORY);
-    setEditingCell(null);
+    setServerErrors(NO_ERRORS);
+    setConflicts([]);
+    newRowsRef.current = new Map();
+    setNewRows(NO_NEW_ROWS);
     setSaveMessage(undefined);
+  };
+
+  const handleSaveResult = (result: SaveResult) => {
+    if (result.ok) {
+      resetEdits();
+      refocusActiveCell(); // the bar (and its button) disappears; keep the keyboard in the grid
+      announce(`Saved ${plural(changeCount, 'change')}.`);
+      return;
+    }
+    if (result.kind === 'validation') {
+      // Pin the server's messages to their cells (whole-row messages go on the row).
+      const pinned: Record<string, Record<string, string>> = {};
+      for (const [id, { fields, row }] of Object.entries(result.rows)) {
+        const cells: Record<string, string> = {};
+        for (const [field, messages] of Object.entries(fields ?? {}))
+          if (messages.length) cells[field] = messages.join(' ');
+        if (row?.length) cells[ROW_ERROR_KEY] = row.join(' ');
+        if (Object.keys(cells).length) pinned[id] = cells;
+      }
+      setServerErrors(pinned);
+      const n = Object.keys(pinned).length;
+      const message = `${plural(n, 'row')} rejected by the server. Nothing was saved.`;
+      setSaveMessage(message);
+      announce(message);
+      // Jump to the first one, in reading order.
+      const first = Object.keys(pinned)
+        .map((id) => ({
+          id,
+          row: rowIndexById.get(id) ?? Number.MAX_SAFE_INTEGER,
+        }))
+        .sort((a, b) => a.row - b.row)[0];
+      const firstCells = first ? pinned[first.id] : undefined;
+      if (first && firstCells) {
+        const key = Object.keys(firstCells)[0] ?? ROW_ERROR_KEY;
+        const columnId =
+          key === ROW_ERROR_KEY ? (leafColumns[0]?.id ?? key) : key;
+        focusById(first.id, columnId, first.row);
+      }
+      return;
+    }
+    setConflicts(result.rows);
+    const message = `${plural(result.rows.length, 'row')} changed on the server. Nothing was saved.`;
+    setSaveMessage(message);
+    announce(message);
+  };
+
+  /**
+   * Resolves the first conflict. Both choices adopt the server's newer version for the
+   * row, so the next Save isn't rejected again for the same reason.
+   * - theirs: drop my changes to that row and show the server's values.
+   * - mine: keep my changes; Save again overwrites the server's.
+   */
+  const resolveConflict = (choice: 'theirs' | 'mine') => {
+    const conflict = conflicts[0];
+    if (!conflict) return;
+    const { id } = conflict;
+    setOverrides((o) => {
+      const base = o.data === data ? o : { data, rows: {}, versions: {} };
+      return {
+        data,
+        rows:
+          choice === 'theirs'
+            ? { ...base.rows, [id]: conflict.current }
+            : base.rows,
+        versions: { ...base.versions, [id]: conflict.version },
+      };
+    });
+    if (choice === 'theirs') {
+      setDraft((d) => {
+        const next = { ...d };
+        delete next[id];
+        return next;
+      });
+      // Undo shouldn't bring back changes the user just threw away.
+      setHistory((h) => ({
+        undo: h.undo
+          .map((e) => ({
+            ...e,
+            changes: e.changes.filter((c) => c.rowId !== id),
+          }))
+          .filter((e) => e.changes.length > 0),
+        redo: [],
+      }));
+      setServerErrors((e) => {
+        const next = { ...e };
+        delete next[id];
+        return next;
+      });
+    }
+    const rest = conflicts.slice(1);
+    setConflicts(rest);
+    if (rest.length === 0) setSaveMessage(undefined);
+    refocusActiveCell();
+    announce(
+      choice === 'theirs'
+        ? `${rowLabel(id)}: using the server's version.`
+        : `${rowLabel(id)}: keeping your changes. Save all to overwrite.`,
+    );
+  };
+
+  const discard = () => {
+    resetEdits();
+    setEditingCell(null);
     refocusActiveCell();
     announce('Changes discarded.');
   };
@@ -911,6 +1238,8 @@ export function DataGrid<TData extends RowData>({
         cell.getSelectionExtendHandler()(event),
       onCellDoubleClick: (rowId, columnId) =>
         latest.current.startEdit(rowId, columnId),
+      // No seed = "toggle" for checkbox columns.
+      onToggle: (rowId, columnId) => latest.current.startEdit(rowId, columnId),
       onEditorBlur: (event) => {
         // Clicking another cell or a button commits, like Excel. Moving focus inside
         // the grid via our own keys has already committed.
@@ -920,6 +1249,10 @@ export function DataGrid<TData extends RowData>({
     }),
     [table],
   );
+
+  /** The first editable column carries the "Type here to add a row…" hint. */
+  const hintColumnId =
+    leafColumns.find((c) => c.columnDef.meta?.editor)?.id ?? null;
 
   /** Per-row slice of the range, as primitives so memoized rows can compare them. */
   const rowRange = (index: number) =>
@@ -1171,6 +1504,10 @@ export function DataGrid<TData extends RowData>({
                     editingInitial={isEditingRow ? editingCell.initial : ''}
                     cellApi={cellApi}
                     {...rowRange(item.index)}
+                    rowErrors={isEditing ? errors[row.id] : undefined}
+                    isNew={newRows.has(row.id)}
+                    isTrailing={row.id === NEW_ROW_ID}
+                    hintColumnId={hintColumnId}
                   />
                 );
               })
@@ -1179,7 +1516,7 @@ export function DataGrid<TData extends RowData>({
         </table>
       </div>
 
-      {isEditing && (isDirty || saveMessage) ? (
+      {isEditing && (isDirty || saveMessage || conflicts.length > 0) ? (
         <SaveBar
           changeCount={changeCount}
           rowCount={changedRowCount}
@@ -1189,6 +1526,16 @@ export function DataGrid<TData extends RowData>({
           onDiscard={discard}
           canUndo={history.undo.length > 0}
           onUndo={undo}
+          errorCount={errorCount}
+          onGoToError={goToError}
+          conflict={
+            conflicts[0] && {
+              message: conflictMessage(conflicts[0], rowLabel(conflicts[0].id)),
+              remaining: conflicts.length,
+            }
+          }
+          onUseTheirs={() => resolveConflict('theirs')}
+          onKeepMine={() => resolveConflict('mine')}
         />
       ) : (
         enableRowSelection &&
@@ -1217,7 +1564,10 @@ export function DataGrid<TData extends RowData>({
         <p role="status" className="tabular-nums">
           {isSearching && !isEditing
             ? `${rows.length.toLocaleString()} of ${data.length.toLocaleString()} rows`
-            : `${rows.length.toLocaleString()} rows`}
+            : `${(isEditing ? realRowCount : rows.length).toLocaleString()} rows`}
+          {isEditing &&
+            newRows.size > 0 &&
+            ` · ${plural(newRows.size, 'new row')}`}
           {selectedCount > 0 &&
             !isEditing &&
             ` · ${selectedCount.toLocaleString()} selected`}
@@ -1245,4 +1595,16 @@ function headerLabel<TData extends RowData>(
 ): string {
   const header = column?.columnDef.header;
   return typeof header === 'string' ? header : (column?.id ?? 'This column');
+}
+
+/** "INV-10004 was changed by Dana at 10:42 AM." */
+function conflictMessage(conflict: SaveConflict, label: string) {
+  const at = conflict.at ? new Date(conflict.at) : null;
+  const time =
+    at && !Number.isNaN(at.getTime())
+      ? at.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+      : conflict.at;
+  return `${label} was changed${conflict.by ? ` by ${conflict.by}` : ''}${
+    time ? ` at ${time}` : ''
+  } while you were editing.`;
 }

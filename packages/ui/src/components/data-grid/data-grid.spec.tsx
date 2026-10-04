@@ -57,7 +57,7 @@ describe('DataGrid', () => {
     renderGrid();
     const table = screen.getByRole('table', { name: 'Invoices' });
     expect(table.getAttribute('aria-rowcount')).toBe('10001'); // + header row
-    expect(table.getAttribute('aria-colcount')).toBe('20');
+    expect(table.getAttribute('aria-colcount')).toBe('21');
     expect(bodyRows()[0]?.getAttribute('aria-rowindex')).toBe('2');
   });
 

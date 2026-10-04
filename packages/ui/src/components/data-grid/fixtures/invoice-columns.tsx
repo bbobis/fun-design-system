@@ -27,8 +27,9 @@ const tone = {
 } as const;
 
 /**
- * 20 columns, defined once at module scope so the reference is stable.
- * Nine have an `editor`, so they become editable in edit mode; the rest stay read-only.
+ * 21 columns, defined once at module scope so the reference is stable.
+ * Ten have an `editor`, so they become editable in edit mode; the rest stay read-only.
+ * A few carry validation rules (`required`, `validate`) to show the error states.
  */
 export const invoiceColumns = col.columns([
   col.accessor('number', {
@@ -39,7 +40,7 @@ export const invoiceColumns = col.columns([
   col.accessor('customer', {
     header: 'Customer',
     size: 200,
-    meta: { editor: 'text' },
+    meta: { editor: 'text', required: true },
   }),
   col.accessor('status', {
     header: 'Status',
@@ -67,7 +68,13 @@ export const invoiceColumns = col.columns([
     header: 'Subtotal',
     size: 120,
     cell: (i) => money.format(i.getValue()),
-    meta: { align: 'end', editor: 'number' },
+    meta: {
+      align: 'end',
+      editor: 'number',
+      required: true,
+      validate: (v) =>
+        typeof v === 'number' && v <= 0 ? 'Must be more than 0' : undefined,
+    },
   }),
   col.accessor('tax', {
     header: 'Tax',
@@ -108,7 +115,14 @@ export const invoiceColumns = col.columns([
   col.accessor('items', {
     header: 'Items',
     size: 80,
-    meta: { align: 'end', editor: 'number' },
+    meta: {
+      align: 'end',
+      editor: 'number',
+      validate: (v) =>
+        typeof v === 'number' && (!Number.isInteger(v) || v < 0)
+          ? 'Whole number, 0 or more'
+          : undefined,
+    },
   }),
   col.accessor('marginPct', {
     header: 'Margin %',
@@ -120,6 +134,11 @@ export const invoiceColumns = col.columns([
     header: 'Days out',
     size: 100,
     meta: { align: 'end' },
+  }),
+  col.accessor('emailed', {
+    header: 'Emailed',
+    size: 90,
+    meta: { editor: 'checkbox' },
   }),
   col.accessor('id', { header: 'Record ID', size: 110, meta: { mono: true } }),
 ]);

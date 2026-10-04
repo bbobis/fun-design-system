@@ -14,6 +14,13 @@ type SaveBarProps = {
   /** Shows an Undo button (Ctrl+Z does the same). */
   canUndo?: boolean;
   onUndo?: () => void;
+  /** Invalid cells. Save stays clickable (it jumps to the first error instead). */
+  errorCount?: number;
+  onGoToError?: () => void;
+  /** The first unresolved conflict, if the last save returned some. */
+  conflict?: { message: string; remaining: number };
+  onUseTheirs?: () => void;
+  onKeepMine?: () => void;
 };
 
 /**
@@ -29,6 +36,11 @@ export function SaveBar({
   onDiscard,
   canUndo = false,
   onUndo,
+  errorCount = 0,
+  onGoToError,
+  conflict,
+  onUseTheirs,
+  onKeepMine,
 }: SaveBarProps) {
   const [confirming, setConfirming] = useState(false);
   const discardRef = useRef<HTMLButtonElement>(null);
@@ -44,6 +56,31 @@ export function SaveBar({
   }, [confirming]);
   const plural = (n: number, word: string) =>
     `${n.toLocaleString()} ${word}${n === 1 ? '' : 's'}`;
+
+  if (conflict) {
+    // A conflict blocks everything else: decide row by row, then save again.
+    return (
+      <div
+        data-inverse
+        role="group"
+        aria-label="Save conflict"
+        className="flex flex-wrap items-center gap-2 bg-bg px-4 py-2 text-sm text-fg"
+      >
+        <span>
+          <b className="font-semibold">{conflict.message}</b> Nothing was saved.
+          {conflict.remaining > 1 &&
+            ` (${conflict.remaining - 1} more after this)`}
+        </span>
+        <span className="flex-1" />
+        <Button intent="ghost" size="sm" onClick={onUseTheirs}>
+          Use theirs
+        </Button>
+        <Button intent="primary" size="sm" onClick={onKeepMine}>
+          Keep mine
+        </Button>
+      </div>
+    );
+  }
 
   if (confirming) {
     return (
@@ -89,6 +126,18 @@ export function SaveBar({
         <b className="font-semibold">{plural(changeCount, 'change')}</b> in{' '}
         {plural(rowCount, 'row')}
       </span>
+      {errorCount > 0 && (
+        <>
+          <span className="font-medium text-fg-danger tabular-nums">
+            {plural(errorCount, 'error')}
+          </span>
+          {onGoToError && (
+            <Button intent="ghost" size="sm" onClick={onGoToError}>
+              Go to error
+            </Button>
+          )}
+        </>
+      )}
       {message && <span className="text-fg-danger">{message}</span>}
       <span className="flex-1" />
       {onUndo && (

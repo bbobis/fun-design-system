@@ -116,6 +116,15 @@ export function parseEditorValue(
       ? { ok: false, message: 'Not one of the choices' }
       : { ok: true, value: match };
   }
+  if (kind === 'checkbox') {
+    // What people paste from Excel and Sheets: TRUE/FALSE, yes/no, 1/0, x.
+    const v = raw.trim().toLowerCase();
+    if (['true', 'yes', 'y', '1', 'x', '✓'].includes(v))
+      return { ok: true, value: true };
+    if (['false', 'no', 'n', '0', ''].includes(v))
+      return { ok: true, value: false };
+    return { ok: false, message: 'Use yes or no' };
+  }
   if (kind !== 'number') return { ok: true, value: raw };
   // Excel copies what it displays: "$1,234.50". Strip the formatting before parsing.
   const cleaned = raw.replace(/[\s,$]/g, '');

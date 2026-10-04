@@ -19,7 +19,7 @@ import {
 } from '@tanstack/react-table';
 
 /** The in-cell editors. Date and searchable-select editors come later (they need popovers). */
-export type DataGridEditorKind = 'text' | 'number' | 'select';
+export type DataGridEditorKind = 'text' | 'number' | 'select' | 'checkbox';
 
 /** Extra column settings the DataGrid understands. Set them in a column's `meta`. */
 export type DataGridColumnMeta = {
@@ -35,6 +35,17 @@ export type DataGridColumnMeta = {
   editor?: DataGridEditorKind;
   /** Choices for the `select` editor. */
   options?: readonly string[];
+  /** The cell can't be left empty in a row the user edited or added. */
+  required?: boolean;
+  /**
+   * Your own rule, checked on every edited or new row. Return a short message when the
+   * value is wrong ("Must be more than 0"), or nothing when it's fine. `row` is the row
+   * as the user sees it, draft values included, so cross-field rules work too.
+   */
+  validate?: (
+    value: unknown,
+    row: Readonly<Record<string, unknown>>,
+  ) => string | undefined;
 };
 
 /**

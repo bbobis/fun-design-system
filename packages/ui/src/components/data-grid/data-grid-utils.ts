@@ -3,6 +3,12 @@
  */
 import type { CSSProperties } from 'react';
 
+/** Row id of the trailing "Type here to add a row…" row. */
+export const NEW_ROW_ID = '__new';
+
+/** Key for row-level errors (not tied to one field) inside a row's error map. */
+export const ROW_ERROR_KEY = '__row';
+
 /** Id of the injected row-selection checkbox column. */
 export const SELECT_COLUMN_ID = '__select';
 
@@ -60,5 +66,12 @@ export function fieldValue(row: unknown, columnId: string): unknown {
 export function toEditorText(value: unknown): string {
   if (value == null) return '';
   if (value instanceof Date) return value.toISOString().slice(0, 10);
+  // Excel's own spelling, so a copied checkbox column pastes back into Excel as booleans.
+  if (typeof value === 'boolean') return value ? 'TRUE' : 'FALSE';
   return String(value);
+}
+
+/** Nothing to show or save: null, undefined or an empty string. */
+export function isEmptyValue(value: unknown): boolean {
+  return value == null || value === '';
 }
