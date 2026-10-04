@@ -69,6 +69,8 @@ example and forgets things he doesn't use, so:
 - A Storybook story (if Storybook is set up)
 
 ## Boundaries
-- Do not add dependencies without asking (headless library is still undecided;
-  when the choice comes up, present 2-3 options with trade-offs and let Ben pick).
+- Do not add dependencies without asking.
+- Headless library: **React Aria Components** (decided 2026-10-04, see
+  `docs/decisions/0001-headless-library.md`). Build interactive components on it,
+  wrapped by our own components; don't add another headless library without asking.
 - Do not change Nx workspace config without asking.

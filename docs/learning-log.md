@@ -108,3 +108,9 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Remember: don't disable a button you can explain.** Save stays clickable with errors and jumps to the first one. A disabled button gives no reason and can't be focused.
 - **Gotcha:** jsdom can't scroll, so virtualized rows below the fake viewport never mount. Make the test viewport tall enough for the rows the test touches.
 - **Read:** https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Reference/Attributes/aria-invalid
+
+## 2026-10-04 — Decision: React Aria Components as the headless library
+- **Decided:** React Aria Components (Adobe) over Base UI and Downshift, recorded in `docs/decisions/0001-headless-library.md`. Deciding factor: it's the only one with a date picker, so the design system stays on one library.
+- **Remember: an ADR (architecture decision record)** is a short file: context, decision, options rejected, consequences. Future teammates read it instead of re-opening the debate.
+- **Remember: React Aria stops key events from bubbling by default.** A parent (like our grid's `<table>`) won't see Enter unless the handler calls `e.continuePropagation()`, or the parent listens in the capture phase.
+- **Read:** https://react-aria.adobe.com/
