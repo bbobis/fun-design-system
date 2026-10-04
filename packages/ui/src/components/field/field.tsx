@@ -41,6 +41,7 @@ export function Field({
 }: FieldProps) {
   const baseId = useId();
   const controlId = `${baseId}-control`;
+  const labelId = `${baseId}-label`;
   const descriptionId = description ? `${baseId}-description` : undefined;
   const errorId = error ? `${baseId}-error` : undefined;
   const describedBy =
@@ -48,6 +49,7 @@ export function Field({
 
   const context: FieldContextValue = {
     controlId,
+    labelId,
     describedBy,
     invalid: Boolean(error),
     required,
@@ -56,7 +58,7 @@ export function Field({
 
   return (
     <div className={cn('flex flex-col gap-1.5', className)} {...rest}>
-      <Label htmlFor={controlId} required={required}>
+      <Label id={labelId} htmlFor={controlId} required={required}>
         {label}
       </Label>
       <FieldContext.Provider value={context}>{children}</FieldContext.Provider>

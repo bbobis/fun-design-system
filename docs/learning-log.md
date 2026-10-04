@@ -114,3 +114,10 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Remember: an ADR (architecture decision record)** is a short file: context, decision, options rejected, consequences. Future teammates read it instead of re-opening the debate.
 - **Remember: React Aria stops key events from bubbling by default.** A parent (like our grid's `<table>`) won't see Enter unless the handler calls `e.continuePropagation()`, or the parent listens in the capture phase.
 - **Read:** https://react-aria.adobe.com/
+
+## 2026-10-04 — Select: the first React Aria component
+- **Built:** `Select` on React Aria Components (`Select` → `Button` + `SelectValue` + `Popover` + `ListBox`), with our own API (`options`, `value`, `onChange`, `size`, `invalid`), a hidden `<select>` for plain form posts, and `Field` now gives its label an id (`labelId`) so the trigger is named with `aria-labelledby`.
+- **Remember: focus restore.** When a popup closes, focus goes back to whatever had it before it opened (the trigger). React Aria's `FocusScope` does this for you, one animation frame after the popup unmounts. Hand-rolled popups often forget this, and keyboard users end up on `<body>`.
+- **Remember: wrap, don't re-export.** Apps import our `Select`, never `react-aria-components`. Our props stay simple (`string | null`), and we can change the internals later without breaking apps.
+- **Gotcha:** jsdom lacks `CSS.escape`; React Aria needs it. Polyfilled in the spec (every real browser has it).
+- **Read:** https://react-aria.adobe.com/Select

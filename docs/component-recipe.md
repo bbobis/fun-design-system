@@ -73,6 +73,19 @@ src/index.ts          export * from './components/<name>'
     screen would also need (DataGrid's checkbox), build the primitive (`Checkbox`) with
     its own test and story, and use it from the composite.
 
+17. **Wrapping a headless component (React Aria).** Our component owns the public API;
+    React Aria is an implementation detail apps never import.
+    - Props are ours and plain: `options`, `value: string | null`, `onChange(value)`,
+      `invalid`, `disabled`, `size`. Convert at the boundary (React Aria's "keys" →
+      our strings; `invalid` → `isInvalid`).
+    - Style state from React Aria's `data-*` attributes (`data-focused`,
+      `data-selected`, `data-disabled`, `group-data-invalid:`), not from render props,
+      unless the *content* changes (a check icon for the selected option).
+    - React Aria positions popovers itself (it sets `top`/`left`); we size them with its
+      CSS variables, e.g. `w-(--trigger-width)`. Our code stays Tailwind-only.
+    - Field wiring: `aria-labelledby` = the Field's `labelId` for controls `htmlFor`
+      can't name; `aria-describedby` merges the Field's ids with the caller's.
+
 ## Tests to write for every component
 
 - renders the right element and role
@@ -83,6 +96,9 @@ src/index.ts          export * from './components/<name>'
 - `className` override wins over the component's own class
 - native attributes pass through; `ref` reaches the DOM node
 
+- React Aria components: jsdom has no `CSS.escape` (polyfill it in the spec); focus is
+  restored to the trigger on the next animation frame, so await one before asserting;
+  focus the trigger first, as a keyboard user would
 - virtualized components: jsdom has no layout, so mock `offsetHeight`/`offsetWidth` and
   assert rows actually rendered before asserting their order (an empty list "passes"
   any sort check)
