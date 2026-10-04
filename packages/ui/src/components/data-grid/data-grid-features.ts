@@ -1,4 +1,5 @@
 import {
+  cellSelectionFeature,
   columnFilteringFeature,
   columnSizingFeature,
   createColumnHelper,
@@ -17,12 +18,23 @@ import {
   type RowData,
 } from '@tanstack/react-table';
 
+/** The in-cell editors. Date and searchable-select editors come later (they need popovers). */
+export type DataGridEditorKind = 'text' | 'number' | 'select';
+
 /** Extra column settings the DataGrid understands. Set them in a column's `meta`. */
 export type DataGridColumnMeta = {
   /** Right-align numbers and amounts so digits line up. @default 'start' */
   align?: 'start' | 'end';
   /** Render the cell in IBM Plex Mono (IDs, codes, SKUs). @default false */
   mono?: boolean;
+  /**
+   * Makes the column editable in edit mode, with this editor. Only works on columns
+   * made with `col.accessor('field')`: the grid writes the value back to that field.
+   * Columns without an editor are read-only.
+   */
+  editor?: DataGridEditorKind;
+  /** Choices for the `select` editor. */
+  options?: readonly string[];
 };
 
 /**
@@ -44,6 +56,8 @@ export const dataGridFeatures = tableFeatures({
   filterFns: { includesString: filterFn_includesString },
   rowSelectionFeature,
   columnSizingFeature,
+  // Active cell + roving tabindex in edit mode (and cell ranges, later).
+  cellSelectionFeature,
   // Type-only slot: makes `meta` on every column typed as DataGridColumnMeta.
   columnMeta: {} as DataGridColumnMeta,
 });

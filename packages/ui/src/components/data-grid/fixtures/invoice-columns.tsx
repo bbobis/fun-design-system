@@ -1,6 +1,11 @@
 import { Badge } from '../../badge';
 import { createDataGridColumnHelper } from '../data-grid-features';
-import type { Invoice } from './invoices';
+import {
+  invoiceStatuses,
+  paymentTerms,
+  salesReps,
+  type Invoice,
+} from './invoices';
 
 const col = createDataGridColumnHelper<Invoice>();
 
@@ -21,17 +26,25 @@ const tone = {
   Draft: 'neutral',
 } as const;
 
-/** 20 columns, defined once at module scope so the reference is stable. */
+/**
+ * 20 columns, defined once at module scope so the reference is stable.
+ * Nine have an `editor`, so they become editable in edit mode; the rest stay read-only.
+ */
 export const invoiceColumns = col.columns([
   col.accessor('number', {
     header: 'Invoice',
     size: 120,
     meta: { mono: true },
   }),
-  col.accessor('customer', { header: 'Customer', size: 200 }),
+  col.accessor('customer', {
+    header: 'Customer',
+    size: 200,
+    meta: { editor: 'text' },
+  }),
   col.accessor('status', {
     header: 'Status',
     size: 110,
+    meta: { editor: 'select', options: invoiceStatuses },
     cell: (info) => (
       <Badge tone={tone[info.getValue()]}>{info.getValue()}</Badge>
     ),
@@ -54,13 +67,13 @@ export const invoiceColumns = col.columns([
     header: 'Subtotal',
     size: 120,
     cell: (i) => money.format(i.getValue()),
-    meta: { align: 'end' },
+    meta: { align: 'end', editor: 'number' },
   }),
   col.accessor('tax', {
     header: 'Tax',
     size: 100,
     cell: (i) => money.format(i.getValue()),
-    meta: { align: 'end' },
+    meta: { align: 'end', editor: 'number' },
   }),
   col.accessor('total', {
     header: 'Total',
@@ -71,16 +84,32 @@ export const invoiceColumns = col.columns([
   col.accessor('currency', { header: 'Cur.', size: 70, meta: { mono: true } }),
   col.accessor('region', { header: 'Region', size: 100 }),
   col.accessor('country', { header: 'Country', size: 110 }),
-  col.accessor('city', { header: 'City', size: 120 }),
-  col.accessor('salesRep', { header: 'Sales rep', size: 130 }),
-  col.accessor('terms', { header: 'Terms', size: 130 }),
+  col.accessor('city', {
+    header: 'City',
+    size: 120,
+    meta: { editor: 'text' },
+  }),
+  col.accessor('salesRep', {
+    header: 'Sales rep',
+    size: 130,
+    meta: { editor: 'select', options: salesReps },
+  }),
+  col.accessor('terms', {
+    header: 'Terms',
+    size: 130,
+    meta: { editor: 'select', options: paymentTerms },
+  }),
   col.accessor('poNumber', {
     header: 'PO number',
     size: 120,
-    meta: { mono: true },
+    meta: { mono: true, editor: 'text' },
   }),
   col.accessor('category', { header: 'Category', size: 120 }),
-  col.accessor('items', { header: 'Items', size: 80, meta: { align: 'end' } }),
+  col.accessor('items', {
+    header: 'Items',
+    size: 80,
+    meta: { align: 'end', editor: 'number' },
+  }),
   col.accessor('marginPct', {
     header: 'Margin %',
     size: 100,
