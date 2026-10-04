@@ -58,6 +58,21 @@ src/index.ts          export * from './components/<name>'
     and read by Tailwind classes: `style={{ '--w': '120px' }}` + `className="w-(--w)"`.
     Never put real CSS properties in `style`. (Approved by Ben, 2026-10-03, for DataGrid.)
 
+14. **Inverse surfaces with `data-inverse`, not new colours.** A bar that must stand out
+    (bulk actions, unsaved changes) gets `data-inverse`: it takes the opposite theme's
+    tokens, so put `bg-bg text-fg` on it and use normal components inside. A
+    `<Button intent="secondary">` re-themes itself with no code change. Don't use `dark:`
+    utilities inside an inverse; they follow `<html>`, not the inverse.
+
+15. **Slots vs render props.** Static extra content is a `ReactNode` slot
+    (`toolbarActions`). Content that depends on the component's state is a function
+    (`renderBulkActions({ selectedRowIds, clearSelection })`): the component calls it with
+    the data the caller needs.
+
+16. **Primitives don't hide inside composites.** If a composite needs a control another
+    screen would also need (DataGrid's checkbox), build the primitive (`Checkbox`) with
+    its own test and story, and use it from the composite.
+
 ## Tests to write for every component
 
 - renders the right element and role

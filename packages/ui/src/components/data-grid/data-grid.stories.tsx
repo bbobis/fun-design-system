@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
 import type { RowSelectionState } from '@tanstack/react-table';
+import { Button } from '../button';
 import { DataGrid } from './data-grid';
 import { invoiceColumns } from './fixtures/invoice-columns';
 import { makeInvoices, type Invoice } from './fixtures/invoices';
@@ -28,11 +29,49 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-/** 10,000 rows × 20 columns. Only the rows in view are rendered; scroll, sort and search. */
+/**
+ * 10,000 rows × 20 columns. Only the rows in view are rendered; scroll, sort and
+ * search. Tick a few rows to see the bulk-action bar.
+ */
 export const TenThousandRows: Story = {
   args: {
+    title: 'Invoices',
     enableRowSelection: true,
     className: 'h-[36rem]',
+    toolbarActions: (
+      <Button size="sm" intent="primary">
+        New invoice
+      </Button>
+    ),
+    renderBulkActions: ({ selectedRowIds, clearSelection }) => (
+      <>
+        <Button
+          size="sm"
+          intent="secondary"
+          onClick={() => console.info('Export', selectedRowIds)}
+        >
+          Export
+        </Button>
+        <Button
+          size="sm"
+          intent="secondary"
+          onClick={() => {
+            console.info('Mark as paid', selectedRowIds);
+            clearSelection();
+          }}
+        >
+          Mark as paid
+        </Button>
+      </>
+    ),
+  },
+};
+
+/** Without a title or actions: just search, the count and the grid. */
+export const Minimal: Story = {
+  args: {
+    data: twentyFive,
+    className: 'h-96',
   },
 };
 
@@ -45,6 +84,7 @@ export const ControlledSelection: Story = {
         <div className="flex flex-col gap-2">
           <DataGrid
             aria-label="Invoices"
+            title="Invoices"
             data={twentyFive}
             columns={invoiceColumns}
             getRowId={getRowId}

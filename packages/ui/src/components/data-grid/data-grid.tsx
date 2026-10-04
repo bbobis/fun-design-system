@@ -23,8 +23,11 @@ import {
   type CSSProperties,
   type FocusEvent,
   type ReactNode,
+  type SVGProps,
 } from 'react';
 import { cn } from '../../utils/cn';
+import { Button } from '../button';
+import { Checkbox } from '../checkbox';
 import { Input } from '../input';
 import {
   createDataGridColumnHelper,
@@ -47,6 +50,14 @@ function cssVars(vars: Record<`--${string}`, string | number>): CSSProperties {
   return vars as CSSProperties;
 }
 
+/** What `renderBulkActions` receives. */
+export type DataGridBulkActionsContext = {
+  /** Ids (from `getRowId`) of every selected row, including rows hidden by search. */
+  selectedRowIds: string[];
+  /** Clears the selection, e.g. after an action finishes. */
+  clearSelection: () => void;
+};
+
 export type DataGridProps<TData extends RowData> = {
   /** The rows. Keep the array reference stable between renders (state, memo or query). */
   data: TData[];
@@ -62,7 +73,17 @@ export type DataGridProps<TData extends RowData> = {
   rowSelection?: RowSelectionState;
   /** Called with the next selection when the user (de)selects rows. */
   onRowSelectionChange?: OnChangeFn<RowSelectionState>;
-  /** Shows the search box and row count above the grid. @default true */
+  /** Visible title in the grid's header bar, e.g. "Invoices". */
+  title?: ReactNode;
+  /** Extra controls on the right of the header bar (buttons, menus). A slot: any nodes. */
+  toolbarActions?: ReactNode;
+  /**
+   * Actions shown in the bar that appears while rows are selected ("Export",
+   * "Mark as paid"). A function, because what it shows depends on the selection.
+   * The bar always shows the count and "Clear selection"; this adds your buttons.
+   */
+  renderBulkActions?: (context: DataGridBulkActionsContext) => ReactNode;
+  /** Shows the header bar (title, count, search, actions). @default true */
   showToolbar?: boolean;
   /** Row height: `compact` (32px) for dense data, `standard` (40px). @default 'compact' */
   density?: keyof typeof ROW_HEIGHT;
@@ -92,6 +113,9 @@ export function DataGrid<TData extends RowData>({
   enableRowSelection = false,
   rowSelection: controlledSelection,
   onRowSelectionChange,
+  title,
+  toolbarActions,
+  renderBulkActions,
   showToolbar = true,
   density = 'compact',
   emptyMessage = 'No rows to show.',
@@ -120,7 +144,7 @@ export function DataGrid<TData extends RowData>({
       enableSorting: false,
       enableGlobalFilter: false,
       header: ({ table }) => (
-        <SelectCheckbox
+        <Checkbox
           aria-label="Select all rows"
           checked={table.getIsAllRowsSelected()}
           // v9: "some" means at least one, so it's only mixed when not all are selected.
@@ -131,7 +155,7 @@ export function DataGrid<TData extends RowData>({
         />
       ),
       cell: ({ row }) => (
-        <SelectCheckbox
+        <Checkbox
           aria-label={`Select row ${row.id}`}
           checked={row.getIsSelected()}
           // Click, not change: the click event carries Shift, which v9 uses for range select.
@@ -209,36 +233,52 @@ export function DataGrid<TData extends RowData>({
       focusedIndex.current = null;
   };
 
-  const selectedCount = Object.keys(rowSelection).length;
+  const selectedRowIds = Object.keys(rowSelection);
+  const selectedCount = selectedRowIds.length;
   const isSearching = deferredSearch.length > 0;
+
+  const clearSelection = useCallback(() => {
+    table.resetRowSelection(true);
+    // The bar (and the button that was clicked) disappears; put focus somewhere
+    // sensible instead of letting it fall to <body>.
+    scrollRef.current?.focus();
+  }, [table]);
 
   return (
     <div
       className={cn(
-        'flex h-[32rem] min-h-0 flex-col gap-3 font-sans text-fg',
+        'flex h-[32rem] min-h-0 flex-col overflow-hidden rounded-lg border border-border bg-bg font-sans text-fg',
         className,
       )}
     >
       {showToolbar && (
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <Input
-            id={searchId}
-            type="search"
-            size="sm"
-            aria-label={`Search ${ariaLabel}`}
-            placeholder="Search all columns"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="max-w-xs"
-          />
-          {/* role=status: screen readers announce the new count after each search. */}
-          <p role="status" className="text-sm text-fg-muted tabular-nums">
-            {isSearching
-              ? `${rows.length.toLocaleString()} of ${data.length.toLocaleString()} rows`
-              : `${data.length.toLocaleString()} rows`}
-            {selectedCount > 0 &&
-              ` · ${selectedCount.toLocaleString()} selected`}
-          </p>
+        <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+          <div className="flex min-w-0 items-center gap-2.5">
+            {title && (
+              <span className="truncate text-[0.9375rem] font-semibold">
+                {title}
+              </span>
+            )}
+            <span className="rounded-full bg-surface px-2 py-px text-xs font-medium text-fg-muted tabular-nums">
+              {data.length.toLocaleString()}
+            </span>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="relative flex items-center">
+              <SearchIcon className="pointer-events-none absolute start-2.5 size-3.5 text-fg-muted" />
+              <Input
+                id={searchId}
+                type="search"
+                size="sm"
+                aria-label={`Search ${ariaLabel}`}
+                placeholder="Search"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-64 max-w-full border-border bg-surface ps-8"
+              />
+            </div>
+            {toolbarActions}
+          </div>
         </div>
       )}
 
@@ -248,7 +288,7 @@ export function DataGrid<TData extends RowData>({
         role="region"
         aria-label={ariaLabel}
         tabIndex={0}
-        className="relative min-h-0 flex-1 overflow-auto rounded-md border border-border bg-bg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
+        className="relative min-h-0 flex-1 overflow-auto focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus-ring"
       >
         {/*
           Explicit roles: display:grid/flex on table elements makes some browsers drop
@@ -264,7 +304,7 @@ export function DataGrid<TData extends RowData>({
           style={cssVars({ '--table-w': `${totalWidth}px` })}
         >
           {/* eslint-disable-next-line jsx-a11y/no-redundant-roles -- display:grid can strip implicit table roles */}
-          <thead role="rowgroup" className="sticky top-0 z-10 grid bg-surface">
+          <thead role="rowgroup" className="sticky top-0 z-10 grid bg-bg">
             {headerGroups.map((group) => (
               <tr
                 key={group.id}
@@ -291,8 +331,9 @@ export function DataGrid<TData extends RowData>({
                           : undefined
                       }
                       className={cn(
-                        'flex h-9 w-(--w) shrink-0 items-center border-b border-border-strong px-3',
-                        'text-xs font-semibold whitespace-nowrap text-fg-muted',
+                        // `group` lets children react to hovering the whole header cell.
+                        'group flex h-9 w-(--w) shrink-0 items-center border-y border-border px-3',
+                        'text-xs font-medium whitespace-nowrap text-fg-muted',
                         meta?.align === 'end' && 'justify-end',
                         column.id === SELECT_COLUMN_ID && 'justify-center px-0',
                       )}
@@ -338,7 +379,7 @@ export function DataGrid<TData extends RowData>({
               <tr role="row" className="absolute flex w-full">
                 <td
                   role="cell"
-                  className="w-full px-3 py-6 text-center text-fg-muted"
+                  className="w-full px-3 py-10 text-center text-fg-muted"
                 >
                   {isSearching
                     ? `No rows match "${deferredSearch}".`
@@ -367,6 +408,34 @@ export function DataGrid<TData extends RowData>({
           </tbody>
         </table>
       </div>
+
+      {enableRowSelection && selectedCount > 0 && (
+        // data-inverse flips the theme for this bar only (dark on light pages, light on
+        // dark), so it stands out without new colours. See tokens.css.
+        <div
+          data-inverse
+          className="flex flex-wrap items-center gap-2 bg-bg px-4 py-2 text-sm text-fg"
+        >
+          <span className="me-2 font-medium tabular-nums">
+            {selectedCount.toLocaleString()} selected
+          </span>
+          {renderBulkActions?.({ selectedRowIds, clearSelection })}
+          <span className="flex-1" />
+          <Button intent="ghost" size="sm" onClick={clearSelection}>
+            Clear selection
+          </Button>
+        </div>
+      )}
+
+      <div className="flex items-center justify-between gap-3 border-t border-border px-4 py-2 text-xs text-fg-muted">
+        {/* role=status: screen readers announce the new count after each search. */}
+        <p role="status" className="tabular-nums">
+          {isSearching
+            ? `${rows.length.toLocaleString()} of ${data.length.toLocaleString()} rows`
+            : `${data.length.toLocaleString()} rows`}
+          {selectedCount > 0 && ` · ${selectedCount.toLocaleString()} selected`}
+        </p>
+      </div>
     </div>
   );
 }
@@ -375,30 +444,20 @@ function noop() {
   /* React requires onChange on a controlled checkbox; the click handler does the work. */
 }
 
-type SelectCheckboxProps = Omit<React.ComponentProps<'input'>, 'type'> & {
-  indeterminate?: boolean;
-};
-
-/** Native checkbox. `indeterminate` is a DOM property, not an attribute, so it's set via ref. */
-function SelectCheckbox({
-  indeterminate = false,
-  className,
-  ...rest
-}: SelectCheckboxProps) {
-  const ref = useRef<HTMLInputElement>(null);
-  useEffect(() => {
-    if (ref.current) ref.current.indeterminate = indeterminate;
-  }, [indeterminate]);
+function SearchIcon(props: SVGProps<SVGSVGElement>) {
   return (
-    <input
-      ref={ref}
-      type="checkbox"
-      className={cn(
-        'size-4 cursor-pointer accent-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring',
-        className,
-      )}
-      {...rest}
-    />
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      {...props}
+    >
+      <circle cx="7" cy="7" r="4.5" />
+      <path d="m10.5 10.5 3 3" />
+    </svg>
   );
 }
 
@@ -407,7 +466,12 @@ function SortIndicator({ direction }: { direction: false | 'asc' | 'desc' }) {
     <svg
       aria-hidden="true"
       viewBox="0 0 12 12"
-      className={cn('size-3 shrink-0', !direction && 'opacity-30')}
+      className={cn(
+        'size-3 shrink-0 transition-opacity',
+        // Unsorted columns stay quiet: the icon appears on hover/focus of the header only.
+        !direction &&
+          'opacity-0 group-hover:opacity-50 group-focus-within:opacity-50',
+      )}
     >
       <path
         d="M6 2 9 5H3z"
@@ -470,7 +534,11 @@ const DataGridRow = memo(function DataGridRow<TData extends RowData>({
       className={cn(
         'absolute top-0 left-0 flex h-(--row-h) w-full translate-y-(--y)',
         'border-b border-border',
-        'hover:bg-surface data-selected:bg-primary/15',
+        'hover:bg-surface',
+        // Selected: a soft brand wash plus a 2px rail on the leading edge (inset shadow,
+        // so nothing shifts by a pixel).
+        'data-selected:bg-primary/10 data-selected:shadow-[inset_2px_0_0_var(--color-primary)]',
+        'data-selected:hover:bg-primary/15',
       )}
       style={cssVars({ '--y': `${start}px`, '--row-h': `${rowHeight}px` })}
     >

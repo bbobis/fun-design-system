@@ -113,6 +113,22 @@ describe('DataGrid', () => {
     expect(screen.getByText('No rows match "zzz-no-match".')).toBeTruthy();
   });
 
+  it('shows the title, the total count and toolbar actions', () => {
+    renderGrid({
+      title: 'Open invoices',
+      toolbarActions: <button type="button">New invoice</button>,
+    });
+    expect(screen.getByText('Open invoices')).toBeTruthy();
+    expect(screen.getByText('10,000')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'New invoice' })).toBeTruthy();
+  });
+
+  it('hides the header bar with showToolbar={false}', () => {
+    renderGrid({ showToolbar: false });
+    expect(screen.queryByRole('searchbox')).toBeNull();
+    expect(screen.getByRole('status').textContent).toBe('10,000 rows');
+  });
+
   it('shows the empty message when there is no data', () => {
     renderGrid({ data: [], emptyMessage: 'No invoices yet.' });
     expect(screen.getByText('No invoices yet.')).toBeTruthy();
@@ -143,6 +159,51 @@ describe('DataGrid', () => {
       expect(all.indeterminate).toBe(false);
       expect(screen.getByRole('status').textContent).toContain(
         '10,000 selected',
+      );
+    });
+
+    it('shows the bulk-action bar only while rows are selected', () => {
+      const renderBulkActions = vi.fn(({ selectedRowIds }) => (
+        <button type="button">Export {selectedRowIds.length}</button>
+      ));
+      renderGrid({ data: small, enableRowSelection: true, renderBulkActions });
+      expect(
+        screen.queryByRole('button', { name: 'Clear selection' }),
+      ).toBeNull();
+      expect(renderBulkActions).not.toHaveBeenCalled();
+
+      act(() =>
+        fireEvent.click(
+          screen.getByRole('checkbox', { name: 'Select row inv-2' }),
+        ),
+      );
+      act(() =>
+        fireEvent.click(
+          screen.getByRole('checkbox', { name: 'Select row inv-4' }),
+        ),
+      );
+      expect(screen.getByRole('button', { name: 'Export 2' })).toBeTruthy();
+      expect(renderBulkActions).toHaveBeenLastCalledWith(
+        expect.objectContaining({ selectedRowIds: ['inv-2', 'inv-4'] }),
+      );
+    });
+
+    it('"Clear selection" empties the selection and moves focus back to the grid', () => {
+      renderGrid({ data: small, enableRowSelection: true });
+      act(() =>
+        fireEvent.click(
+          screen.getByRole('checkbox', { name: 'Select row inv-1' }),
+        ),
+      );
+      const clear = screen.getByRole('button', { name: 'Clear selection' });
+      clear.focus();
+      act(() => fireEvent.click(clear));
+      expect(
+        screen.queryByRole('button', { name: 'Clear selection' }),
+      ).toBeNull();
+      expect(screen.getByRole('status').textContent).toBe('5 rows');
+      expect(document.activeElement).toBe(
+        screen.getByRole('region', { name: 'Invoices' }),
       );
     });
 

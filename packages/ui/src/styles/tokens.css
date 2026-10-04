@@ -96,8 +96,18 @@
 
 /* ---------- 2. Theme values ---------- */
 /* Light is the default. Dark only lists what changes; everything else is inherited.
- * The app switches themes by setting data-theme="dark" on <html>. */
-:root {
+ * The app switches themes by setting data-theme="dark" on <html>.
+ *
+ * Inverse surfaces: an element with `data-inverse` gets the *opposite* theme, so a
+ * bar can be dark on a light page and light on a dark page (the DataGrid's bulk-action
+ * and save bars). This works because the semantic tokens are `inline` (section 3):
+ * `bg-bg` reads var(--fds-bg) at the element that uses it, so re-declaring --fds-*
+ * on a subtree re-themes everything inside it, components included.
+ * Limit: `dark:` utilities still follow <html>, so don't use them inside an inverse. */
+:root,
+[data-theme='dark'] [data-inverse] {
+  color-scheme: light;
+
   /* brand */
   --fds-primary: var(--color-yellow-500);
   --fds-on-primary: var(--color-gray-900);
@@ -150,7 +160,8 @@
   --fds-focus-ring: var(--color-gray-900);
 }
 
-[data-theme='dark'] {
+[data-theme='dark'],
+:root:not([data-theme='dark']) [data-inverse] {
   color-scheme: dark; /* native scrollbars and form controls go dark too */
 
   --fds-primary-hover: var(--color-yellow-400);

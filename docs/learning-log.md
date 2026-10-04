@@ -67,3 +67,17 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Remember: `memo` per row + `useDeferredValue` for search.** Rows that stay on screen keep the same props, so React skips them while scrolling. Search text updates instantly; the 10k-row filter uses the deferred value, so typing never waits.
 - **Gotcha:** TanStack sorts number/date columns *descending* on the first click by default. We set `sortDescFirst: false` so every column starts ascending, like Excel.
 - **Read:** https://tanstack.com/table/latest/docs/framework/react/guide/virtualization
+
+## 2026-10-03 — Edit-mode prototype (plain HTML, before the React build)
+- **Built:** a clickable prototype of "Edit table → draft → Save all" to test the feel with real users before writing React. It is the spec for the editing phases.
+- **Remember: roving tabindex + re-render.** Only the active cell has `tabindex="0"`. If you re-render and throw away the focused element, focus falls to `<body>` and the keyboard goes dead. Fix: note `grid.contains(document.activeElement)` before the re-render and focus the new active cell after. In React, keys keep the DOM node alive, but a virtualized row scrolling out has the same problem (that's why `rangeExtractor` keeps the focused row mounted).
+- **Remember: the draft is a separate layer.** Server rows never change while editing; edits live in a `Map` keyed `rowId:colId`. Save sends only the diff plus each row's `version`, so Spring can answer 409 for a row someone else changed.
+- **Gotcha:** CSS specificity. `.bar .btn:hover:not(:disabled)` (4 selectors) beat `.bar .btn.primary` (3), so the yellow button went dark on hover. In Tailwind this goes away because each state is its own class (`hover:bg-primary-hover`).
+- **Read:** https://www.w3.org/WAI/ARIA/apg/patterns/grid/
+
+## 2026-10-04 — PR A: DataGrid restyle (style A + bulk bar) and the Checkbox primitive
+- **Built:** a calm card layout for DataGrid (title, count chip, search with icon, actions slot, quiet sort icons, selected-row wash + rail, footer status), a style C bulk-action bar, and a new `Checkbox` primitive.
+- **Remember: scoped theming.** `data-inverse` re-declares the `--fds-*` variables on one element. Because our semantic tokens are `@theme inline`, `bg-secondary` resolves `var(--fds-secondary)` *at the element*, so everything inside flips, Button included, with zero component changes.
+- **Remember: `peer` and `group`.** `peer-checked:opacity-100` styles a sibling from the input's state (the tick); `group-hover:opacity-50` styles a child from the parent's hover (the sort icon). CSS does the state tracking, not React.
+- **Gotcha:** fading only the input (`disabled:opacity-50`) left the tick invisible in dark mode. Fade the wrapper instead: `has-[:disabled]:opacity-50`.
+- **Read:** https://tailwindcss.com/docs/hover-focus-and-other-states#styling-based-on-sibling-state
