@@ -3,6 +3,7 @@ export * from './components/button';
 export * from './components/card';
 export * from './components/checkbox';
 export * from './components/combobox';
+export * from './components/multi-combobox';
 export * from './components/data-grid';
 export * from './components/field';
 export * from './components/heading';

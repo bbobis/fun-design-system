@@ -134,3 +134,10 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Remember: control the result, not the mechanics.** A first version let apps control the input text (`inputValue`). React Aria then stopped putting the picked label in the box and stopped resetting half-typed text on blur (found in the browser, not in tests). Fix: no `inputValue` prop; apps only *listen* (`onInputChange`).
 - **Gotcha:** `defaultItems` = "React Aria filters these"; `items` = "already filtered by you". Pass the wrong one and filtering silently stops.
 - **Read:** https://react-aria.adobe.com/ComboBox
+
+## 2026-10-04 — MultiCombobox: several picks as tags
+- **Built:** `MultiCombobox` on React Aria `ComboBox selectionMode="multiple"` + `TagGroup`. Picks show as tags inside the box (they wrap; the box grows), the text clears and the list stays open after each pick, Backspace in the empty input removes the last tag, and the form posts one entry per value. Shares its dropdown with `Combobox` (`combobox-parts.tsx`); both now use React Aria's `Group` as the field box.
+- **Remember: a "grid" of tags is one Tab stop.** Tab lands on the tags once; ←/→ move between them (roving `tabindex`: only the current tag has `tabindex=0`). Delete removes one, and focus moves to the next tag, or to the input when none are left — never to `<body>`.
+- **Remember: hidden collection pass.** React Aria finds a ComboBox's options by rendering its children once in a hidden tree. Other collections inside it (our TagGroup) must be wrapped in a *hideable* component (`ComboBoxValue`), or they render in that pass and crash.
+- **Gotcha (tests):** while the list is open, React Aria sets `aria-hidden` on everything outside the input and list, so `getAllByRole('row')` "loses" the tags. Use `{ hidden: true }` to query them.
+- **Read:** https://react-aria.adobe.com/TagGroup
