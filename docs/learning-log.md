@@ -141,3 +141,10 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Remember: hidden collection pass.** React Aria finds a ComboBox's options by rendering its children once in a hidden tree. Other collections inside it (our TagGroup) must be wrapped in a *hideable* component (`ComboBoxValue`), or they render in that pass and crash.
 - **Gotcha (tests):** while the list is open, React Aria sets `aria-hidden` on everything outside the input and list, so `getAllByRole('row')` "loses" the tags. Use `{ hidden: true }` to query them.
 - **Read:** https://react-aria.adobe.com/TagGroup
+
+## 2026-10-04 — DatePicker: a calendar day, not a moment
+- **Built:** `DatePicker` on React Aria `DatePicker` (`DateInput` + `DateSegment` pieces, `Popover` → `Dialog` → `Calendar`). Value, `min`, `max` and the posted form value are ISO day strings (`'2026-10-04'`). Added `@internationalized/date` as a direct dependency (React Aria already used it; the build imports it, doesn't bundle it).
+- **Remember: a date is not a `Date`.** `new Date(2026, 9, 4)` in Tokyo is midnight local = Oct 3, 15:00 UTC, so a UTC server stores Oct 3. A calendar day has no time zone; keep it as `'YYYY-MM-DD'` from the field to the database.
+- **Remember: segments are spinbuttons.** Each piece (month, day, year) is its own `role="spinbutton"`: type digits (it jumps to the next piece when full) or ↑↓. Order follows the user's locale (US: mm/dd/yyyy). Alt+↓ opens the calendar; closing it puts focus back where you were.
+- **Gotcha (tests):** segments take typed digits from the `beforeinput` event, not `keydown`. The spec fires `InputEvent('beforeinput', { data: '1' })`.
+- **Read:** https://react-aria.adobe.com/DatePicker
