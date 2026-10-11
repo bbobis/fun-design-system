@@ -142,7 +142,7 @@ src/index.ts          export * from './components/<name>'
     only one file of ours may import it, our public API must not mention it (apps use
     `toast.success()` and `<ToastRegion />`), and `react-aria-components` stays pinned
     to patch updates (`~`). An upgrade is a PR whose tests prove the wrapper still works.
-23. **Group controls carry their own label (RadioGroup, later CheckboxGroup).** A
+23. **Group controls carry their own label (RadioGroup, CheckboxGroup).** A
     group is named by a legend-like label over all its choices, not by `<label for>`
     on one control, so it can't sit inside `Field`. It takes the *same* prop names as
     Field (`label`, `description`, `error`, `required`, `disabled`), so the API feels

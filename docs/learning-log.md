@@ -222,3 +222,9 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Gotcha (tests):** jsdom's `fireEvent.click` fires on disabled inputs, which real browsers never do. Test the `disabled` attribute instead of clicking it.
 - **Read:** https://www.w3.org/WAI/ARIA/apg/patterns/radio/
 
+## 2026-10-11 — CheckboxGroup
+- **Built:** `CheckboxGroup` + `CheckboxGroupItem` on React Aria (group label, description, error, required, orientation; value is `string[]`; forms post one entry per checked value). Items look exactly like `Checkbox`, which stays for single boxes. Completes Tier 2: NumberField, TextArea, RadioGroup, Switch, CheckboxGroup.
+- **Remember: checkboxes are separate Tab stops, radios are one.** Radios are one choice, so arrows move through them. Checkboxes are independent yes/no answers, so each one gets Tab and Space.
+- **Remember: two components beat one that changes meaning.** React Aria's group needs its own items, so a separate `CheckboxGroupItem` keeps `Checkbox` simple and native, instead of a Checkbox that behaves differently depending on its parent.
+- **Read:** https://react-aria.adobe.com/CheckboxGroup
+
