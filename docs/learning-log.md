@@ -286,3 +286,9 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Remember: how a description is computed.** `aria-describedby` is followed even to hidden elements, so `aria-hidden` on the tooltip does nothing. But inside the referenced element, `aria-hidden` *children* are skipped. Hiding the text inside the tooltip empties the description while it stays on screen.
 - **Remember: check names and descriptions in a real browser.** Chrome's accessibility tree (via DevTools or CDP `Accessibility.getPartialAXTree`) is the source of truth; jsdom doesn't compute it.
 - **Read:** https://www.w3.org/TR/accname-1.2/#mapping_additional_nd_description
+
+## 2026-10-11 — Popup animations
+- **Built:** one shared motion for every popup: Popover, Menu + submenus, Select, Combobox, MultiCombobox, DatePicker calendar (fade + scale from 96%, 120ms in, 80ms out), and Tooltip (fade only). One class string in `utils/motion.ts`, so they can't drift apart.
+- **Remember: grow out of the trigger.** React Aria sets `--trigger-anchor-point` on each popup, the point that touches its trigger (for a start-aligned menu below a button: its top-start corner). `origin-(--trigger-anchor-point)` makes the scale start there.
+- **Remember: slow animations down to test them.** A 120ms animation is over before a script can look. Chrome DevTools (or CDP `Animation.setPlaybackRate`) can run them at 10% speed.
+- **Read:** https://react-aria.adobe.com/Popover#animation

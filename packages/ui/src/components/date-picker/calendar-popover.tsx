@@ -12,6 +12,7 @@ import {
   Popover,
 } from 'react-aria-components';
 import { cn } from '../../utils/cn';
+import { popoverMotion } from '../../utils/motion';
 
 /**
  * The calendar dropdown shared by DatePicker and the DataGrid's date cell editor.
@@ -22,7 +23,10 @@ export function CalendarPopover() {
   return (
     <Popover
       offset={4}
-      className="rounded-md border border-border bg-bg p-3 text-fg shadow-lg"
+      className={cn(
+        'rounded-md border border-border bg-bg p-3 text-fg shadow-lg',
+        popoverMotion,
+      )}
     >
       <Dialog className="outline-hidden">
         <Calendar>

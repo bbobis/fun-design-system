@@ -10,6 +10,7 @@ import {
 } from 'react-aria-components';
 import { cn } from '../../utils/cn';
 import { useFieldContext } from '../field/field-context';
+import { popoverMotion } from '../../utils/motion';
 
 /** One choice in a Select. */
 export type SelectOption = {
@@ -139,7 +140,10 @@ export function Select({
       */}
       <Popover
         offset={4}
-        className="w-(--trigger-width) min-w-40 rounded-md border border-border bg-bg shadow-lg"
+        className={cn(
+          'w-(--trigger-width) min-w-40 rounded-md border border-border bg-bg shadow-lg',
+          popoverMotion,
+        )}
       >
         <ListBox
           items={options}

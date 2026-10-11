@@ -11,6 +11,8 @@ import {
   type TriggerButtonProps,
   type TriggerPlacement,
 } from '../button/trigger-button';
+import { cn } from '../../utils/cn';
+import { popoverMotion } from '../../utils/motion';
 
 const panelVariants = cva(
   'rounded-md border border-border bg-bg text-fg shadow-lg outline-hidden',
@@ -81,7 +83,7 @@ export function Popover({
       <AriaPopover
         placement={placement}
         offset={4}
-        className={panelVariants({ size: panelSize })}
+        className={cn(panelVariants({ size: panelSize }), popoverMotion)}
       >
         {/* A dialog inside the popover: focus moves in, Tab stays in until it closes. */}
         <Dialog className="max-h-[inherit] overflow-auto p-4 outline-hidden">

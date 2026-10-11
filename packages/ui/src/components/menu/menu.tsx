@@ -21,6 +21,7 @@ import {
   type TriggerButtonProps,
   type TriggerPlacement,
 } from '../button/trigger-button';
+import { popoverMotion } from '../../utils/motion';
 
 export type MenuProps = TriggerButtonProps & {
   /** Where the menu opens, relative to the trigger. Flips if there's no room. @default 'bottom start' */
@@ -57,7 +58,10 @@ export function Menu({
       <Popover
         placement={placement}
         offset={4}
-        className="min-w-44 rounded-md border border-border bg-bg p-1 text-fg shadow-lg outline-hidden"
+        className={cn(
+          'min-w-44 rounded-md border border-border bg-bg p-1 text-fg shadow-lg outline-hidden',
+          popoverMotion,
+        )}
       >
         <AriaMenu className="max-h-[inherit] overflow-auto outline-hidden">
           {children}
@@ -245,7 +249,10 @@ export function MenuSubmenu({ label, children, disabled }: MenuSubmenuProps) {
           no room) comes from React Aria. */}
       <Popover
         offset={-4}
-        className="min-w-40 rounded-md border border-border bg-bg p-1 text-fg shadow-lg outline-hidden"
+        className={cn(
+          'min-w-40 rounded-md border border-border bg-bg p-1 text-fg shadow-lg outline-hidden',
+          popoverMotion,
+        )}
       >
         <AriaMenu className="max-h-[inherit] overflow-auto outline-hidden">
           {children}
