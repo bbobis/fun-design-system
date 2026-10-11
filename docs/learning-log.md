@@ -156,3 +156,10 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Gotcha: React events bubble through portals.** The list and calendar are portaled to `<body>`, but their clicks still reach the cell's React `onMouseDown`. Cells now ignore events whose DOM target isn't inside them.
 - **Read:** https://react.dev/reference/react-dom/createPortal#event-bubbling-through-portals
 
+## 2026-10-11 — Dialog and AlertDialog
+- **Built:** `Dialog` (title, description, scrolling body, `footer` slot, ×; Escape or a click outside closes) and `AlertDialog` (role `alertdialog`, Cancel focused first, no outside-click close, async `onConfirm` with a spinner that stays open on failure). Both on React Aria `ModalOverlay` + `Modal` + `Dialog`. New `--fds-backdrop` token for the dimmed page.
+- **Remember: a modal does three things.** Focus moves inside and is trapped there; everything behind is hidden from screen readers (`aria-hidden`) and can't be clicked or tabbed to; on close, focus goes back to the button that opened it. Without the last one, a keyboard user is dropped at the top of the page.
+- **Remember: `dialog` vs `alertdialog`.** `alertdialog` is for a question that needs an answer now. Screen readers announce it as urgent, so it should be rare: one per destructive action, not for every message.
+- **Gotcha (tests):** React Aria moves focus into the dialog on the next animation frame. Wait a frame before pressing keys, or Escape fires outside the dialog and nothing closes.
+- **Read:** https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/
+
