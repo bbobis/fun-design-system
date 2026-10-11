@@ -189,4 +189,20 @@ describe('MultiCombobox', () => {
     expect(text).toContain('Pick at least one');
     expect(input().getAttribute('aria-invalid')).toBe('true');
   });
+
+  it('selectedOptions: tags show labels for saved values not in the results yet', () => {
+    render(
+      <MultiCombobox
+        aria-label="Countries"
+        filter="none"
+        options={[]}
+        value={['ca', 'de']}
+        selectedOptions={[
+          { value: 'ca', label: 'Canada' },
+          { value: 'de', label: 'Germany' },
+        ]}
+      />,
+    );
+    expect(tagTexts()).toEqual(['Canada', 'Germany']);
+  });
 });

@@ -53,6 +53,13 @@ const rowHeight = { sm: 'h-6', md: 'h-7', lg: 'h-8' } as const;
 export type MultiComboboxProps = VariantProps<typeof fieldVariants> & {
   /** The choices. With `filter="none"`, the current server results. */
   options: readonly MultiComboboxOption[];
+  /**
+   * Labels for chosen values that may not be in `options` yet. With server search, the
+   * saved value ("ca") usually isn't in the first results, so without this the field
+   * would show the raw value instead of "Canada". Pass the chosen option(s) you
+   * already have (e.g. loaded with the record).
+   */
+  selectedOptions?: readonly MultiComboboxOption[];
   /** The chosen options' values, in the order they were picked (controlled). */
   value?: readonly string[];
   /** Starting values when uncontrolled. */
@@ -101,6 +108,7 @@ export type MultiComboboxProps = VariantProps<typeof fieldVariants> & {
  */
 export function MultiCombobox({
   options,
+  selectedOptions,
   value,
   defaultValue = [],
   onChange,
@@ -139,6 +147,7 @@ export function MultiCombobox({
   // ComboBoxValue: that one only knows options in the *current* list, so with server
   // search every tag would vanish as soon as the results changed.
   const labels = useRef(new Map<string, string>());
+  for (const o of selectedOptions ?? []) labels.current.set(o.value, o.label);
   for (const o of options) labels.current.set(o.value, o.label);
   const tags = selected.map((v) => ({
     value: v,

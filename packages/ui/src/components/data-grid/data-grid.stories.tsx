@@ -157,6 +157,8 @@ const isPaid = (row: Invoice) => row.status === 'Paid';
  * **Save all** (the request is logged to the browser console). Paid rows are locked.
  * Type in the last row (or paste past it) to add invoices. Customer and Subtotal are
  * required, Subtotal must be above 0: break a rule to see the error states.
+ * **Issued** opens a date editor (Alt+↓ for the calendar) and **Category** a searchable
+ * list: both are popover editors.
  */
 export const Editable: Story = {
   render: () => {
@@ -181,6 +183,69 @@ export const Editable: Story = {
             onSave: async (changes) => {
               console.info('onSave', changes);
               await new Promise((r) => setTimeout(r, 600));
+              setRows((prev) => applyChanges(prev, changes));
+              return { ok: true };
+            },
+          }}
+        />
+      );
+    }
+    return <Example />;
+  },
+};
+
+const customerNames = [...new Set(tenThousand.map((r) => r.customer))].sort();
+const customerColumns = invoiceColumns.map((c) =>
+  'accessorKey' in c && c.accessorKey === 'customer'
+    ? {
+        ...c,
+        meta: {
+          ...c.meta,
+          editor: 'combobox' as const,
+          // A fake server: 400 ms per search, cancelled when the user types on.
+          searchOptions: (query: string, signal: AbortSignal) =>
+            new Promise<readonly string[]>((resolve, reject) => {
+              const t = setTimeout(
+                () =>
+                  resolve(
+                    customerNames.filter((n) =>
+                      n.toLowerCase().includes(query.toLowerCase()),
+                    ),
+                  ),
+                400,
+              );
+              signal.addEventListener('abort', () => {
+                clearTimeout(t);
+                reject(signal.reason);
+              });
+            }),
+        },
+      }
+    : c,
+);
+
+/**
+ * Customer as a **server-search combobox** (`meta.searchOptions`): type in the cell and
+ * the grid asks your function for matches, 250 ms after the last key. A slower
+ * search is cancelled through its `AbortSignal`, so stale results never win.
+ */
+export const ServerSearchEditor: Story = {
+  render: () => {
+    function Example() {
+      const [rows, setRows] = useState(() => tenThousand.slice(0, 200));
+      return (
+        <DataGrid
+          aria-label="Invoices"
+          title="Invoices"
+          data={rows}
+          columns={customerColumns}
+          getRowId={getRowId}
+          density="standard"
+          className="h-[36rem]"
+          editing={{
+            isRowLocked: isPaid,
+            onSave: async (changes) => {
+              console.info('onSave', changes);
               setRows((prev) => applyChanges(prev, changes));
               return { ok: true };
             },

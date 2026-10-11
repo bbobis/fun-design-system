@@ -1,42 +1,68 @@
-import {
-  useLayoutEffect,
-  useRef,
-  type FocusEvent,
-  type RefObject,
-} from 'react';
+import { useLayoutEffect, useRef, type RefObject } from 'react';
 import { cn } from '../../../utils/cn';
-import type { DataGridEditorKind } from '../data-grid-features';
+import { isIsoDate } from '../../date-picker/iso-date';
+import type {
+  DataGridEditorKind,
+  DataGridSearchOptions,
+} from '../data-grid-features';
+import type { CellEditorHandle, EditorCommit } from './popover-editor';
+import { ComboboxCellEditor, DateCellEditor } from './popover-editors';
 
-export type CellEditorElement = HTMLInputElement | HTMLSelectElement;
+export type { CellEditorHandle, EditorCommit } from './popover-editor';
 
 type CellEditorProps = {
   kind: DataGridEditorKind;
   /** Accessible name, usually the column header ("Customer"). */
   label: string;
-  /** Starting text: the current value (Enter/F2) or the typed character (type-to-replace). */
+  /**
+   * Starting text. Native editors: the current value (Enter/F2) or the typed character
+   * (type-to-replace). Popover editors: always the current value (see `seed`).
+   */
   initialValue: string;
+  /** Popover editors: the key that started the edit, if any (the combobox searches it). */
+  seed?: string;
   options?: readonly string[];
+  searchOptions?: DataGridSearchOptions;
   align?: 'start' | 'end';
-  /** The grid reads the value from here when it commits. */
-  editorRef: RefObject<CellEditorElement | null>;
-  /** Clicking elsewhere commits, like Excel. */
-  onBlur: (event: FocusEvent<CellEditorElement>) => void;
+  /** The editor fills this in; the grid reads the value from it when it commits. */
+  editorRef: RefObject<CellEditorHandle | null>;
+  /** Popover editors handle Enter / Tab / Escape themselves and report them here. */
+  onCommit: (action: EditorCommit) => boolean | void;
+  /** Focus left the editor (a click elsewhere): commit in place, like Excel. */
+  onLeave: () => void;
 };
 
 /**
- * The one boxed input in edit mode. Uncontrolled on purpose: the grid only needs the
- * value at commit time, so typing doesn't re-render the 10k-row table on every key.
+ * The one boxed input in edit mode. Native editors (text, number, select) are
+ * uncontrolled on purpose: the grid only needs the value at commit time, so typing
+ * doesn't re-render the 10k-row table on every key. Popover editors (combobox, date)
+ * are React Aria components behind the same handle.
  */
-export function CellEditor({
+export function CellEditor(props: CellEditorProps) {
+  const { kind, seed, options, searchOptions, ...shared } = props;
+  if (kind === 'combobox')
+    return (
+      <ComboboxCellEditor
+        {...shared}
+        seed={seed}
+        options={options}
+        searchOptions={searchOptions}
+      />
+    );
+  if (kind === 'date') return <DateCellEditor {...shared} />;
+  return <NativeCellEditor {...props} />;
+}
+
+function NativeCellEditor({
   kind,
   label,
   initialValue,
   options = [],
   align = 'start',
   editorRef,
-  onBlur,
+  onLeave,
 }: CellEditorProps) {
-  const local = useRef<CellEditorElement | null>(null);
+  const local = useRef<HTMLInputElement | HTMLSelectElement | null>(null);
 
   // Focus on mount and put the caret at the end. Without this, type-to-replace
   // ("A" then "cme") ends up as "cmeA": the caret starts before the seeded letter.
@@ -48,11 +74,19 @@ export function CellEditor({
       const end = el.value.length;
       el.setSelectionRange(end, end);
     }
-  }, []);
+    // The handle: native editors' value *is* the DOM value.
+    editorRef.current = {
+      getValue: () => el.value,
+      focus: () => el.focus(),
+    };
+    return () => {
+      editorRef.current = null;
+    };
+  }, [editorRef]);
 
-  const setRef = (el: CellEditorElement | null) => {
-    local.current = el;
-    editorRef.current = el;
+  const onBlur = (event: { currentTarget: Element }) => {
+    // Moving focus with our own keys has already committed and unmounted the editor.
+    if (event.currentTarget.isConnected) onLeave();
   };
 
   const className = cn(
@@ -64,7 +98,9 @@ export function CellEditor({
   if (kind === 'select') {
     return (
       <select
-        ref={setRef}
+        ref={(el) => {
+          local.current = el;
+        }}
         aria-label={label}
         defaultValue={initialValue}
         onBlur={onBlur}
@@ -84,7 +120,9 @@ export function CellEditor({
 
   return (
     <input
-      ref={setRef}
+      ref={(el) => {
+        local.current = el;
+      }}
       aria-label={label}
       defaultValue={initialValue}
       onBlur={onBlur}
@@ -106,7 +144,20 @@ export function parseEditorValue(
   raw: string,
   options: readonly string[] = [],
 ): { ok: true; value: unknown } | { ok: false; message: string } {
-  if (kind === 'select') {
+  if (kind === 'date') {
+    const text = raw.trim();
+    if (text === '') return { ok: true, value: null };
+    // Only 'YYYY-MM-DD': '3/10/2026' is March 10 or October 3 depending on who typed it.
+    return isIsoDate(text)
+      ? { ok: true, value: text }
+      : { ok: false, message: 'Use a date like 2026-10-04' };
+  }
+  // A combobox with server search has no list to check against: keep the text.
+  if (kind === 'combobox' && options.length === 0) {
+    const text = raw.trim();
+    return { ok: true, value: text === '' ? null : text };
+  }
+  if (kind === 'select' || kind === 'combobox') {
     if (raw === '') return { ok: true, value: null };
     // Pasted text is often a different case ("pending"): match it to the real option.
     const match =

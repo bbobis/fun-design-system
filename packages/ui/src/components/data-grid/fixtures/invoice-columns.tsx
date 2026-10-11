@@ -1,6 +1,7 @@
 import { Badge } from '../../badge';
 import { createDataGridColumnHelper } from '../data-grid-features';
 import {
+  categories,
   invoiceStatuses,
   paymentTerms,
   salesReps,
@@ -32,7 +33,7 @@ const tone = {
 
 /**
  * 21 columns, defined once at module scope so the reference is stable.
- * Ten have an `editor`, so they become editable in edit mode; the rest stay read-only.
+ * Twelve have an `editor`, so they become editable in edit mode; the rest stay read-only.
  * A few carry validation rules (`required`, `validate`) to show the error states.
  */
 export const invoiceColumns = col.columns([
@@ -56,11 +57,11 @@ export const invoiceColumns = col.columns([
   }),
   col.accessor('issued', {
     header: 'Issued',
-    size: 110,
+    size: 130,
     // ISO strings sort correctly as plain text: '2026-01-31' < '2026-10-04'.
     sortFn: 'text',
     cell: (i) => formatDay(i.getValue()),
-    meta: { align: 'end' },
+    meta: { align: 'end', editor: 'date' },
   }),
   col.accessor('due', {
     header: 'Due',
@@ -117,7 +118,11 @@ export const invoiceColumns = col.columns([
     size: 120,
     meta: { mono: true, editor: 'text' },
   }),
-  col.accessor('category', { header: 'Category', size: 120 }),
+  col.accessor('category', {
+    header: 'Category',
+    size: 140,
+    meta: { editor: 'combobox', options: categories },
+  }),
   col.accessor('items', {
     header: 'Items',
     size: 80,

@@ -1,11 +1,5 @@
 import type { Row, RowData, useTable } from '@tanstack/react-table';
-import {
-  memo,
-  type FocusEvent,
-  type MouseEvent,
-  type ReactNode,
-  type RefObject,
-} from 'react';
+import { memo, type MouseEvent, type ReactNode, type RefObject } from 'react';
 import { cn } from '../../utils/cn';
 import type { DataGridFeatures } from './data-grid-features';
 import { Checkbox } from '../checkbox';
@@ -17,7 +11,11 @@ import {
   SELECT_COLUMN_ID,
 } from './data-grid-utils';
 import { CheckIcon } from './icons';
-import { CellEditor, type CellEditorElement } from './editing/cell-editor';
+import {
+  CellEditor,
+  type CellEditorHandle,
+  type EditorCommit,
+} from './editing/cell-editor';
 
 /**
  * The few parts of a TanStack cell the mouse handlers use. A small structural type
@@ -33,11 +31,14 @@ export type GridCell = {
 
 /** Stable callbacks the memoized rows use in edit mode. */
 export type CellApi = {
-  editorRef: RefObject<CellEditorElement | null>;
+  editorRef: RefObject<CellEditorHandle | null>;
   onCellMouseDown: (cell: GridCell, event: MouseEvent) => void;
   onCellMouseEnter: (cell: GridCell, event: MouseEvent) => void;
   onCellDoubleClick: (rowId: string, columnId: string) => void;
-  onEditorBlur: (event: FocusEvent<CellEditorElement>) => void;
+  /** Focus left the editor: commit in place. */
+  onEditorLeave: () => void;
+  /** A popover editor handled Enter / Tab / Escape itself. False = value rejected. */
+  onEditorCommit: (action: EditorCommit) => boolean | void;
   /** Checkbox cells: flip the value (click on the box). */
   onToggle: (rowId: string, columnId: string) => void;
 };
@@ -59,6 +60,8 @@ type DataGridRowProps<TData extends RowData> = {
   focusedColumnId: string | null;
   editingColumnId: string | null;
   editingInitial: string;
+  /** The key that started the edit (popover editors use it as search text). */
+  editingSeed: string | undefined;
   cellApi: CellApi;
   /** The selected range's columns in this row (-1 when the row is outside it). */
   rangeStart: number;
@@ -96,6 +99,7 @@ export const DataGridRow = memo(function DataGridRow<TData extends RowData>({
   focusedColumnId,
   editingColumnId,
   editingInitial,
+  editingSeed,
   cellApi,
   rangeStart,
   rangeEnd,
@@ -229,9 +233,14 @@ export const DataGridRow = memo(function DataGridRow<TData extends RowData>({
             aria-invalid={error ? true : undefined}
             aria-describedby={errorId}
             title={error}
-            onMouseDown={(e) => cellApi.onCellMouseDown(cell, e)}
-            onMouseEnter={(e) => cellApi.onCellMouseEnter(cell, e)}
+            // React events bubble through portals: a click in an editor's popup (list,
+            // calendar) arrives here too. Only react to events from inside the cell.
+            onMouseDown={(e) => fromCell(e) && cellApi.onCellMouseDown(cell, e)}
+            onMouseEnter={(e) =>
+              fromCell(e) && cellApi.onCellMouseEnter(cell, e)
+            }
             onDoubleClick={(e) => {
+              if (!fromCell(e)) return;
               // A double-click on a checkbox already toggled it twice; don't add a third.
               if ((e.target as HTMLElement).closest('input')) return;
               cellApi.onCellDoubleClick(row.id, column.id);
@@ -271,10 +280,13 @@ export const DataGridRow = memo(function DataGridRow<TData extends RowData>({
                       : column.id
                   }
                   initialValue={editingInitial}
+                  seed={editingSeed}
                   options={meta.options}
+                  searchOptions={meta.searchOptions}
                   align={meta.align}
                   editorRef={cellApi.editorRef}
-                  onBlur={cellApi.onEditorBlur}
+                  onLeave={cellApi.onEditorLeave}
+                  onCommit={cellApi.onEditorCommit}
                 />
               </span>
             ) : (
@@ -306,3 +318,8 @@ export const DataGridRow = memo(function DataGridRow<TData extends RowData>({
     </tr>
   );
 }) as <TData extends RowData>(props: DataGridRowProps<TData>) => ReactNode;
+
+/** True when the event's target is in the cell's own DOM (not in a portaled popup). */
+function fromCell(event: MouseEvent): boolean {
+  return event.currentTarget.contains(event.target as Node);
+}

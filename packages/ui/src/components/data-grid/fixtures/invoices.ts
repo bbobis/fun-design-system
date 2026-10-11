@@ -99,7 +99,8 @@ export const paymentTerms = [
   'Net 60',
   'Due on receipt',
 ];
-const categories = [
+/** Choices for the Category editor (a combobox: type to search). */
+export const categories = [
   'Software',
   'Hardware',
   'Services',
@@ -149,10 +150,7 @@ export function makeInvoices(count: number, seed = 42): Invoice[] {
       category: pick(categories),
       items: 1 + Math.floor(rand() * 40),
       marginPct: Math.round((5 + rand() * 45) * 10) / 10,
-      daysOutstanding: Math.max(
-        0,
-        Math.round((today - dueMs) / 86_400_000),
-      ),
+      daysOutstanding: Math.max(0, Math.round((today - dueMs) / 86_400_000)),
       // Derived from the index, not rand(), so adding it didn't change any other value.
       emailed: i % 3 !== 0,
     };
