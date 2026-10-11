@@ -1,7 +1,8 @@
 import { useId, type ReactNode } from 'react';
 import { Link as AriaLink } from 'react-aria-components';
 import { cn } from '../../utils/cn';
-import { useCloseDrawer } from './app-shell';
+import { Tooltip } from '../tooltip';
+import { useShellNav } from './app-shell';
 
 export type SideNavProps = {
   /**
@@ -43,12 +44,17 @@ export type SideNavSectionProps = {
  */
 export function SideNavSection({ title, children }: SideNavSectionProps) {
   const id = useId();
+  const { collapsed } = useShellNav();
   return (
     <div className="flex flex-col gap-1">
       {title && (
+        // Collapsed: hidden from view, but still names the list for screen readers.
         <p
           id={id}
-          className="px-2 text-xs font-medium tracking-wide text-fg-muted uppercase"
+          className={cn(
+            'px-2 text-xs font-medium tracking-wide text-fg-muted uppercase',
+            collapsed && 'sr-only',
+          )}
         >
           {title}
         </p>
@@ -75,7 +81,7 @@ export type SideNavItemProps = {
    * screen readers say "current page". Your router decides which item it is.
    */
   current?: boolean;
-  /** Something small after the text, e.g. a count `<Badge>3</Badge>`. */
+  /** Something small after the text, e.g. a count `<Badge>3</Badge>`. Hidden when the sidebar is collapsed. */
   end?: ReactNode;
 };
 
@@ -91,29 +97,49 @@ export function SideNavItem({
   current = false,
   end,
 }: SideNavItemProps) {
-  const closeDrawer = useCloseDrawer();
+  const { collapsed, closeDrawer } = useShellNav();
   return (
     <li>
-      <AriaLink
-        href={href}
-        aria-current={current ? 'page' : undefined}
-        onPress={closeDrawer}
-        className={cn(
-          'flex items-center gap-2 rounded-md px-2 py-1.5 text-sm text-fg-muted outline-hidden transition-colors',
-          'hover:bg-surface hover:text-fg',
-          'data-focus-visible:outline-2 data-focus-visible:-outline-offset-2 data-focus-visible:outline-solid data-focus-visible:outline-focus-ring',
-          // Not colour alone: the current page also gets a background and bold text.
-          current && 'bg-surface font-medium text-fg',
-        )}
-      >
-        {icon && (
-          <span className="flex size-4 shrink-0 items-center justify-center">
-            {icon}
+      {/* Collapsed: the label shows as a tooltip. Always rendered (just disabled when
+          expanded), so toggling doesn't remount the link and lose focus. */}
+      <Tooltip content={children} placement="end" disabled={!collapsed}>
+        <AriaLink
+          href={href}
+          aria-current={current ? 'page' : undefined}
+          onPress={closeDrawer}
+          className={cn(
+            'flex items-center gap-2 rounded-md px-2 py-1.5 text-sm text-fg-muted outline-hidden transition-colors',
+            'hover:bg-surface hover:text-fg',
+            'data-focus-visible:outline-2 data-focus-visible:-outline-offset-2 data-focus-visible:outline-solid data-focus-visible:outline-focus-ring',
+            // Not colour alone: the current page also gets a background and bold text.
+            current && 'bg-surface font-medium text-fg',
+            collapsed && 'justify-center px-0 py-2',
+          )}
+        >
+          {icon ? (
+            <span className="flex size-4 shrink-0 items-center justify-center">
+              {icon}
+            </span>
+          ) : (
+            collapsed && (
+              // No icon: show the first letter so the item still has a shape.
+              <span
+                aria-hidden="true"
+                className="flex size-5 items-center justify-center rounded bg-surface text-xs font-semibold"
+              >
+                {typeof children === 'string' ? children.charAt(0) : '•'}
+              </span>
+            )
+          )}
+          {/* sr-only, not removed: the link keeps its name ("Invoices") when collapsed. */}
+          <span
+            className={cn('min-w-0 flex-1 truncate', collapsed && 'sr-only')}
+          >
+            {children}
           </span>
-        )}
-        <span className="min-w-0 flex-1 truncate">{children}</span>
-        {end}
-      </AriaLink>
+          {!collapsed && end}
+        </AriaLink>
+      </Tooltip>
     </li>
   );
 }

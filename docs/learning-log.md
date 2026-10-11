@@ -261,3 +261,10 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Remember: three ways to shorten a trail.** Link "…" to the parent (loses the levels in between), expand it in place (the trail jumps to several lines), or open a menu (one line, every level still one step away). We picked the menu.
 - **Remember: name icon-like buttons by what they do.** "…" means nothing read aloud, so the button is named "Show 3 more levels".
 - **Read:** https://react-aria.adobe.com/Menu#links
+
+## 2026-10-11 — Collapsible sidebar
+- **Built:** a collapse button at the bottom of AppShell's wide sidebar (64px, icons only, labels as tooltips), with `sidebarCollapsed` / `defaultSidebarCollapsed` / `onSidebarCollapsedChange`. SideNav reads the state from context, so app nav code doesn't change.
+- **Remember: `sr-only`, not removed.** A collapsed item hides its label visually but keeps it in the page, so the link is still "Invoices, link, current page". Deleting the text would leave an unnamed link.
+- **Remember: controlled *or* uncontrolled.** `defaultX` lets the component keep the state; `x` + `onXChange` lets the app own it (e.g. to save it). We support both with `x ?? ownState`.
+- **Remember: keep the tree stable.** The Tooltip is always rendered and only `disabled` when expanded. Adding or removing a wrapper would remount the link and drop keyboard focus.
+- **Read:** https://react.dev/learn/sharing-state-between-components#controlled-and-uncontrolled-components
