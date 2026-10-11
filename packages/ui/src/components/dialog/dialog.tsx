@@ -240,9 +240,19 @@ function DialogFrame({
       isOpen={open}
       onOpenChange={onOpenChange}
       isDismissable={dismissable}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-backdrop p-4"
+      className={cn(
+        'fixed inset-0 z-50 flex items-center justify-center bg-backdrop p-4',
+        // Fade the backdrop; the panel pops in on its own (below).
+        'motion-safe:data-entering:animate-overlay-in motion-safe:data-exiting:animate-overlay-out',
+      )}
     >
-      <Modal className={cn(panelVariants({ size }), className)}>
+      <Modal
+        className={cn(
+          panelVariants({ size }),
+          'motion-safe:data-entering:animate-dialog-in motion-safe:data-exiting:animate-dialog-out',
+          className,
+        )}
+      >
         {/* Focus is trapped in here; on close it returns to the element that had it. */}
         <AriaDialog
           role={role}
