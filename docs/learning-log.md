@@ -242,3 +242,10 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Remember: keep the layout still.** Pagination always shows the same number of items (first, last, current ± siblings, gaps), so the buttons don't move under the mouse while you click through.
 - **Remember: several `<nav>`s need different names.** Screen readers list landmarks by name ("Breadcrumbs", "Pagination"), so two pagers on one page need their own `aria-label`.
 - **Read:** https://www.w3.org/WAI/ARIA/apg/patterns/breadcrumb/
+
+## 2026-10-11 — AppShell + PageHeader
+- **Built:** `AppShell` (top bar, sidebar, `<main>`, skip link; below 1024px the sidebar becomes a React Aria modal drawer), `SideNav` / `SideNavSection` / `SideNavItem` (`aria-current="page"`), and `PageHeader` (breadcrumbs, the page's one `h1`, description, actions). Completes Tier 4.
+- **Remember: the skip link.** It's the first thing Tab reaches, hidden until focused. Enter jumps to `<main tabindex="-1">`, so keyboard users skip the whole sidebar in 2 key presses instead of 15+.
+- **Remember: landmarks are a table of contents.** `<header>`, `<nav>`, `<main>` let screen-reader users jump straight to a region. One `<main>` per page; each `<nav>` gets its own name.
+- **Gotcha:** a story's module-level `const nav = <SideNav … icon={<HomeIcon />} />` ran before `HomeIcon` was defined lower in the file (the "temporal dead zone"). Typecheck caught it; wrapping it in a component delays it until render.
+- **Read:** https://www.w3.org/WAI/ARIA/apg/practices/landmark-regions/
