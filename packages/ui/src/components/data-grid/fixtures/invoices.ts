@@ -9,8 +9,10 @@ export type Invoice = {
   number: string;
   customer: string;
   status: 'Paid' | 'Pending' | 'Overdue' | 'Draft';
-  issued: Date;
-  due: Date;
+  /** Calendar day as an ISO string, `'YYYY-MM-DD'` (no time zone; see recipe rule 17). */
+  issued: string;
+  /** Calendar day as an ISO string, `'YYYY-MM-DD'`. */
+  due: string;
   subtotal: number;
   tax: number;
   total: number;
@@ -97,7 +99,8 @@ export const paymentTerms = [
   'Net 60',
   'Due on receipt',
 ];
-const categories = [
+/** Choices for the Category editor (a combobox: type to search). */
+export const categories = [
   'Software',
   'Hardware',
   'Services',
@@ -105,6 +108,11 @@ const categories = [
   'Consulting',
   'Maintenance',
 ];
+
+/** UTC milliseconds → `'YYYY-MM-DD'`. UTC on both sides, so no time zone shifts the day. */
+function isoDay(ms: number): string {
+  return new Date(ms).toISOString().slice(0, 10);
+}
 
 export function makeInvoices(count: number, seed = 42): Invoice[] {
   const rand = mulberry32(seed);
@@ -114,10 +122,10 @@ export function makeInvoices(count: number, seed = 42): Invoice[] {
   const today = Date.UTC(2026, 9, 3);
 
   return Array.from({ length: count }, (_, i) => {
-    const issued = new Date(start + Math.floor(rand() * 640) * 86_400_000);
+    const issuedMs = start + Math.floor(rand() * 640) * 86_400_000;
     const term = pick(paymentTerms);
     const termDays = term === 'Due on receipt' ? 0 : Number(term.split(' ')[1]);
-    const due = new Date(issued.getTime() + termDays * 86_400_000);
+    const dueMs = issuedMs + termDays * 86_400_000;
     const subtotal = Math.round((50 + rand() * 49_950) * 100) / 100;
     const tax = Math.round(subtotal * 0.05 * 100) / 100;
     const [region, country, city] = pick(places);
@@ -126,8 +134,8 @@ export function makeInvoices(count: number, seed = 42): Invoice[] {
       number: `INV-${String(10_000 + i + 1)}`,
       customer: pick(customers),
       status: pick(statuses),
-      issued,
-      due,
+      issued: isoDay(issuedMs),
+      due: isoDay(dueMs),
       subtotal,
       tax,
       total: Math.round((subtotal + tax) * 100) / 100,
@@ -142,10 +150,7 @@ export function makeInvoices(count: number, seed = 42): Invoice[] {
       category: pick(categories),
       items: 1 + Math.floor(rand() * 40),
       marginPct: Math.round((5 + rand() * 45) * 10) / 10,
-      daysOutstanding: Math.max(
-        0,
-        Math.round((today - due.getTime()) / 86_400_000),
-      ),
+      daysOutstanding: Math.max(0, Math.round((today - dueMs) / 86_400_000)),
       // Derived from the index, not rand(), so adding it didn't change any other value.
       emailed: i % 3 !== 0,
     };

@@ -222,4 +222,17 @@ describe('Combobox', () => {
     expect(text).toContain('Billing country');
     expect(text).toContain('Required');
   });
+
+  it('selectedOptions: shows the label of a saved value that is not in the results yet', () => {
+    render(
+      <Combobox
+        aria-label="Country"
+        filter="none"
+        options={[]}
+        value="ca"
+        selectedOptions={[{ value: 'ca', label: 'Canada' }]}
+      />,
+    );
+    expect(input().value).toBe('Canada');
+  });
 });

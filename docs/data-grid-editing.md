@@ -39,6 +39,16 @@ col.accessor('subtotal', {
   },
 }),
 col.accessor('emailed', { header: 'Emailed', meta: { editor: 'checkbox' } }),
+col.accessor('due', { header: 'Due', meta: { editor: 'date' } }),            // value: '2026-10-04'
+col.accessor('category', { header: 'Category', meta: { editor: 'combobox', options: categories } }),
+col.accessor('customer', {                                                   // server search
+  header: 'Customer',
+  meta: {
+    editor: 'combobox',
+    searchOptions: (query, signal) =>
+      fetch(`/api/customers?q=${encodeURIComponent(query)}`, { signal }).then((r) => r.json()),
+  },
+}),
 ```
 
 | `meta.editor` | Accepts (typed or pasted) |
@@ -47,8 +57,17 @@ col.accessor('emailed', { header: 'Emailed', meta: { editor: 'checkbox' } }),
 | `number` | `1500`, `1,500.50`, `$1,500.50` (empty = `null`) |
 | `select` | one of `options`, any case (`pending` → `Pending`) |
 | `checkbox` | Space / Enter / click toggles; paste `TRUE`, `yes`, `1`, `x` / `FALSE`, `no`, `0` |
+| `combobox` | one of `options`, any case. With `searchOptions`: any text (check it with `validate`) |
+| `date` | `'YYYY-MM-DD'` only (`2026-10-04`). `3/10/2026` is rejected, not guessed: is it March 10 or October 3? |
 
-Date and searchable-select editors come later (they need a popover component).
+**Dates are ISO strings, both ways.** Give the grid `'2026-10-04'` and it saves
+`'2026-10-04'`. Don't give it a JS `Date` (a moment in time: it can show a different day
+in another time zone). Format for display in `cell`, with `timeZone: 'UTC'`:
+`new Intl.DateTimeFormat('en-CA', { timeZone: 'UTC' }).format(new Date(iso))`.
+
+**`select` or `combobox`?** `select` (a native list) for a handful of fixed choices;
+`combobox` for long lists or server search. `searchOptions` is called 250 ms after the
+last key, with an `AbortSignal`: pass it to `fetch` so a slow, stale search is cancelled.
 
 **Validation.** `required` and `validate(value, row)` run on every row the user edited or
 added. `row` includes draft values, so cross-field rules work
@@ -138,6 +157,19 @@ Both choices adopt the new version. They last until the app passes new `data`.
 
 Mouse: click selects, drag or Shift+click selects a range, double-click edits, clicking
 elsewhere commits.
+
+**Popover editors (`combobox`, `date`).** The list opens as soon as you start editing
+(the calendar opens with Alt+↓ or its button). While a popup is open it owns the keys:
+
+| Key | Popup open | Popup closed |
+|---|---|---|
+| Enter | Pick the highlighted option (or day), commit, move down | Commit, move down |
+| Tab | Pick the highlighted option, commit, move right | Commit, move right |
+| Esc | Close the popup only (you're still editing) | Cancel the edit |
+| Click an option / day | Commit, stay on the cell | — |
+
+Type-to-replace in a combobox cell makes the typed letter the search text. In a date
+cell, press Enter or F2 first, then type the digits.
 
 **Deviation from the WAI-ARIA grid pattern:** strictly, a grid is one Tab stop. Excel
 users expect Tab to move between cells, so Tab moves within the row and leaves the grid

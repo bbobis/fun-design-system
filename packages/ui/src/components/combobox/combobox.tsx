@@ -41,6 +41,13 @@ const fieldVariants = cva(
 export type ComboboxProps = VariantProps<typeof fieldVariants> & {
   /** The choices. With `filter="none"`, the current server results. */
   options: readonly ComboboxOption[];
+  /**
+   * Labels for chosen values that may not be in `options` yet. With server search, the
+   * saved value ("ca") usually isn't in the first results, so without this the field
+   * would show the raw value instead of "Canada". Pass the chosen option(s) you
+   * already have (e.g. loaded with the record).
+   */
+  selectedOptions?: readonly ComboboxOption[];
   /** The chosen option's `value` (controlled). `null` = nothing chosen. */
   value?: string | null;
   /** Starting value when uncontrolled. */
@@ -94,6 +101,7 @@ export type ComboboxProps = VariantProps<typeof fieldVariants> & {
  */
 export function Combobox({
   options,
+  selectedOptions,
   value,
   defaultValue = null,
   onChange,
@@ -128,6 +136,7 @@ export function Combobox({
   // selected option often isn't in the latest results; without its label, React Aria
   // would empty the input on blur while the value stayed set.
   const labels = useRef(new Map<string, string>());
+  for (const o of selectedOptions ?? []) labels.current.set(o.value, o.label);
   for (const o of options) labels.current.set(o.value, o.label);
 
   const items = useMemo(() => {

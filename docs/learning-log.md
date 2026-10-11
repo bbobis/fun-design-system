@@ -148,3 +148,11 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Remember: segments are spinbuttons.** Each piece (month, day, year) is its own `role="spinbutton"`: type digits (it jumps to the next piece when full) or ↑↓. Order follows the user's locale (US: mm/dd/yyyy). Alt+↓ opens the calendar; closing it puts focus back where you were.
 - **Gotcha (tests):** segments take typed digits from the `beforeinput` event, not `keydown`. The spec fires `InputEvent('beforeinput', { data: '1' })`.
 - **Read:** https://react-aria.adobe.com/DatePicker
+
+## 2026-10-11 — DataGrid popover editors: searchable list and date cells
+- **Built:** two new cell editor kinds on React Aria: `combobox` (searchable list, `options` or server `searchOptions` with debounce + `AbortSignal`) and `date` (ISO `'YYYY-MM-DD'` in and out, calendar on Alt+↓). A `PopoverEditorShell` routes Enter / Tab / Escape; every editor now fills a `CellEditorHandle` (`getValue()`, `focus()`). Demo invoices store dates as ISO strings. `Combobox` / `MultiCombobox` gained `selectedOptions` (labels for saved values not in the current results). The calendar popup moved to `calendar-popover.tsx`, shared by DatePicker and the grid.
+- **Remember: capture phase runs first.** A keydown travels down (capture: `onKeyDownCapture`, parents first) and then back up (bubble: `onKeyDown`, target first). React Aria stops Enter in the bubble phase, so the shell listens in capture to see it at all.
+- **Remember: read the value, not the text.** A combobox's input shows what you *searched* ("dev"), not what you *picked* ("DevOps"). The grid asks the editor's handle for the value instead of reading the input.
+- **Gotcha: React events bubble through portals.** The list and calendar are portaled to `<body>`, but their clicks still reach the cell's React `onMouseDown`. Cells now ignore events whose DOM target isn't inside them.
+- **Read:** https://react.dev/reference/react-dom/createPortal#event-bubbling-through-portals
+

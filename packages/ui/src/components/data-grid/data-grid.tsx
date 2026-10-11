@@ -34,11 +34,13 @@ import {
   createDataGridColumnHelper,
   dataGridFeatures,
   type DataGridColumnDef,
+  type DataGridColumnMeta,
   type DataGridFeatures,
 } from './data-grid-features';
 import {
   parseEditorValue,
-  type CellEditorElement,
+  type CellEditorHandle,
+  type EditorCommit,
 } from './editing/cell-editor';
 import type {
   DataGridEditing,
@@ -158,7 +160,13 @@ export type DataGridProps<TData extends RowData> = {
   className?: string;
 };
 
-type EditingCell = { rowId: string; columnId: string; initial: string };
+type EditingCell = {
+  rowId: string;
+  columnId: string;
+  initial: string;
+  /** Popover editors: the key that started the edit (type-to-replace). */
+  seed?: string;
+};
 
 /**
  * A virtualized, client-side data grid for large datasets (tested with 10,000 rows ×
@@ -239,7 +247,7 @@ export function DataGrid<TData extends RowData>({
     tempIdOf.set(row as object, NEW_ROW_ID);
     return row;
   }, [tempIdOf]);
-  const editorRef = useRef<CellEditorElement | null>(null);
+  const editorRef = useRef<CellEditorHandle | null>(null);
   const editButtonRef = useRef<HTMLButtonElement>(null);
   // The cell that should receive DOM focus once it is rendered (see the layout effect).
   const pendingFocus = useRef<string | null>(null);
@@ -795,6 +803,16 @@ export function DataGrid<TData extends RowData>({
       return;
     }
     const current = toEditorText(shownValue(rowId, columnId));
+    if (meta.editor === 'combobox' || meta.editor === 'date') {
+      // Popover editors start from the value; the typed key becomes search text.
+      setEditingCell({
+        rowId,
+        columnId,
+        initial: current,
+        seed: seed || undefined,
+      });
+      return;
+    }
     let initial = seed ?? current;
     if (meta.editor === 'select' && seed !== undefined) {
       // Type-to-replace in a list: jump to the first option starting with that letter.
@@ -816,8 +834,14 @@ export function DataGrid<TData extends RowData>({
     const { rowId, columnId } = editingCell;
     const column = table.getColumn(columnId);
     const meta = column?.columnDef.meta;
-    const raw = editorRef.current?.value ?? editingCell.initial;
-    const parsed = parseEditorValue(meta?.editor ?? 'text', raw, meta?.options);
+    // Read the value from the editor's handle, never from an input's text: a combobox
+    // input holds the search text, not the picked value.
+    const raw = editorRef.current?.getValue() ?? editingCell.initial;
+    const parsed = parseEditorValue(
+      meta?.editor ?? 'text',
+      raw,
+      parseOptions(meta),
+    );
     if (!parsed.ok) {
       announce(`${headerLabel(column)}: ${parsed.message}.`);
       if (refocus) editorRef.current?.focus();
@@ -1023,7 +1047,7 @@ export function DataGrid<TData extends RowData>({
       const parsed = parseEditorValue(
         meta?.editor ?? 'text',
         matrix[t.srcRow]?.[t.srcCol] ?? '',
-        meta?.options,
+        parseOptions(meta),
       );
       if (!parsed.ok) {
         rejected++;
@@ -1218,9 +1242,9 @@ export function DataGrid<TData extends RowData>({
 
   // Memoized rows need stable callbacks. These wrappers never change identity and
   // always call the latest handlers (stored in a ref after each render).
-  const latest = useRef({ startEdit, commitEdit, isEditing });
+  const latest = useRef({ startEdit, commitEdit, cancelEdit, isEditing });
   useLayoutEffect(() => {
-    latest.current = { startEdit, commitEdit, isEditing };
+    latest.current = { startEdit, commitEdit, cancelEdit, isEditing };
   });
   const cellApi = useMemo<CellApi>(
     () => ({
@@ -1240,12 +1264,12 @@ export function DataGrid<TData extends RowData>({
         latest.current.startEdit(rowId, columnId),
       // No seed = "toggle" for checkbox columns.
       onToggle: (rowId, columnId) => latest.current.startEdit(rowId, columnId),
-      onEditorBlur: (event) => {
-        // Clicking another cell or a button commits, like Excel. Moving focus inside
-        // the grid via our own keys has already committed.
-        if (event.currentTarget.isConnected)
-          latest.current.commitEdit(0, 0, { refocus: false });
-      },
+      // Clicking another cell or a button commits, like Excel.
+      onEditorLeave: () => latest.current.commitEdit(0, 0, { refocus: false }),
+      onEditorCommit: (action: EditorCommit) =>
+        action.type === 'cancel'
+          ? latest.current.cancelEdit()
+          : latest.current.commitEdit(action.dRow, action.dCol),
     }),
     [table],
   );
@@ -1502,6 +1526,7 @@ export function DataGrid<TData extends RowData>({
                     }
                     editingColumnId={isEditingRow ? editingCell.columnId : null}
                     editingInitial={isEditingRow ? editingCell.initial : ''}
+                    editingSeed={isEditingRow ? editingCell.seed : undefined}
                     cellApi={cellApi}
                     {...rowRange(item.index)}
                     rowErrors={isEditing ? errors[row.id] : undefined}
@@ -1607,4 +1632,12 @@ function conflictMessage(conflict: SaveConflict, label: string) {
   return `${label} was changed${conflict.by ? ` by ${conflict.by}` : ''}${
     time ? ` at ${time}` : ''
   } while you were editing.`;
+}
+
+/**
+ * The list pasted or committed text must match. A combobox with server search has no
+ * list here, so its text is kept as typed (check it with `validate`).
+ */
+function parseOptions(meta: DataGridColumnMeta | undefined) {
+  return meta?.searchOptions ? [] : meta?.options;
 }

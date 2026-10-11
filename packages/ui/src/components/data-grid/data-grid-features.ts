@@ -18,8 +18,30 @@ import {
   type RowData,
 } from '@tanstack/react-table';
 
-/** The in-cell editors. Date and searchable-select editors come later (they need popovers). */
-export type DataGridEditorKind = 'text' | 'number' | 'select' | 'checkbox';
+/**
+ * The in-cell editors:
+ * - `text`, `number`: a plain input.
+ * - `select`: a native list. Best for a handful of fixed choices.
+ * - `combobox`: a searchable list in a popup. For long lists, or choices from a server.
+ * - `date`: a calendar day, stored as an ISO string `'YYYY-MM-DD'` (ISO in, ISO out).
+ * - `checkbox`: true / false, toggled with Space, Enter or a click.
+ */
+export type DataGridEditorKind =
+  | 'text'
+  | 'number'
+  | 'select'
+  | 'combobox'
+  | 'date'
+  | 'checkbox';
+
+/**
+ * Server search for a `combobox` column: return the choices matching `query`.
+ * Pass `signal` to `fetch`, so a search the user typed past is cancelled.
+ */
+export type DataGridSearchOptions = (
+  query: string,
+  signal: AbortSignal,
+) => Promise<readonly string[]>;
 
 /** Extra column settings the DataGrid understands. Set them in a column's `meta`. */
 export type DataGridColumnMeta = {
@@ -33,8 +55,14 @@ export type DataGridColumnMeta = {
    * Columns without an editor are read-only.
    */
   editor?: DataGridEditorKind;
-  /** Choices for the `select` editor. */
+  /** Choices for the `select` and `combobox` editors. Also what pasted text must match. */
   options?: readonly string[];
+  /**
+   * `combobox` only: fetch the choices from your server as the user types, instead of
+   * filtering `options` in the browser. Pasted text is then accepted as typed (the grid
+   * can't check it against a list it doesn't have); use `validate` to check it.
+   */
+  searchOptions?: DataGridSearchOptions;
   /** The cell can't be left empty in a row the user edited or added. */
   required?: boolean;
   /**

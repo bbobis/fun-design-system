@@ -98,6 +98,18 @@ src/index.ts          export * from './components/<name>'
       React Aria's `CalendarDate`. A `Date` is a moment, so it can be a different day in
       another time zone; a string is a calendar day and survives JSON and forms as is.
       Convert to `CalendarDate` only inside the component (`parseDate`).
+18. **Popups inside a composite (grid cell editors).** When a React Aria popup lives
+    inside a component that has its own keyboard model (the DataGrid):
+    - Read the value from a **handle** (`getValue()`), never from an input's DOM text.
+      A combobox input holds the search text; the value is the picked option.
+    - Route the composite's keys in the **capture phase** (`onKeyDownCapture`). React
+      Aria stops Enter from bubbling, so a bubble-phase listener would never see it.
+      While the popup is open, the library owns the keys; we only stop them reaching
+      the composite twice.
+    - React events bubble through **portals** (the React tree, not the DOM). A click in
+      a portaled list reaches the cell's `onMouseDown`; check
+      `event.currentTarget.contains(event.target)` before acting. The same fact lets
+      `onFocus` on a wrapper see focus moving into its popup ("still inside").
 
 ## Tests to write for every component
 

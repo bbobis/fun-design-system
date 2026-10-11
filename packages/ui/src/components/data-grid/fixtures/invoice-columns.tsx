@@ -1,6 +1,7 @@
 import { Badge } from '../../badge';
 import { createDataGridColumnHelper } from '../data-grid-features';
 import {
+  categories,
   invoiceStatuses,
   paymentTerms,
   salesReps,
@@ -14,11 +15,15 @@ const money = new Intl.NumberFormat('en-CA', {
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
 });
+// timeZone 'UTC' on both sides: '2026-10-04' parses as UTC midnight, so formatting it in
+// the viewer's zone would show Oct 3 in Edmonton. A calendar day has no time zone.
 const date = new Intl.DateTimeFormat('en-CA', {
   year: 'numeric',
   month: '2-digit',
   day: '2-digit',
+  timeZone: 'UTC',
 });
+const formatDay = (iso: string) => date.format(new Date(iso));
 const tone = {
   Paid: 'success',
   Pending: 'warning',
@@ -28,7 +33,7 @@ const tone = {
 
 /**
  * 21 columns, defined once at module scope so the reference is stable.
- * Ten have an `editor`, so they become editable in edit mode; the rest stay read-only.
+ * Twelve have an `editor`, so they become editable in edit mode; the rest stay read-only.
  * A few carry validation rules (`required`, `validate`) to show the error states.
  */
 export const invoiceColumns = col.columns([
@@ -52,16 +57,18 @@ export const invoiceColumns = col.columns([
   }),
   col.accessor('issued', {
     header: 'Issued',
-    size: 110,
-    sortFn: 'datetime',
-    cell: (i) => date.format(i.getValue()),
-    meta: { align: 'end' },
+    size: 130,
+    // ISO strings sort correctly as plain text: '2026-01-31' < '2026-10-04'.
+    sortFn: 'text',
+    cell: (i) => formatDay(i.getValue()),
+    meta: { align: 'end', editor: 'date' },
   }),
   col.accessor('due', {
     header: 'Due',
     size: 110,
-    sortFn: 'datetime',
-    cell: (i) => date.format(i.getValue()),
+    // ISO strings sort correctly as plain text: '2026-01-31' < '2026-10-04'.
+    sortFn: 'text',
+    cell: (i) => formatDay(i.getValue()),
     meta: { align: 'end' },
   }),
   col.accessor('subtotal', {
@@ -111,7 +118,11 @@ export const invoiceColumns = col.columns([
     size: 120,
     meta: { mono: true, editor: 'text' },
   }),
-  col.accessor('category', { header: 'Category', size: 120 }),
+  col.accessor('category', {
+    header: 'Category',
+    size: 140,
+    meta: { editor: 'combobox', options: categories },
+  }),
   col.accessor('items', {
     header: 'Items',
     size: 80,

@@ -17,4 +17,5 @@ export {
   type DataGridColumnMeta,
   type DataGridEditorKind,
   type DataGridFeatures,
+  type DataGridSearchOptions,
 } from './data-grid-features';
