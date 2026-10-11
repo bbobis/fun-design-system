@@ -7,7 +7,13 @@ import {
 } from '@testing-library/react';
 import { useState } from 'react';
 import { AlertDialog } from '../dialog';
-import { Menu, MenuItem, MenuSection, MenuSeparator } from './menu';
+import {
+  Menu,
+  MenuItem,
+  MenuSection,
+  MenuSeparator,
+  MenuSubmenu,
+} from './menu';
 
 /** React Aria moves and restores focus on the next animation frame. */
 const nextFrame = () =>
@@ -202,5 +208,69 @@ describe('Menu → AlertDialog', () => {
     // Closing the dialog then returns focus to the menu button, the last real "place".
     press('Escape');
     await waitFor(() => expect(document.activeElement).toBe(trigger()));
+  });
+});
+
+function WithExport({ onCsv = vi.fn() }) {
+  return (
+    <Menu label="Actions">
+      <MenuItem>Edit</MenuItem>
+      <MenuSubmenu label="Export as">
+        <MenuItem onAction={onCsv}>CSV</MenuItem>
+        <MenuItem>PDF</MenuItem>
+      </MenuSubmenu>
+    </Menu>
+  );
+}
+const focused = () => document.activeElement?.textContent;
+
+describe('MenuSubmenu', () => {
+  it('the parent item says it opens a menu', async () => {
+    render(<WithExport />);
+    await openWithKeyboard();
+    const item = screen.getByRole('menuitem', { name: 'Export as' });
+    expect(item.getAttribute('aria-haspopup')).toBe('menu');
+    expect(item.getAttribute('aria-expanded')).toBe('false');
+  });
+
+  it('→ opens it on its first item; ← closes it and returns to the parent', async () => {
+    render(<WithExport />);
+    await openWithKeyboard();
+    press('ArrowDown'); // Edit → Export as
+    expect(focused()).toBe('Export as');
+    press('ArrowRight');
+    await nextFrame();
+    expect(screen.getAllByRole('menu')).toHaveLength(2);
+    expect(focused()).toBe('CSV');
+    press('ArrowLeft');
+    await nextFrame();
+    expect(screen.getAllByRole('menu')).toHaveLength(1);
+    expect(focused()).toBe('Export as');
+  });
+
+  it('choosing an item in the submenu runs it and closes everything', async () => {
+    const onCsv = vi.fn();
+    render(<WithExport onCsv={onCsv} />);
+    await openWithKeyboard();
+    press('ArrowDown');
+    press('ArrowRight');
+    await nextFrame();
+    press('Enter');
+    await nextFrame();
+    expect(onCsv).toHaveBeenCalledTimes(1);
+    expect(screen.queryAllByRole('menu')).toHaveLength(0);
+    expect(document.activeElement).toBe(trigger());
+  });
+
+  it('Escape in the submenu closes only the submenu', async () => {
+    render(<WithExport />);
+    await openWithKeyboard();
+    press('ArrowDown');
+    press('ArrowRight');
+    await nextFrame();
+    press('Escape');
+    await nextFrame();
+    expect(screen.getAllByRole('menu')).toHaveLength(1);
+    expect(focused()).toBe('Export as');
   });
 });

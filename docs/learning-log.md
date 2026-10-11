@@ -268,3 +268,9 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Remember: controlled *or* uncontrolled.** `defaultX` lets the component keep the state; `x` + `onXChange` lets the app own it (e.g. to save it). We support both with `x ?? ownState`.
 - **Remember: keep the tree stable.** The Tooltip is always rendered and only `disabled` when expanded. Adding or removing a wrapper would remount the link and drop keyboard focus.
 - **Read:** https://react.dev/learn/sharing-state-between-components#controlled-and-uncontrolled-components
+
+## 2026-10-11 — Menu submenus
+- **Built:** `MenuSubmenu` ("Export as ▸ CSV / Excel / PDF") on React Aria `SubmenuTrigger`: the parent item gets `aria-haspopup="menu"` + `aria-expanded` and a ▸ chevron; the submenu opens beside it.
+- **Remember the keys:** → or Enter opens the submenu on its first item; ← or Escape closes **only** the submenu and puts focus back on its parent item; Enter on an item runs it and closes the whole menu. In right-to-left languages ← and → swap.
+- **Remember: "alpha" APIs get the same care as `UNSTABLE_` ones.** One file imports `SubmenuTrigger`, nothing in our public types mentions it, and React Aria stays patch-pinned (recipe rule 22).
+- **Read:** https://react-aria.adobe.com/Menu#submenus

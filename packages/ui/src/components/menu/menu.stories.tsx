@@ -1,7 +1,13 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
 import { AlertDialog } from '../dialog';
-import { Menu, MenuItem, MenuSection, MenuSeparator } from './menu';
+import {
+  Menu,
+  MenuItem,
+  MenuSection,
+  MenuSeparator,
+  MenuSubmenu,
+} from './menu';
 
 const meta = {
   title: 'Components/Menu',
@@ -147,4 +153,26 @@ export const WithConfirm: Story = {
     }
     return <Example />;
   },
+};
+
+/**
+ * `MenuSubmenu`: "Export as ▸" opens a second menu beside it. Keyboard: → opens it,
+ * ← or Escape closes just the submenu, Enter on an item runs it and closes everything.
+ */
+export const WithSubmenu: Story = {
+  render: () => (
+    <div className="pb-40">
+      <Menu label="Actions" intent="secondary">
+        <MenuItem>Edit</MenuItem>
+        <MenuItem shortcut="Ctrl+D">Duplicate</MenuItem>
+        <MenuSubmenu label="Export as">
+          <MenuItem description="Opens in Excel or Sheets">CSV</MenuItem>
+          <MenuItem>Excel</MenuItem>
+          <MenuItem>PDF</MenuItem>
+        </MenuSubmenu>
+        <MenuSeparator />
+        <MenuItem intent="danger">Delete</MenuItem>
+      </Menu>
+    </div>
+  ),
 };

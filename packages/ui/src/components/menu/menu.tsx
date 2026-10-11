@@ -8,6 +8,10 @@ import {
   MenuTrigger,
   Popover,
   Separator,
+  // React Aria marks SubmenuTrigger "alpha". Same rule as UNSTABLE_ APIs (recipe rule
+  // 22): only this file imports it, it doesn't appear in our public types, and the
+  // package is patch-pinned, so an upgrade that changes it is a deliberate PR.
+  SubmenuTrigger,
   Text,
   type Key,
 } from 'react-aria-components';
@@ -194,9 +198,83 @@ export function MenuSection({
   );
 }
 
+export type MenuSubmenuProps = {
+  /** The item that opens the submenu ("Export as"). */
+  label: string;
+  /** `MenuItem`s (and sections or separators) inside the submenu. */
+  children: ReactNode;
+  disabled?: boolean;
+};
+
+/**
+ * An item that opens a second menu beside it ("Export as ▸ CSV / Excel / PDF").
+ * Must be a direct child of `Menu` or `MenuSection`.
+ *
+ * Keyboard: → (or Enter) opens it on its first item, ← closes it and goes back to the
+ * parent item (mirrored in right-to-left languages). Hovering opens it after a short
+ * delay. Choosing an item closes the whole menu.
+ *
+ * Keep it to one level: menus inside submenus inside menus are hard to use with a
+ * mouse and slow with a keyboard.
+ *
+ * @example
+ * <MenuSubmenu label="Export as">
+ *   <MenuItem onAction={exportCsv}>CSV</MenuItem>
+ *   <MenuItem onAction={exportPdf}>PDF</MenuItem>
+ * </MenuSubmenu>
+ */
+export function MenuSubmenu({ label, children, disabled }: MenuSubmenuProps) {
+  return (
+    <SubmenuTrigger>
+      {/* First child: the item that opens it. React Aria adds aria-haspopup and
+          aria-expanded, and data-open while the submenu is showing. */}
+      <AriaMenuItem
+        id={label}
+        textValue={label}
+        isDisabled={disabled}
+        className={cn(
+          'flex cursor-default items-center gap-2 rounded px-2 py-1.5 text-sm outline-hidden',
+          'data-focused:bg-surface data-open:bg-surface',
+          'data-disabled:cursor-not-allowed data-disabled:opacity-50',
+        )}
+      >
+        <span className="min-w-0 flex-1 truncate">{label}</span>
+        <ChevronIcon className="size-4 text-fg-muted rtl:-scale-x-100" />
+      </AriaMenuItem>
+      {/* Second child: the submenu. Placement (beside the item, flipping if there's
+          no room) comes from React Aria. */}
+      <Popover
+        offset={-4}
+        className="min-w-40 rounded-md border border-border bg-bg p-1 text-fg shadow-lg outline-hidden"
+      >
+        <AriaMenu className="max-h-[inherit] overflow-auto outline-hidden">
+          {children}
+        </AriaMenu>
+      </Popover>
+    </SubmenuTrigger>
+  );
+}
+
 /** A thin line between groups of items. */
 export function MenuSeparator() {
   return <Separator className="mx-1 my-1 border-t border-border" />;
+}
+
+function ChevronIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+    >
+      <path d="m6 3.5 4.5 4.5L6 12.5" />
+    </svg>
+  );
 }
 
 function CheckIcon(props: SVGProps<SVGSVGElement>) {
