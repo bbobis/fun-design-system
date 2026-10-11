@@ -228,3 +228,10 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Remember: two components beat one that changes meaning.** React Aria's group needs its own items, so a separate `CheckboxGroupItem` keeps `Checkbox` simple and native, instead of a Checkbox that behaves differently depending on its parent.
 - **Read:** https://react-aria.adobe.com/CheckboxGroup
 
+
+## 2026-10-11 — Tabs
+- **Built:** `Tabs`, `TabList`, `Tab`, `TabPanel` on React Aria (string `value`/`defaultValue`/`onChange`, disabled tabs, `keyboardActivation` automatic or manual). Starts Tier 4 (navigation and layout).
+- **Remember: automatic vs. manual activation.** Automatic (default): ←/→ move *and* show the panel. Manual: arrows only move focus, Enter or Space shows it. Pick manual when panels are slow to load.
+- **Remember: tabs switch views, links change pages.** If clicking it changes the URL to a new page, it's navigation (links), not tabs.
+- **Gotcha:** React Aria calls `onSelectionChange` on mount when it picks the first tab itself. Our wrapper skips that call, so `onChange` only means "the user picked a tab".
+- **Read:** https://react-aria.adobe.com/Tabs
