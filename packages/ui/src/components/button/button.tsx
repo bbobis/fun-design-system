@@ -5,8 +5,11 @@ import { cn } from '../../utils/cn';
 /**
  * Style recipe. Every class here uses a semantic token (bg-primary, text-fg),
  * never a raw color, so the Button follows the theme on its own.
+ *
+ * Exported for our own components whose trigger must be a React Aria Button (Menu):
+ * they look exactly like a Button without wrapping it. Not exported from the package.
  */
-const buttonVariants = cva(
+export const buttonVariants = cva(
   [
     'inline-flex shrink-0 items-center justify-center rounded-md font-medium whitespace-nowrap',
     'transition-colors select-none',
