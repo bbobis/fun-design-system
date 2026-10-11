@@ -158,6 +158,8 @@
     --color-yellow-700
   ); /* yellow-500 is 1.7:1 on white, too faint to see */
   --fds-focus-ring: var(--color-gray-900);
+  /* The dimmed page behind a dialog. */
+  --fds-backdrop: color-mix(in oklab, var(--color-gray-900) 50%, transparent);
 }
 
 [data-theme='dark'],
@@ -196,6 +198,8 @@
   --fds-link: var(--color-gray-50);
   --fds-link-underline: var(--color-yellow-500);
   --fds-focus-ring: var(--color-yellow-500);
+  /* Darker on a dark page, or the dialog doesn't stand out from it. */
+  --fds-backdrop: color-mix(in oklab, var(--color-black) 70%, transparent);
 }
 
 /* ---------- 3. Semantic tokens ---------- */
@@ -239,6 +243,7 @@
   --color-link: var(--fds-link);
   --color-link-underline: var(--fds-link-underline);
   --color-focus-ring: var(--fds-focus-ring);
+  --color-backdrop: var(--fds-backdrop);
 }
 
 /* Tailwind's `dark:` prefix follows the same attribute, for the rare one-off. */

@@ -110,6 +110,16 @@ src/index.ts          export * from './components/<name>'
       a portaled list reaches the cell's `onMouseDown`; check
       `event.currentTarget.contains(event.target)` before acting. The same fact lets
       `onFocus` on a wrapper see focus moving into its popup ("still inside").
+19. **Modal overlays (Dialog, AlertDialog).** Controlled only: `open` + `onOpenChange`,
+    opened from any Button's `onClick`. Our Button is a native `<button>`, and React
+    Aria's `DialogTrigger` only listens to its own Button, so a trigger wrapper would
+    force two Button components on apps.
+    - `title` is a required string: it is the dialog's accessible name.
+    - React Aria makes the page behind inert and returns focus to the opener on close;
+      don't re-implement either. It names the dialog from `slot="title"` but not the
+      description: wire `aria-describedby` yourself.
+    - A question (`AlertDialog`) never closes on an outside click, and focus starts on
+      the safe button (Cancel).
 
 ## Tests to write for every component
 
