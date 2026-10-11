@@ -12,5 +12,6 @@ export * from './components/input';
 export * from './components/label';
 export * from './components/menu';
 export * from './components/multi-combobox';
+export * from './components/popover';
 export * from './components/select';
 export * from './components/text';

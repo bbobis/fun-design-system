@@ -170,3 +170,9 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Gotcha (tests):** while a menu is open, React Aria hides everything else from screen readers, including its own trigger. Query the trigger with `{ hidden: true }` while it's open.
 - **Read:** https://www.w3.org/WAI/ARIA/apg/patterns/menu-button/
 
+## 2026-10-11 — Popover
+- **Built:** `Popover`: a trigger button + a floating panel (filters, details, a small form) on React Aria `DialogTrigger` + `Popover` + `Dialog`. Optional `title` (names the panel; without it, the trigger's label does), `panelSize`, `placement`, optional controlled `open` / `onOpenChange`, and children-as-a-function for `close`. Menu and Popover now share one internal `TriggerButton`.
+- **Remember: modal vs. "light dismiss".** A Dialog dims the page and needs an answer. A Popover belongs to its button: the page stays visible, and Escape or any click outside closes it. While it's open, an invisible layer covers the page, so that first outside click only closes the popover: it never presses the button behind it by accident.
+- **Remember: popups nest.** A Select inside a Popover opens its own popup; React Aria keeps a stack of open overlays, so picking an option closes only the top one.
+- **Read:** https://react-aria.adobe.com/Popover
+

@@ -1,7 +1,5 @@
-import type { VariantProps } from 'class-variance-authority';
 import type { ReactNode, SVGProps } from 'react';
 import {
-  Button as AriaButton,
   Header,
   Keyboard,
   Menu as AriaMenu,
@@ -14,37 +12,17 @@ import {
   type Key,
 } from 'react-aria-components';
 import { cn } from '../../utils/cn';
-import { buttonVariants } from '../button/button';
+import {
+  TriggerButton,
+  type TriggerButtonProps,
+  type TriggerPlacement,
+} from '../button/trigger-button';
 
-type Placement =
-  | 'bottom start'
-  | 'bottom end'
-  | 'top start'
-  | 'top end'
-  | 'start'
-  | 'end';
-
-export type MenuProps = Pick<
-  VariantProps<typeof buttonVariants>,
-  'intent' | 'size'
-> & {
-  /** What the trigger button shows: text ("Actions") or an icon. */
-  label: ReactNode;
-  /**
-   * Accessible name for the trigger. Required when `label` is only an icon
-   * (`aria-label="Row actions"`); otherwise the label's text is the name.
-   */
-  'aria-label'?: string;
-  /** Show a ▾ after the label. Turn off for icon-only triggers. @default true */
-  chevron?: boolean;
+export type MenuProps = TriggerButtonProps & {
   /** Where the menu opens, relative to the trigger. Flips if there's no room. @default 'bottom start' */
-  placement?: Placement;
-  /** The trigger can't be used. */
-  disabled?: boolean;
+  placement?: TriggerPlacement;
   /** `MenuItem`, `MenuSection` and `MenuSeparator` elements. */
   children: ReactNode;
-  /** Classes for the trigger button. */
-  className?: string;
 };
 
 /**
@@ -65,28 +43,13 @@ export type MenuProps = Pick<
  * </Menu>
  */
 export function Menu({
-  label,
-  'aria-label': ariaLabel,
-  chevron = true,
   placement = 'bottom start',
-  disabled,
-  intent = 'secondary',
-  size,
   children,
-  className,
+  ...trigger
 }: MenuProps) {
   return (
     <MenuTrigger>
-      {/* React Aria's Button, not ours: MenuTrigger only wires its own (aria-expanded,
-          ↓ to open). Same classes as Button, so it looks identical. */}
-      <AriaButton
-        aria-label={ariaLabel}
-        isDisabled={disabled}
-        className={cn(buttonVariants({ intent, size }), className)}
-      >
-        {label}
-        {chevron && <ChevronIcon className="size-4 opacity-70" />}
-      </AriaButton>
+      <TriggerButton {...trigger} />
       <Popover
         placement={placement}
         offset={4}
@@ -227,23 +190,6 @@ export function MenuSection({
 /** A thin line between groups of items. */
 export function MenuSeparator() {
   return <Separator className="mx-1 my-1 border-t border-border" />;
-}
-
-function ChevronIcon(props: SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      aria-hidden="true"
-      viewBox="0 0 16 16"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.5}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      {...props}
-    >
-      <path d="m4 6 4 4 4-4" />
-    </svg>
-  );
 }
 
 function CheckIcon(props: SVGProps<SVGSVGElement>) {
