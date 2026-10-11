@@ -138,6 +138,10 @@ src/index.ts          export * from './components/<name>'
     - A tooltip is a description (`aria-describedby`), never the name: icon-only
       buttons keep their own `aria-label`. It never shows on touch, so nothing a user
       needs may live only in a tooltip.
+22. **Unstable headless APIs (Toast).** When React Aria marks something `UNSTABLE_`,
+    only one file of ours may import it, our public API must not mention it (apps use
+    `toast.success()` and `<ToastRegion />`), and `react-aria-components` stays pinned
+    to patch updates (`~`). An upgrade is a PR whose tests prove the wrapper still works.
 
 ## Tests to write for every component
 

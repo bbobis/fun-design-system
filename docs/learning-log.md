@@ -195,3 +195,10 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Remember: respect reduced motion.** `motion-reduce:` styles apply when the user turns animations down in their OS. The skeleton stops pulsing and the indeterminate bar stands still; the spinner only slows down, because a still spinner looks broken.
 - **Read:** https://developer.mozilla.org/en-US/docs/Web/CSS/@media/prefers-reduced-motion
 
+## 2026-10-11 — Toast
+- **Built:** `toast.success / info / warning / danger / show / dismiss` plus `<ToastRegion />` (render once at the app root), on React Aria's `UNSTABLE_Toast`, wrapped so apps never see the unstable names. Errors and toasts with an action (Undo) stay until closed; others close after 5 s, pausing on hover or focus. `react-aria-components` is now pinned to `~1.21.1` (patch updates only).
+- **Remember: a function API for a global thing.** A toast can be triggered from anywhere, including code that isn't a component (an API error handler), so it's a module-level queue with plain functions. No hook, no context provider.
+- **Remember: timing is an accessibility rule.** WCAG 2.2.1 says people must get enough time. A message that needs reading or an action (an error, Undo) must not vanish on a timer.
+- **Remember: check the source, not your assumptions.** I first wrote that the toast region exists before messages arrive. It doesn't: each toast is an `alertdialog` with a `role="alert"` inside, revealed one render late so NVDA notices. The docs were corrected before the PR.
+- **Read:** https://react-aria.adobe.com/Toast
+

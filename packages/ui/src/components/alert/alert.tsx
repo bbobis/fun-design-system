@@ -47,8 +47,8 @@ export type AlertProps = VariantProps<typeof alertVariants> & {
    * they're read in order like any other content, without interrupting.
    *
    * Screen readers reliably announce a newly added `role="alert"`; a newly added
-   * `role="status"` is hit and miss. For "Saved"-style confirmations, use a Toast,
-   * whose live region is on the page before the message arrives.
+   * `role="status"` is hit and miss. For "Saved"-style confirmations that come and go,
+   * use a Toast instead.
    * @default false
    */
   announce?: boolean;
