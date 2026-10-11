@@ -208,3 +208,10 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Remember: required props for structure.** Like `Heading`, the heading level has no default. A component can't know where it sits in the page outline, and a wrong level breaks screen-reader navigation by headings.
 - **Read:** https://www.nngroup.com/articles/empty-state-interface-design/
 
+## 2026-10-11 — NumberField and TextArea
+- **Built:** `NumberField` on React Aria (formats with `Intl.NumberFormat` options: currency, percent, decimals; ↑/↓ and −/+ to step; `min` / `max` / `step`; the app gets a plain `number | null`, and forms post the plain number). `TextArea`: native, styled like Input, grows with its text, with an optional "12 / 500" counter.
+- **Remember: format for people, store for machines.** The field shows `$1,234.50` in the user's locale, but the app only ever sees `1234.5`. Formatting is a display concern, like ISO dates: never send "$1,234.50" to a backend.
+- **Remember: numbers vs. number-looking codes.** A PO number or a postal code is text; a NumberField would drop its leading zeros and add commas. Use NumberField only when doing maths on the value makes sense.
+- **Remember: don't announce every keystroke.** The character counter is linked with `aria-describedby` (read on focus), not a live region, which would talk over the user while they type.
+- **Read:** https://react-aria.adobe.com/NumberField
+
