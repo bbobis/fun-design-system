@@ -57,3 +57,19 @@
     }
   }
 }
+
+/* Popups next to a trigger (menus, selects, popovers): a small, quick pop. Smaller and
+ * faster than dialogs: they're light, and people open them many times a minute. */
+@theme {
+  --animate-popover-in: popover-pop 120ms ease-out;
+  --animate-popover-out: popover-pop 80ms ease-in reverse;
+  --animate-tooltip-in: overlay-fade 100ms ease-out;
+  --animate-tooltip-out: overlay-fade 80ms ease-in reverse;
+
+  @keyframes popover-pop {
+    from {
+      opacity: 0;
+      transform: scale(0.96);
+    }
+  }
+}

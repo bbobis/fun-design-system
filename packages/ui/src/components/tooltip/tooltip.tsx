@@ -4,6 +4,8 @@ import {
   Tooltip as AriaTooltip,
   TooltipTrigger,
 } from 'react-aria-components';
+import { cn } from '../../utils/cn';
+import { tooltipMotion } from '../../utils/motion';
 
 export type TooltipProps = {
   /** The hint. Short: a few words ("Export as CSV"), not a paragraph. */
@@ -71,7 +73,10 @@ export function Tooltip({
       <AriaTooltip
         placement={placement}
         offset={6}
-        className="max-w-64 rounded-md bg-secondary px-2 py-1 text-xs text-on-secondary shadow-md"
+        className={cn(
+          'max-w-64 rounded-md bg-secondary px-2 py-1 text-xs text-on-secondary shadow-md',
+          tooltipMotion,
+        )}
       >
         {kind === 'label' ? (
           // React Aria still points aria-describedby at the tooltip. A description

@@ -8,6 +8,7 @@ import {
 } from 'react-aria-components';
 import { cn } from '../../utils/cn';
 import type { SelectOption } from '../select';
+import { popoverMotion } from '../../utils/motion';
 
 /** Row height in px. Fixed, so the virtualizer can place 10,000 rows without measuring. */
 const ROW_HEIGHT = 32;
@@ -27,7 +28,10 @@ export function ComboboxPopover({
   return (
     <Popover
       offset={4}
-      className="w-(--trigger-width) min-w-40 rounded-md border border-border bg-bg shadow-lg"
+      className={cn(
+        'w-(--trigger-width) min-w-40 rounded-md border border-border bg-bg shadow-lg',
+        popoverMotion,
+      )}
     >
       {/*
         React Aria's own virtualizer: only the visible rows are in the DOM. Rows must be
