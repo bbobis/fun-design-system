@@ -215,3 +215,10 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Remember: don't announce every keystroke.** The character counter is linked with `aria-describedby` (read on focus), not a live region, which would talk over the user while they type.
 - **Read:** https://react-aria.adobe.com/NumberField
 
+## 2026-10-11 — RadioGroup and Switch
+- **Built:** `RadioGroup` + `Radio` (label, description, error, required, horizontal or vertical, per-radio description) and `Switch`, both on React Aria with native inputs underneath.
+- **Remember: a radio group is one Tab stop.** Tab lands on the chosen radio, arrows move *and* choose, Tab leaves. Choosing with arrows is the standard; it surprises people who expect Space.
+- **Remember: Switch vs. Checkbox.** A Switch acts *now* (like a light switch: "Email me when paid"). A Checkbox is a choice applied on submit ("I accept the terms"). Same input underneath; screen readers say "on/off" for a switch and "checked" for a checkbox.
+- **Gotcha (tests):** jsdom's `fireEvent.click` fires on disabled inputs, which real browsers never do. Test the `disabled` attribute instead of clicking it.
+- **Read:** https://www.w3.org/WAI/ARIA/apg/patterns/radio/
+
