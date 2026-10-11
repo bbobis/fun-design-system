@@ -236,3 +236,79 @@ describe('Combobox', () => {
     expect(input().value).toBe('Canada');
   });
 });
+
+describe('Combobox autoHighlight', () => {
+  /** The highlight is applied in a microtask, after React Aria's own effects. */
+  const settle = () => act(() => Promise.resolve());
+  const highlighted = () =>
+    document.getElementById(input().getAttribute('aria-activedescendant') ?? '')
+      ?.textContent;
+
+  it('off (default): typing highlights nothing, Enter picks nothing', async () => {
+    const onChange = vi.fn();
+    render(
+      <Combobox aria-label="Country" options={countries} onChange={onChange} />,
+    );
+    act(() => input().focus());
+    type('c');
+    await settle();
+    expect(input().hasAttribute('aria-activedescendant')).toBe(false);
+    press('Enter');
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('on: the first match is highlighted as you type, and Enter picks it', async () => {
+    const onChange = vi.fn();
+    render(
+      <Combobox
+        aria-label="Country"
+        options={countries}
+        onChange={onChange}
+        autoHighlight
+      />,
+    );
+    act(() => input().focus());
+    type('c');
+    await settle();
+    expect(highlighted()).toBe('Canada');
+    type('ch');
+    await settle();
+    expect(highlighted()).toBe('Chile'); // follows the new first match
+    press('Enter');
+    expect(onChange).toHaveBeenLastCalledWith('cl');
+    expect(input().value).toBe('Chile');
+  });
+
+  it('on: skips disabled options, and arrows still move from there', async () => {
+    render(<Combobox aria-label="Country" options={countries} autoHighlight />);
+    act(() => input().focus());
+    type('united');
+    await settle();
+    expect(highlighted()).toBe('United States');
+    type('united k'); // only the disabled one matches
+    await settle();
+    expect(input().hasAttribute('aria-activedescendant')).toBe(false);
+    type('c');
+    await settle();
+    press('ArrowDown');
+    expect(highlighted()).toBe('Chile');
+  });
+
+  it('on: Escape closes the list without picking', async () => {
+    const onChange = vi.fn();
+    render(
+      <Combobox
+        aria-label="Country"
+        options={countries}
+        onChange={onChange}
+        autoHighlight
+      />,
+    );
+    act(() => input().focus());
+    type('c');
+    await settle();
+    press('Escape');
+    expect(screen.queryByRole('listbox')).toBeNull();
+    expect(onChange).not.toHaveBeenCalled();
+  });
+});

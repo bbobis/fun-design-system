@@ -1,5 +1,6 @@
-import type { SVGProps } from 'react';
+import { useContext, useEffect, type SVGProps } from 'react';
 import {
+  ComboBoxStateContext,
   ListBox,
   ListBoxItem,
   ListLayout,
@@ -9,6 +10,46 @@ import {
 import { cn } from '../../utils/cn';
 import type { SelectOption } from '../select';
 import { popoverMotion } from '../../utils/motion';
+
+/**
+ * Put inside a React Aria `ComboBox` to highlight the first enabled option whenever
+ * the list is open and there's typed text, so Enter (and Tab) pick it: the ARIA "list
+ * autocomplete with automatic selection" pattern. Renders nothing. Only once the user
+ * has typed: while the text is still the chosen option's label, nothing changes.
+ *
+ * React Aria clears the highlight every time the text changes, in an effect of the
+ * ComboBox itself. A parent's effects run *after* its children's, so setting it in our
+ * own effect would be undone at once. A microtask runs after all of this render's
+ * effects, so the highlight sticks.
+ */
+export function AutoHighlightFirst() {
+  const state = useContext(ComboBoxStateContext);
+  const isOpen = state?.isOpen ?? false;
+  const text = state?.inputValue ?? '';
+  const collection = state?.collection;
+  useEffect(() => {
+    if (!state || !isOpen || text === '' || !collection) return;
+    // Text still shows the chosen option (opened, nothing typed yet): leave it, so
+    // Enter keeps the current value instead of jumping to the first option.
+    if (state.selectedItem?.textValue === text) return;
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (cancelled || state.selectionManager.focusedKey != null) return;
+      for (const node of collection) {
+        if (node.type === 'item' && !state.disabledKeys.has(node.key)) {
+          state.selectionManager.setFocusedKey(node.key);
+          return;
+        }
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+    // `state` is a new object every render; these are the parts that matter.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, text, collection]);
+  return null;
+}
 
 /** Row height in px. Fixed, so the virtualizer can place 10,000 rows without measuring. */
 const ROW_HEIGHT = 32;

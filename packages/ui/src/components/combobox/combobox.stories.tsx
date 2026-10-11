@@ -181,3 +181,18 @@ export const ServerSearch: Story = {
     return <Example />;
   },
 };
+
+/**
+ * `autoHighlight`: type "ch" and Chile is already highlighted, so Enter picks it.
+ * Note that Tab picks it too, which is why it's off by default (on in grid cells).
+ */
+export const AutoHighlight: Story = {
+  args: { autoHighlight: true },
+  render: (args) => (
+    <div className="w-72 pb-64">
+      <Field label="Country">
+        <Combobox {...args} />
+      </Field>
+    </div>
+  ),
+};
