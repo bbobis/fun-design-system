@@ -119,12 +119,10 @@ describe('DataGrid combobox editor', () => {
     // it there (not the first option, Design), so Enter keeps Finance.
     const openId = teamInput().getAttribute('aria-activedescendant');
     expect(document.getElementById(openId ?? '')?.textContent).toBe('Finance');
-    press('Enter');
-    expect(teamInput().value).toBe('Finance');
-    // (Unchanged value: this first Enter only closes the list; the next one commits.
-    // That was already so before auto-highlight.)
+    // One Enter on the unchanged value: commits and moves down (not two presses).
     press('Enter');
     expect(cellText('t1', 'team')).toBe('Finance');
+    expect(activeKey()).toBe('t2:team');
     // t2: type "dev", Enter: picks DevOps without touching the arrows.
     press('Enter');
     typeSearch('dev');
