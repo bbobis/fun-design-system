@@ -163,3 +163,10 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Gotcha (tests):** React Aria moves focus into the dialog on the next animation frame. Wait a frame before pressing keys, or Escape fires outside the dialog and nothing closes.
 - **Read:** https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/
 
+## 2026-10-11 — Menu
+- **Built:** `Menu` (a trigger button + popup of actions) with `MenuItem` (`onAction`, `danger`, `disabled`, `description`, `shortcut`), `MenuSection` (title; `selectionMode` turns items into checkboxes or radios, e.g. "show columns") and `MenuSeparator`. On React Aria `MenuTrigger` + `Menu`. `buttonVariants` is now exported from `button.tsx` so the trigger looks exactly like a Button.
+- **Remember: a menu is for actions, not values.** "Edit / Duplicate / Delete" is a Menu; "pick a status for this form" is a Select. Screen readers announce them differently (`menu` vs `listbox`), and a menu has no "current value".
+- **Remember: a menu is not a Tab stop.** Arrows move inside; Tab leaves it, and the popup closes as soon as focus leaves. Escape closes it and puts focus back on the button.
+- **Gotcha (tests):** while a menu is open, React Aria hides everything else from screen readers, including its own trigger. Query the trigger with `{ hidden: true }` while it's open.
+- **Read:** https://www.w3.org/WAI/ARIA/apg/patterns/menu-button/
+

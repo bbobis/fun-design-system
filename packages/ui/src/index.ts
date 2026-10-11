@@ -10,6 +10,7 @@ export * from './components/field';
 export * from './components/heading';
 export * from './components/input';
 export * from './components/label';
+export * from './components/menu';
 export * from './components/multi-combobox';
 export * from './components/select';
 export * from './components/text';

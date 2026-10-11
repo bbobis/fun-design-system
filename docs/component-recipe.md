@@ -120,6 +120,13 @@ src/index.ts          export * from './components/<name>'
       description: wire `aria-describedby` yourself.
     - A question (`AlertDialog`) never closes on an outside click, and focus starts on
       the safe button (Cancel).
+20. **Triggers React Aria must own (Menu).** When the trigger *is* part of the pattern
+    (a menu button needs `aria-expanded` and ↓-to-open), our component renders the
+    trigger itself, as a React Aria `Button` styled with `buttonVariants`. Apps pass
+    `label` / `intent` / `size`, never a button element. (A Dialog is different: any
+    button can open it, so it stays controlled; see rule 19.)
+    - Our list props are plain strings: `selectedKeys: string[]`, not React Aria's
+      `Set<Key>`. Convert at the boundary.
 
 ## Tests to write for every component
 
