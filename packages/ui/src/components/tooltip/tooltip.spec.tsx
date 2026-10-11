@@ -82,3 +82,24 @@ describe('Tooltip', () => {
     expect(screen.queryByRole('tooltip')).toBeNull();
   });
 });
+
+describe('Tooltip kind="label"', () => {
+  it('shows the text but hides it from the description', async () => {
+    render(
+      <Tooltip content="Export" delay={0} kind="label">
+        <Button intent="ghost" aria-label="Export">
+          ⤓
+        </Button>
+      </Tooltip>,
+    );
+    keyboardFocus(button());
+    await wait(10);
+    const tip = screen.getByRole('tooltip');
+    // Seen on screen…
+    expect(tip.textContent).toBe('Export');
+    // …but its text sits in an aria-hidden child: a description skips hidden
+    // children of the element aria-describedby points to, so it comes out empty.
+    expect(tip.firstElementChild?.getAttribute('aria-hidden')).toBe('true');
+    expect(tip.firstElementChild?.textContent).toBe('Export');
+  });
+});

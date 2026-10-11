@@ -102,7 +102,12 @@ export function SideNavItem({
     <li>
       {/* Collapsed: the label shows as a tooltip. Always rendered (just disabled when
           expanded), so toggling doesn't remount the link and lose focus. */}
-      <Tooltip content={children} placement="end" disabled={!collapsed}>
+      <Tooltip
+        content={children}
+        kind="label"
+        placement="end"
+        disabled={!collapsed}
+      >
         <AriaLink
           href={href}
           aria-current={current ? 'page' : undefined}

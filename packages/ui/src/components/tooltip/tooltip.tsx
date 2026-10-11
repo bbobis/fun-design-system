@@ -26,6 +26,15 @@ export type TooltipProps = {
   delay?: number;
   /** Don't show the hint (e.g. the button already has visible text). */
   disabled?: boolean;
+  /**
+   * - `description` (default): the hint adds information ("Export as CSV" on an
+   *   "Export" button). Screen readers read it after the name.
+   * - `label`: the hint only repeats the element's own name (an icon-only nav item
+   *   whose label is visually hidden). Screen readers skip it, so they don't say the
+   *   name twice. The element must already be named (text or `aria-label`).
+   * @default 'description'
+   */
+  kind?: 'description' | 'label';
 };
 
 /**
@@ -49,6 +58,7 @@ export function Tooltip({
   placement = 'top',
   delay = 700,
   disabled,
+  kind = 'description',
 }: TooltipProps) {
   return (
     <TooltipTrigger delay={delay} closeDelay={300} isDisabled={disabled}>
@@ -63,7 +73,15 @@ export function Tooltip({
         offset={6}
         className="max-w-64 rounded-md bg-secondary px-2 py-1 text-xs text-on-secondary shadow-md"
       >
-        {content}
+        {kind === 'label' ? (
+          // React Aria still points aria-describedby at the tooltip. A description
+          // follows that reference even to hidden elements, but skips the referenced
+          // element's aria-hidden *children*, so the description comes out empty.
+          // (aria-hidden on the tooltip itself would not work.)
+          <span aria-hidden="true">{content}</span>
+        ) : (
+          content
+        )}
       </AriaTooltip>
     </TooltipTrigger>
   );

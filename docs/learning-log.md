@@ -280,3 +280,9 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Remember: React Aria waits for exit animations.** On close it keeps the dialog in the page with `data-exiting` until the animation ends, *then* removes it and returns focus to the button. (Checked in Chromium: still there right after Escape, gone and focus restored 250ms later.)
 - **Remember: animate with `motion-safe:`, don't cancel with `motion-reduce:`.** `.x[data-entering]` (class + attribute) beats `.y` in a media query, so `motion-reduce:animate-none` silently lost and reduced-motion users still got the animation. Only a real browser caught it; jsdom doesn't run CSS animations.
 - **Read:** https://react-aria.adobe.com/Modal#animation
+
+## 2026-10-11 — Tooltip kind="label"
+- **Built:** `Tooltip kind="label"` for hints that only repeat the element's own name (collapsed sidebar icons). SideNav uses it, so screen readers no longer say "Invoices" twice.
+- **Remember: how a description is computed.** `aria-describedby` is followed even to hidden elements, so `aria-hidden` on the tooltip does nothing. But inside the referenced element, `aria-hidden` *children* are skipped. Hiding the text inside the tooltip empties the description while it stays on screen.
+- **Remember: check names and descriptions in a real browser.** Chrome's accessibility tree (via DevTools or CDP `Accessibility.getPartialAXTree`) is the source of truth; jsdom doesn't compute it.
+- **Read:** https://www.w3.org/TR/accname-1.2/#mapping_additional_nd_description
