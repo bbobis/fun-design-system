@@ -15,3 +15,4 @@ export * from './components/multi-combobox';
 export * from './components/popover';
 export * from './components/select';
 export * from './components/text';
+export * from './components/tooltip';

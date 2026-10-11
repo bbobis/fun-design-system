@@ -131,6 +131,13 @@ src/index.ts          export * from './components/<name>'
       Menu and Popover. Their props extend `TriggerButtonProps`.
     - Content that must close its own popup (an Apply button) gets `close` from
       children-as-a-function: `{({ close }) => …}`. No ref, no extra state.
+21. **Behavior that attaches to *your* element (Tooltip).** When an overlay doesn't
+    own its trigger, wrap the app's element with React Aria's `Focusable` (re-exported
+    by `react-aria-components`) instead of changing our Button. The child only has to
+    pass props and `ref` to a DOM element.
+    - A tooltip is a description (`aria-describedby`), never the name: icon-only
+      buttons keep their own `aria-label`. It never shows on touch, so nothing a user
+      needs may live only in a tooltip.
 
 ## Tests to write for every component
 
