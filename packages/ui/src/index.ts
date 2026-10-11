@@ -18,4 +18,5 @@ export * from './components/progress';
 export * from './components/select';
 export * from './components/skeleton';
 export * from './components/text';
+export * from './components/toast';
 export * from './components/tooltip';
