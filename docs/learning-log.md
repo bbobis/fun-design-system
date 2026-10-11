@@ -176,3 +176,10 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Remember: popups nest.** A Select inside a Popover opens its own popup; React Aria keeps a stack of open overlays, so picking an option closes only the top one.
 - **Read:** https://react-aria.adobe.com/Popover
 
+## 2026-10-11 — Tooltip
+- **Built:** `Tooltip` (`content`, `placement`, `delay` = 700 ms, `disabled`) on React Aria `TooltipTrigger` + `Tooltip`, wrapping any focusable element through `Focusable`, so our native `<button>` Button stays as it is (option C of A/B/C).
+- **Remember: keyboard focus shows it, mouse focus doesn't.** React Aria tracks the *interaction modality* (keyboard, pointer, or virtual). Clicking a button focuses it, but the mouse is already there, so a hint would only be in the way. Tabbing to it shows the hint, because a keyboard user has no hover.
+- **Remember: description, not name.** The tooltip is wired with `aria-describedby`: screen readers say the button's own label first ("Export, button"), then the hint. An icon button without `aria-label` has no name at all.
+- **Gotcha (tests):** jsdom here has `PointerEvent`, so hover means `pointerover` / `pointerout` with `pointerType: 'mouse'`, after one `pointerdown` so React Aria knows the mouse is in use.
+- **Read:** https://react-aria.adobe.com/Tooltip
+
