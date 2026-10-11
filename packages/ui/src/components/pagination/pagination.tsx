@@ -1,9 +1,15 @@
+import { useId } from 'react';
 import { Button } from '../button';
+import { Select } from '../select';
+import { cn } from '../../utils/cn';
 
 export type PaginationProps = {
   /** The current page, starting at 1. */
   page: number;
-  /** How many pages there are. With 1 or fewer, nothing is shown. */
+  /**
+   * How many pages there are. With 1 or fewer, the page buttons are hidden (and, without
+   * a page-size picker, nothing is shown).
+   */
   pageCount: number;
   /** Called with the page the user picked (1-based). */
   onChange: (page: number) => void;
@@ -18,8 +24,31 @@ export type PaginationProps = {
    * @default 'Pagination'
    */
   'aria-label'?: string;
+  /** Rows per page. Set it together with `onPageSizeChange` to show the picker. */
+  pageSize?: number;
+  /**
+   * The sizes to choose from.
+   * @default [10, 25, 50, 100]
+   */
+  pageSizeOptions?: readonly number[];
+  /**
+   * Shows a "Rows per page" picker. Called with the new size and the page that keeps
+   * the first row you were looking at on screen (page 5 of 25s → page 3 of 50s).
+   * Set both: `setPageSize(size); setPage(page);`
+   */
+  onPageSizeChange?: (pageSize: number, page: number) => void;
   className?: string;
 };
+
+/**
+ * The page that still shows the first row of `page` after switching to `newSize`, so
+ * the user doesn't lose their place. Rows 101–125 (page 5 of 25s) → page 3 of 50s
+ * (rows 101–150).
+ */
+export function pageForSize(page: number, oldSize: number, newSize: number) {
+  const firstRow = (page - 1) * oldSize; // 0-based index of the first visible row
+  return Math.floor(firstRow / newSize) + 1;
+}
 
 /** A page number, or a gap ("…") between two page numbers. */
 export type PageItem = number | 'gap';
@@ -65,8 +94,17 @@ export function pageItems(
  *   `disabled`: a `disabled` button drops focus, so pressing Next onto the last page
  *   would throw keyboard users back to the top of the document.
  *
+ * - With `pageSize` + `onPageSizeChange`, a "Rows per page" picker shows beside it.
+ *
  * @example
  * <Pagination page={page} pageCount={42} onChange={setPage} />
+ *
+ * @example With a page-size picker
+ * <Pagination
+ *   page={page} pageCount={Math.ceil(total / size)} onChange={setPage}
+ *   pageSize={size}
+ *   onPageSizeChange={(newSize, newPage) => { setSize(newSize); setPage(newPage); }}
+ * />
  */
 export function Pagination({
   page,
@@ -74,9 +112,37 @@ export function Pagination({
   onChange,
   siblings = 1,
   'aria-label': ariaLabel = 'Pagination',
+  pageSize,
+  pageSizeOptions = [10, 25, 50, 100],
+  onPageSizeChange,
   className,
 }: PaginationProps) {
-  if (pageCount <= 1) return null;
+  const sizeLabelId = useId();
+  const picker =
+    pageSize !== undefined && onPageSizeChange ? (
+      <div className="flex items-center gap-2 text-sm text-fg-muted">
+        <span id={sizeLabelId}>Rows per page</span>
+        <Select
+          aria-labelledby={sizeLabelId}
+          size="sm"
+          className="w-20"
+          options={pageSizeOptions.map((n) => ({
+            value: String(n),
+            label: String(n),
+          }))}
+          value={String(pageSize)}
+          onChange={(v) => {
+            const next = Number(v);
+            if (v === null || next === pageSize) return;
+            onPageSizeChange(next, pageForSize(page, pageSize, next));
+          }}
+        />
+      </div>
+    ) : null;
+
+  if (pageCount <= 1) {
+    return picker && <div className={className}>{picker}</div>;
+  }
   const current = Math.min(Math.max(page, 1), pageCount);
   const atStart = current === 1;
   const atEnd = current === pageCount;
@@ -84,8 +150,8 @@ export function Pagination({
     if (to !== current) onChange(to);
   };
 
-  return (
-    <nav aria-label={ariaLabel} className={className}>
+  const nav = (
+    <nav aria-label={ariaLabel} className={picker ? undefined : className}>
       <ul className="flex flex-wrap items-center gap-1">
         <li>
           <Button
@@ -138,6 +204,20 @@ export function Pagination({
         </li>
       </ul>
     </nav>
+  );
+
+  if (!picker) return nav;
+  // The picker sits outside the <nav>: choosing a page size isn't navigation.
+  return (
+    <div
+      className={cn(
+        'flex flex-wrap items-center justify-between gap-x-6 gap-y-3',
+        className,
+      )}
+    >
+      {picker}
+      {nav}
+    </div>
   );
 }
 

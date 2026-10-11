@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { useState } from 'react';
-import { pageItems, Pagination } from './pagination';
+import { pageForSize, pageItems, Pagination } from './pagination';
 
 describe('pageItems', () => {
   it('shows every page when they all fit', () => {
@@ -37,7 +37,9 @@ describe('Pagination', () => {
     const current = screen.getByRole('button', { name: 'Page 5' });
     expect(current.getAttribute('aria-current')).toBe('page');
     expect(
-      screen.getByRole('button', { name: 'Page 4' }).hasAttribute('aria-current'),
+      screen
+        .getByRole('button', { name: 'Page 4' })
+        .hasAttribute('aria-current'),
     ).toBe(false);
   });
 
@@ -74,7 +76,11 @@ describe('Pagination', () => {
     const next = screen.getByRole('button', { name: 'Next' });
     act(() => next.focus());
     fireEvent.click(next);
-    expect(screen.getByRole('button', { name: 'Page 10' }).getAttribute('aria-current')).toBe('page');
+    expect(
+      screen
+        .getByRole('button', { name: 'Page 10' })
+        .getAttribute('aria-current'),
+    ).toBe('page');
     expect(next.getAttribute('aria-disabled')).toBe('true');
     expect(document.activeElement).toBe(next);
   });
@@ -84,5 +90,71 @@ describe('Pagination', () => {
       <Pagination page={1} pageCount={1} onChange={() => undefined} />,
     );
     expect(container.innerHTML).toBe('');
+  });
+});
+
+describe('pageForSize', () => {
+  it('keeps the first visible row on screen', () => {
+    expect(pageForSize(5, 25, 50)).toBe(3); // rows 101–125 → 101–150
+    expect(pageForSize(3, 50, 25)).toBe(5); // rows 101–150 → 101–125
+    expect(pageForSize(1, 25, 100)).toBe(1);
+    expect(pageForSize(4, 10, 25)).toBe(2); // row 31 → rows 26–50
+  });
+});
+
+function SizedPager({ total = 1042 }: { total?: number }) {
+  const [page, setPage] = useState(5);
+  const [size, setSize] = useState(25);
+  return (
+    <Pagination
+      page={page}
+      pageCount={Math.ceil(total / size)}
+      onChange={setPage}
+      pageSize={size}
+      onPageSizeChange={(s, p) => {
+        setSize(s);
+        setPage(p);
+      }}
+    />
+  );
+}
+
+describe('Pagination page-size picker', () => {
+  it('is named "Rows per page" and sits outside the nav landmark', () => {
+    render(<SizedPager />);
+    const picker = screen.getByRole('button', { name: /Rows per page/ });
+    expect(picker.textContent).toContain('25');
+    expect(
+      screen.getByRole('navigation', { name: 'Pagination' }).contains(picker),
+    ).toBe(false);
+  });
+
+  it('picking 50 on page 5 moves to page 3, keeping your place', async () => {
+    render(<SizedPager />);
+    fireEvent.click(screen.getByRole('button', { name: /Rows per page/ }));
+    await act(() => new Promise((r) => requestAnimationFrame(r)));
+    fireEvent.click(screen.getByRole('option', { name: '50' }));
+    expect(
+      screen
+        .getByRole('button', { name: 'Page 3' })
+        .getAttribute('aria-current'),
+    ).toBe('page');
+    expect(
+      screen.getByRole('button', { name: /Rows per page/ }).textContent,
+    ).toContain('50');
+  });
+
+  it('with one page, shows the picker but no page buttons', () => {
+    render(
+      <Pagination
+        page={1}
+        pageCount={1}
+        onChange={() => undefined}
+        pageSize={25}
+        onPageSizeChange={() => undefined}
+      />,
+    );
+    expect(screen.getByRole('button', { name: /Rows per page/ })).toBeTruthy();
+    expect(screen.queryByRole('navigation')).toBeNull();
   });
 });
