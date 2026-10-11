@@ -22,6 +22,7 @@ export * from './components/radio-group';
 export * from './components/select';
 export * from './components/skeleton';
 export * from './components/switch';
+export * from './components/tabs';
 export * from './components/text';
 export * from './components/textarea';
 export * from './components/toast';
