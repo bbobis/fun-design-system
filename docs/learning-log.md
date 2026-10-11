@@ -202,3 +202,9 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Remember: check the source, not your assumptions.** I first wrote that the toast region exists before messages arrive. It doesn't: each toast is an `alertdialog` with a `role="alert"` inside, revealed one render late so NVDA notices. The docs were corrected before the PR.
 - **Read:** https://react-aria.adobe.com/Toast
 
+## 2026-10-11 — EmptyState
+- **Built:** `EmptyState` (`title`, required `headingLevel`, `description`, decorative `icon`, `action`, `size: default | compact`). It drops into the DataGrid's existing `emptyMessage` slot. This completes Tier 3: Alert, loading states, Toast, EmptyState.
+- **Remember: "no data yet" and "no results" are different states.** Same box, different words and a different action: *create the first one* vs. *loosen the search*. One generic "Nothing here" fails both.
+- **Remember: required props for structure.** Like `Heading`, the heading level has no default. A component can't know where it sits in the page outline, and a wrong level breaks screen-reader navigation by headings.
+- **Read:** https://www.nngroup.com/articles/empty-state-interface-design/
+

@@ -7,6 +7,7 @@ export * from './components/combobox';
 export * from './components/data-grid';
 export * from './components/date-picker';
 export * from './components/dialog';
+export * from './components/empty-state';
 export * from './components/field';
 export * from './components/heading';
 export * from './components/input';
