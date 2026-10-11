@@ -64,8 +64,22 @@ function MainNav() {
  * Make the window narrower than 1024px: the sidebar moves into a ☰ drawer.
  */
 export const Default: Story = {
-  render: () => (
+  render: () => <InvoicesPage />,
+};
+
+/**
+ * `defaultSidebarCollapsed`: icons only. Hover or Tab to an icon for its label. The
+ * button at the bottom expands it again. Screen readers still hear "Invoices, link,
+ * current page": the labels are visually hidden, not removed.
+ */
+export const CollapsedSidebar: Story = {
+  render: () => <InvoicesPage collapsed />,
+};
+
+function InvoicesPage({ collapsed = false }: { collapsed?: boolean }) {
+  return (
     <AppShell
+      defaultSidebarCollapsed={collapsed}
       brand={
         <a href="#" className="rounded px-1 text-base">
           Acme Billing
@@ -113,8 +127,8 @@ export const Default: Story = {
         ))}
       </div>
     </AppShell>
-  ),
-};
+  );
+}
 
 function Icon({ d, ...props }: SVGProps<SVGSVGElement> & { d: string }) {
   return (
