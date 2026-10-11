@@ -168,8 +168,10 @@ elsewhere commits.
 | Esc | Close the popup only (you're still editing) | Cancel the edit |
 | Click an option / day | Commit, stay on the cell | — |
 
-Type-to-replace in a combobox cell makes the typed letter the search text. In a date
-cell, press Enter or F2 first, then type the digits.
+Type-to-replace in a combobox cell makes the typed letter the search text, and the first
+match is highlighted, so Enter (or Tab) picks it. In a date cell, a typed digit goes into
+the first date segment and typing carries on across segments (other keys just open the
+editor).
 
 **Deviation from the WAI-ARIA grid pattern:** strictly, a grid is one Tab stop. Excel
 users expect Tab to move between cells, so Tab moves within the row and leaves the grid

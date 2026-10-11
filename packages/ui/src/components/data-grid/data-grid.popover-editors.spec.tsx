@@ -273,6 +273,54 @@ describe('DataGrid date editor', () => {
   });
 });
 
+describe('DataGrid date editor: type-to-replace', () => {
+  const frame = () =>
+    act(() => new Promise((r) => requestAnimationFrame(() => r(undefined))));
+  /** Types like a real key press does: React Aria's segments listen to beforeinput. */
+  const typeDigit = (d: string) =>
+    act(() => {
+      document.activeElement?.dispatchEvent(
+        new InputEvent('beforeinput', {
+          inputType: 'insertText',
+          data: d,
+          bubbles: true,
+          cancelable: true,
+        }),
+      );
+    });
+  const segments = () =>
+    [...document.querySelectorAll('[role="spinbutton"]')].map(
+      (s) => s.textContent,
+    );
+
+  it('a digit opens the editor and goes into the first segment; typing continues', async () => {
+    setup();
+    goTo(0, 2); // t1 Due = 2026-10-04, shown month/day/year in en-US
+    press('1');
+    await frame();
+    expect(screen.getByRole('group', { name: 'Due' })).toBeTruthy();
+    // "1" could still become 10, 11 or 12, so the month waits for a second digit.
+    expect(segments()).toEqual(['1', '4', '2026']);
+    expect(document.activeElement?.textContent).toBe('1');
+    typeDigit('2'); // 12: no month starts with 12x, so focus moves on to the day
+    expect(segments()[0]).toBe('12');
+    expect(document.activeElement?.textContent).toBe('4');
+    press('Enter');
+    expect(cellText('t1', 'due')).toBe('2026-12-04');
+    expect(activeKey()).toBe('t2:due');
+  });
+
+  it('a non-digit only opens the editor; the date is unchanged', async () => {
+    setup();
+    goTo(0, 2);
+    press('x');
+    await frame();
+    expect(segments()).toEqual(['10', '4', '2026']);
+    press('Enter');
+    expect(cellText('t1', 'due')).toBe('2026-10-04');
+  });
+});
+
 describe('parseEditorValue for the popover editors', () => {
   it('date: only real days written as YYYY-MM-DD', () => {
     expect(parseEditorValue('date', '2026-03-15')).toEqual({

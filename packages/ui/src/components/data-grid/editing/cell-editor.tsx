@@ -19,7 +19,10 @@ type CellEditorProps = {
    * (type-to-replace). Popover editors: always the current value (see `seed`).
    */
   initialValue: string;
-  /** Popover editors: the key that started the edit, if any (the combobox searches it). */
+  /**
+   * Popover editors: the key that started the edit, if any. The combobox searches it;
+   * the date editor types it into the first segment if it's a digit.
+   */
   seed?: string;
   options?: readonly string[];
   searchOptions?: DataGridSearchOptions;
@@ -49,7 +52,7 @@ export function CellEditor(props: CellEditorProps) {
         searchOptions={searchOptions}
       />
     );
-  if (kind === 'date') return <DateCellEditor {...shared} />;
+  if (kind === 'date') return <DateCellEditor {...shared} seed={seed} />;
   return <NativeCellEditor {...props} />;
 }
 
