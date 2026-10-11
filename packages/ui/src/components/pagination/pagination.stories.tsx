@@ -39,3 +39,33 @@ export const FewPages: Story = { args: { page: 2, pageCount: 5 } };
 
 /** `siblings={2}`: two numbers either side of the current page. */
 export const MoreSiblings: Story = { args: { page: 21, siblings: 2 } };
+
+/**
+ * `pageSize` + `onPageSizeChange`: a "Rows per page" picker. Go to page 5 at 25 rows,
+ * then switch to 50: you land on page 3, which still shows row 101.
+ */
+export const WithPageSize: Story = {
+  render: function Render() {
+    const total = 1042;
+    const [page, setPage] = useState(5);
+    const [size, setSize] = useState(25);
+    const first = (page - 1) * size + 1;
+    return (
+      <div className="flex max-w-3xl flex-col gap-3">
+        <Pagination
+          page={page}
+          pageCount={Math.ceil(total / size)}
+          onChange={setPage}
+          pageSize={size}
+          onPageSizeChange={(s, p) => {
+            setSize(s);
+            setPage(p);
+          }}
+        />
+        <p className="text-sm text-fg-muted">
+          Showing rows {first}–{Math.min(first + size - 1, total)} of {total}
+        </p>
+      </div>
+    );
+  },
+};

@@ -249,3 +249,9 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Remember: landmarks are a table of contents.** `<header>`, `<nav>`, `<main>` let screen-reader users jump straight to a region. One `<main>` per page; each `<nav>` gets its own name.
 - **Gotcha:** a story's module-level `const nav = <SideNav … icon={<HomeIcon />} />` ran before `HomeIcon` was defined lower in the file (the "temporal dead zone"). Typecheck caught it; wrapping it in a component delays it until render.
 - **Read:** https://www.w3.org/WAI/ARIA/apg/practices/landmark-regions/
+
+## 2026-10-11 — Pagination page-size picker
+- **Built:** `pageSize`, `pageSizeOptions` and `onPageSizeChange(pageSize, page)` on `Pagination`: a "Rows per page" Select beside the page buttons (outside the `<nav>`, since it isn't navigation).
+- **Remember: keep the user's place.** Switching page size should keep the first visible row on screen: page 5 of 25s (rows 101–125) → page 3 of 50s. Jumping to page 1 is common, but it loses where they were. `pageForSize` does the math: `floor((page - 1) × oldSize / newSize) + 1`.
+- **Remember: hand the caller the answer, not the chore.** `onPageSizeChange` passes the new page too, so every app gets this right without writing the formula itself.
+- **Read:** https://react-aria.adobe.com/Select
