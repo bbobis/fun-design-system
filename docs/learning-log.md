@@ -183,3 +183,9 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Gotcha (tests):** jsdom here has `PointerEvent`, so hover means `pointerover` / `pointerout` with `pointerType: 'mouse'`, after one `pointerdown` so React Aria knows the mouse is in use.
 - **Read:** https://react-aria.adobe.com/Tooltip
 
+## 2026-10-11 — Alert
+- **Built:** `Alert`, an inline message box (`info` / `success` / `warning` / `danger`) with `title`, details, an `actions` slot, optional `onDismiss`, and `announce`. No React Aria needed: it's plain markup plus the right role.
+- **Remember: a live region only speaks when content *changes*.** `role="alert"` (urgent, interrupts) and `role="status"` (polite, waits) make screen readers read new content. An alert that's on the page from the start should have *no* live role, or it's read twice. That's why `announce` is opt-in.
+- **Remember: never color alone.** Each alert starts with a hidden word ("Warning: …"), so the tone reaches people who can't see the color or the icon.
+- **Read:** https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Reference/Roles/alert_role
+
