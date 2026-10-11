@@ -299,3 +299,9 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Remember: effects run child first, parent last.** React Aria clears the highlight in the ComboBox's own effect whenever the text changes, which runs after ours. A `queueMicrotask` runs after the whole batch of effects, so our highlight sticks.
 - **Gotcha:** don't highlight before the user types. On opening an existing value the list shows everything, and "first option" would replace the current value on Enter.
 - **Read:** https://www.w3.org/WAI/ARIA/apg/patterns/combobox/examples/combobox-autocomplete-list/
+
+## 2026-10-11 — Date cell type-to-replace
+- **Built:** typing a digit on a date cell opens the editor *with* that digit in the first segment (month in en-US); typing carries on across segments. Other keys just open the editor. Completes the small follow-ups batch.
+- **Remember: "1" waits, "2" jumps.** After "1" the month could still be 10–12, so the segment waits; after "12" no month is longer, so focus moves to the day. React Aria decides this per segment.
+- **Remember: drive components through the platform's own events.** React Aria date segments read typed text from the native `beforeinput` event, so dispatching one is the same path a real key takes. Verified with a real (trusted) key press in Chromium, not only the synthetic event in jsdom.
+- **Read:** https://developer.mozilla.org/en-US/docs/Web/API/Element/beforeinput_event

@@ -201,13 +201,52 @@ export function ComboboxCellEditor({
 export function DateCellEditor({
   label,
   initialValue,
+  seed,
   editorRef,
   onCommit,
   onLeave,
-}: PopoverCellEditorProps) {
+}: PopoverCellEditorProps & {
+  /**
+   * The key that started the edit (type-to-replace). A digit is typed into the first
+   * date segment, as if the user had opened the editor and typed it; other keys just
+   * open the editor.
+   */
+  seed?: string;
+}) {
   const value = useRef(initialValue);
   const open = useRef(false);
   const group = useRef<HTMLDivElement>(null);
+
+  // Type-to-replace. React Aria's date segments take typed text from the browser's
+  // native `beforeinput` event, so we send them one with the digit: the same path a
+  // real key press takes, no React Aria internals. Waits a frame for autoFocus.
+  useEffect(() => {
+    if (!seed || !/^\d$/.test(seed)) return;
+    const frame = requestAnimationFrame(() => {
+      const root = group.current;
+      if (!root) return;
+      const active = document.activeElement;
+      const segment =
+        active instanceof HTMLElement &&
+        root.contains(active) &&
+        active.getAttribute('role') === 'spinbutton'
+          ? active
+          : root.querySelector<HTMLElement>('[role="spinbutton"]');
+      if (!segment) return;
+      segment.focus();
+      segment.dispatchEvent(
+        new InputEvent('beforeinput', {
+          inputType: 'insertText',
+          data: seed,
+          bubbles: true,
+          cancelable: true,
+        }),
+      );
+    });
+    return () => cancelAnimationFrame(frame);
+    // Once, on mount: the key that opened the editor.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   useLayoutEffect(() => {
     editorRef.current = {
       getValue: () => value.current,
