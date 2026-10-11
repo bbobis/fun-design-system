@@ -70,6 +70,11 @@ export type MenuItemProps = {
   id?: string;
   /** Runs when the item is chosen (click, Enter or Space). The menu then closes. */
   onAction?: () => void;
+  /**
+   * Makes the item a link (`<a>`): choosing it navigates. Works with a client-side
+   * router through React Aria's `RouterProvider`, like our other links.
+   */
+  href?: string;
   /** `danger` for destructive actions (Delete). Red text, not a red background. */
   intent?: 'default' | 'danger';
   /** Second line in smaller text ("Only the selected rows"). */
@@ -84,6 +89,7 @@ export function MenuItem({
   children,
   id,
   onAction,
+  href,
   intent = 'default',
   description,
   shortcut,
@@ -94,6 +100,7 @@ export function MenuItem({
       id={id ?? children}
       textValue={children}
       onAction={onAction}
+      href={href}
       isDisabled={disabled}
       className={cn(
         'flex cursor-default items-center gap-2 rounded px-2 py-1.5 text-sm outline-hidden',

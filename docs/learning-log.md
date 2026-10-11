@@ -255,3 +255,9 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Remember: keep the user's place.** Switching page size should keep the first visible row on screen: page 5 of 25s (rows 101–125) → page 3 of 50s. Jumping to page 1 is common, but it loses where they were. `pageForSize` does the math: `floor((page - 1) × oldSize / newSize) + 1`.
 - **Remember: hand the caller the answer, not the chore.** `onPageSizeChange` passes the new page too, so every app gets this right without writing the formula itself.
 - **Read:** https://react-aria.adobe.com/Select
+
+## 2026-10-11 — Collapsing long breadcrumb trails
+- **Built:** `maxItems` on `Breadcrumbs`: the first item, a "…" menu with the hidden levels as links, and the last `maxItems - 1` items. `MenuItem` gained `href`, so any menu item can be a link.
+- **Remember: three ways to shorten a trail.** Link "…" to the parent (loses the levels in between), expand it in place (the trail jumps to several lines), or open a menu (one line, every level still one step away). We picked the menu.
+- **Remember: name icon-like buttons by what they do.** "…" means nothing read aloud, so the button is named "Show 3 more levels".
+- **Read:** https://react-aria.adobe.com/Menu#links

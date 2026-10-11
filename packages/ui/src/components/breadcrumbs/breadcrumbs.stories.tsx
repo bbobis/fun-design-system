@@ -42,3 +42,11 @@ export const Deep: Story = {
     ),
   ],
 };
+
+/**
+ * `maxItems={3}`: the middle levels move into a "…" menu. Tab to it and press Enter:
+ * each hidden level is a link in the menu.
+ */
+export const Collapsed: Story = {
+  args: { ...Deep.args, maxItems: 3 },
+};
