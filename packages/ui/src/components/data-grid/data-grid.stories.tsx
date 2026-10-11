@@ -141,8 +141,8 @@ function applyChanges(rows: Invoice[], changes: ChangeSet): Invoice[] {
 
 /** What a server fills in for a new invoice the user didn't type. */
 const blankInvoice: Partial<Invoice> = {
-  issued: new Date(Date.UTC(2026, 9, 4)),
-  due: new Date(Date.UTC(2026, 10, 3)),
+  issued: '2026-10-04',
+  due: '2026-11-03',
   tax: 0,
   total: 0,
   currency: 'CAD',

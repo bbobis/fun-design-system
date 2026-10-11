@@ -14,11 +14,15 @@ const money = new Intl.NumberFormat('en-CA', {
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
 });
+// timeZone 'UTC' on both sides: '2026-10-04' parses as UTC midnight, so formatting it in
+// the viewer's zone would show Oct 3 in Edmonton. A calendar day has no time zone.
 const date = new Intl.DateTimeFormat('en-CA', {
   year: 'numeric',
   month: '2-digit',
   day: '2-digit',
+  timeZone: 'UTC',
 });
+const formatDay = (iso: string) => date.format(new Date(iso));
 const tone = {
   Paid: 'success',
   Pending: 'warning',
@@ -53,15 +57,17 @@ export const invoiceColumns = col.columns([
   col.accessor('issued', {
     header: 'Issued',
     size: 110,
-    sortFn: 'datetime',
-    cell: (i) => date.format(i.getValue()),
+    // ISO strings sort correctly as plain text: '2026-01-31' < '2026-10-04'.
+    sortFn: 'text',
+    cell: (i) => formatDay(i.getValue()),
     meta: { align: 'end' },
   }),
   col.accessor('due', {
     header: 'Due',
     size: 110,
-    sortFn: 'datetime',
-    cell: (i) => date.format(i.getValue()),
+    // ISO strings sort correctly as plain text: '2026-01-31' < '2026-10-04'.
+    sortFn: 'text',
+    cell: (i) => formatDay(i.getValue()),
     meta: { align: 'end' },
   }),
   col.accessor('subtotal', {
