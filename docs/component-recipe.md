@@ -127,6 +127,10 @@ src/index.ts          export * from './components/<name>'
     button can open it, so it stays controlled; see rule 19.)
     - Our list props are plain strings: `selectedKeys: string[]`, not React Aria's
       `Set<Key>`. Convert at the boundary.
+    - The trigger is one internal component, `button/trigger-button.tsx`, shared by
+      Menu and Popover. Their props extend `TriggerButtonProps`.
+    - Content that must close its own popup (an Apply button) gets `close` from
+      children-as-a-function: `{({ close }) => …}`. No ref, no extra state.
 
 ## Tests to write for every component
 
