@@ -1,5 +1,6 @@
 export * from './components/alert';
 export * from './components/badge';
+export * from './components/breadcrumbs';
 export * from './components/button';
 export * from './components/card';
 export * from './components/checkbox';
@@ -16,6 +17,7 @@ export * from './components/label';
 export * from './components/menu';
 export * from './components/multi-combobox';
 export * from './components/number-field';
+export * from './components/pagination';
 export * from './components/popover';
 export * from './components/progress';
 export * from './components/radio-group';

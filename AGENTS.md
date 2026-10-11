@@ -59,6 +59,10 @@ example and forgets things he doesn't use, so:
 - Follow existing component patterns in this repo before inventing new ones.
 - Keep styling in Tailwind classes; no inline styles.
 - Run tests and lint after each change. Never claim success without running them.
+- Every PR that adds or changes a component includes screenshots of its stories
+  (light, dark, and one keyboard-focus shot), taken from the built Storybook with
+  headless Chromium. Host them on the `pr-screenshots` branch (one folder per PR,
+  never merged into main) and embed them in the PR description.
 - When finished, give a short summary: what changed, what was verified, what Ben
   should remember, and anything left open.
 
