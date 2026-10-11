@@ -53,7 +53,7 @@ src/index.ts          export * from './components/<name>'
 12. **Structure ≠ looks.** `Heading` takes a required `level` (the tag) and an optional `size`
     (the look). Pick the level from the page outline, never from the visual size.
 
-13. **Styling exception: runtime geometry via CSS variables only.** Values that exist only
+13. **Styling exception: runtime geometry via CSS variables only** (`utils/css-vars.ts`). Values that exist only
     at runtime (column widths, virtual row offsets) are passed as CSS custom properties
     and read by Tailwind classes: `style={{ '--w': '120px' }}` + `className="w-(--w)"`.
     Never put real CSS properties in `style`. (Approved by Ben, 2026-10-03, for DataGrid.)

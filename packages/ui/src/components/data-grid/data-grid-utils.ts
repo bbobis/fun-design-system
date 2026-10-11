@@ -1,7 +1,6 @@
 /**
  * Small helpers shared by the DataGrid and its rows. No React state here.
  */
-import type { CSSProperties } from 'react';
 
 /** Row id of the trailing "Type here to add a row…" row. */
 export const NEW_ROW_ID = '__new';
@@ -12,16 +11,8 @@ export const ROW_ERROR_KEY = '__row';
 /** Id of the injected row-selection checkbox column. */
 export const SELECT_COLUMN_ID = '__select';
 
-/**
- * Sets CSS variables only. Runtime numbers (widths, row offsets) can't be Tailwind
- * classes, so they go in as variables and Tailwind classes read them: `w-(--w)`.
- * This is the one approved use of `style` (see docs/component-recipe.md).
- */
-export function cssVars(
-  vars: Record<`--${string}`, string | number>,
-): CSSProperties {
-  return vars as CSSProperties;
-}
+// Moved to utils/ (used library-wide now); re-exported so grid imports stay as they are.
+export { cssVars } from '../../utils/css-vars';
 
 /** Identifies one cell in the DOM: `data-cell-key="rowId:columnId"`. */
 export const cellKey = (rowId: string, columnId: string) =>

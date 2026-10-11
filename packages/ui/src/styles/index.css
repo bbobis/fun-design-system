@@ -5,3 +5,16 @@
 @import './fonts.css';
 @import 'tailwindcss';
 @import './tokens.css';
+
+/* The indeterminate ProgressBar: a bar sliding left to right. Its motion-reduce
+ * classes swap this for a still, half-transparent bar. */
+@theme {
+  @keyframes progress-slide {
+    from {
+      transform: translateX(-100%);
+    }
+    to {
+      transform: translateX(300%);
+    }
+  }
+}

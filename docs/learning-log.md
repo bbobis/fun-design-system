@@ -189,3 +189,9 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Remember: never color alone.** Each alert starts with a hidden word ("Warning: …"), so the tone reaches people who can't see the color or the icon.
 - **Read:** https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Reference/Roles/alert_role
 
+## 2026-10-11 — Spinner, ProgressBar, Skeleton
+- **Built:** `Spinner` (indeterminate React Aria `ProgressBar`, named by `label`), `ProgressBar` (visible label, value text or `valueLabel` like "120 of 300 rows", indeterminate when there's no `value`) and `Skeleton` (`text` / `rect` / `circle` placeholders). `cssVars()` moved to `utils/` now that more than the grid uses it.
+- **Remember: a Skeleton is silent on purpose.** Gray boxes read aloud are noise. The region that's loading says `aria-busy="true"`, and one status line says "Loading invoice…". The boxes are `aria-hidden`.
+- **Remember: respect reduced motion.** `motion-reduce:` styles apply when the user turns animations down in their OS. The skeleton stops pulsing and the indeterminate bar stands still; the spinner only slows down, because a still spinner looks broken.
+- **Read:** https://developer.mozilla.org/en-US/docs/Web/CSS/@media/prefers-reduced-motion
+

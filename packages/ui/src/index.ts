@@ -14,6 +14,8 @@ export * from './components/label';
 export * from './components/menu';
 export * from './components/multi-combobox';
 export * from './components/popover';
+export * from './components/progress';
 export * from './components/select';
+export * from './components/skeleton';
 export * from './components/text';
 export * from './components/tooltip';
