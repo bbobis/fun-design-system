@@ -235,3 +235,10 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Remember: tabs switch views, links change pages.** If clicking it changes the URL to a new page, it's navigation (links), not tabs.
 - **Gotcha:** React Aria calls `onSelectionChange` on mount when it picks the first tab itself. Our wrapper skips that call, so `onChange` only means "the user picked a tab".
 - **Read:** https://react-aria.adobe.com/Tabs
+
+## 2026-10-11 — Breadcrumbs + Pagination
+- **Built:** `Breadcrumbs` (an `items` array, on React Aria `Breadcrumbs` + `Link`) and `Pagination` (our own: Previous, page numbers with "…" gaps, Next, built on `Button`). Both sit inside a `<nav>` landmark with `aria-current="page"` on the current item.
+- **Remember: `disabled` vs. `aria-disabled`.** A `disabled` button drops focus, so pressing Next onto the last page would throw keyboard users to the top of the page. `aria-disabled` looks and reads as disabled but keeps focus, and the click handler ignores it.
+- **Remember: keep the layout still.** Pagination always shows the same number of items (first, last, current ± siblings, gaps), so the buttons don't move under the mouse while you click through.
+- **Remember: several `<nav>`s need different names.** Screen readers list landmarks by name ("Breadcrumbs", "Pagination"), so two pagers on one page need their own `aria-label`.
+- **Read:** https://www.w3.org/WAI/ARIA/apg/patterns/breadcrumb/
