@@ -10,7 +10,12 @@ import {
 import { cn } from '../../utils/cn';
 import { useFieldContext } from '../field/field-context';
 import type { SelectOption } from '../select';
-import { ChevronIcon, ComboboxPopover, SpinnerIcon } from './combobox-parts';
+import {
+  AutoHighlightFirst,
+  ChevronIcon,
+  ComboboxPopover,
+  SpinnerIcon,
+} from './combobox-parts';
 
 /** One choice in a Combobox. Same shape as a Select option. */
 export type ComboboxOption = SelectOption;
@@ -70,6 +75,14 @@ export type ComboboxProps = VariantProps<typeof fieldVariants> & {
   onInputChange?: (value: string) => void;
   /** Results are on their way: shows "Loading…" or a spinner. @default false */
   loading?: boolean;
+  /**
+   * Highlight the first match as the user types, so Enter picks it without pressing ↓.
+   * Off by default: React Aria also picks the highlighted option on **Tab**, so typing
+   * "ca" and tabbing away would choose "Canada". Turn it on where that's expected, like
+   * a spreadsheet cell.
+   * @default false
+   */
+  autoHighlight?: boolean;
   /** Shown in the list when nothing matches. @default 'No matches' */
   emptyMessage?: string;
   /** Called when focus leaves the control (React Hook Form uses this for "touched"). */
@@ -108,6 +121,7 @@ export function Combobox({
   filter = 'contains',
   onInputChange,
   loading = false,
+  autoHighlight = false,
   emptyMessage = 'No matches',
   onBlur,
   placeholder,
@@ -205,6 +219,7 @@ export function Combobox({
           <ChevronIcon className="size-4" />
         </Button>
       </Group>
+      {autoHighlight && <AutoHighlightFirst />}
       <ComboboxPopover loading={loading} emptyMessage={emptyMessage} />
     </AriaComboBox>
   );

@@ -292,3 +292,10 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Remember: grow out of the trigger.** React Aria sets `--trigger-anchor-point` on each popup, the point that touches its trigger (for a start-aligned menu below a button: its top-start corner). `origin-(--trigger-anchor-point)` makes the scale start there.
 - **Remember: slow animations down to test them.** A 120ms animation is over before a script can look. Chrome DevTools (or CDP `Animation.setPlaybackRate`) can run them at 10% speed.
 - **Read:** https://react-aria.adobe.com/Popover#animation
+
+## 2026-10-11 — Combobox autoHighlight
+- **Built:** opt-in `autoHighlight` on `Combobox` (and always on in the grid's combobox cell editor): as you type, the first enabled match is highlighted, so Enter picks it without ↓. ARIA calls this "list autocomplete with automatic selection".
+- **Remember: read the library's source before changing a default.** React Aria picks the highlighted option on **Tab** as well as Enter. In a grid that's what you want; in a form, "type 'ca', Tab away" would silently choose Canada. So it's opt-in.
+- **Remember: effects run child first, parent last.** React Aria clears the highlight in the ComboBox's own effect whenever the text changes, which runs after ours. A `queueMicrotask` runs after the whole batch of effects, so our highlight sticks.
+- **Gotcha:** don't highlight before the user types. On opening an existing value the list shows everything, and "first option" would replace the current value on Enter.
+- **Read:** https://www.w3.org/WAI/ARIA/apg/patterns/combobox/examples/combobox-autocomplete-list/

@@ -110,6 +110,31 @@ describe('DataGrid combobox editor', () => {
     expect(activeKey()).toBe('t2:team');
   });
 
+  it('typing highlights the first match, so Enter picks it; opening alone changes nothing', async () => {
+    setup();
+    goTo(0, 1); // t1 Team = Finance
+    press('Enter');
+    await act(() => Promise.resolve()); // the highlight lands in a microtask
+    // Opened but nothing typed: React Aria highlights the current value, and we leave
+    // it there (not the first option, Design), so Enter keeps Finance.
+    const openId = teamInput().getAttribute('aria-activedescendant');
+    expect(document.getElementById(openId ?? '')?.textContent).toBe('Finance');
+    press('Enter');
+    expect(teamInput().value).toBe('Finance');
+    // (Unchanged value: this first Enter only closes the list; the next one commits.
+    // That was already so before auto-highlight.)
+    press('Enter');
+    expect(cellText('t1', 'team')).toBe('Finance');
+    // t2: type "dev", Enter: picks DevOps without touching the arrows.
+    press('Enter');
+    typeSearch('dev');
+    await act(() => Promise.resolve());
+    const activeId = teamInput().getAttribute('aria-activedescendant');
+    expect(document.getElementById(activeId ?? '')?.textContent).toBe('DevOps');
+    press('Enter');
+    expect(cellText('t2', 'team')).toBe('DevOps');
+  });
+
   it('type-to-replace: the typed letter becomes the search text', () => {
     setup();
     goTo(1, 1); // t2 Team

@@ -17,7 +17,11 @@ import {
   useFilter,
 } from 'react-aria-components';
 import { cn } from '../../../utils/cn';
-import { ChevronIcon, ComboboxPopover } from '../../combobox/combobox-parts';
+import {
+  AutoHighlightFirst,
+  ChevronIcon,
+  ComboboxPopover,
+} from '../../combobox/combobox-parts';
 import {
   CalendarIcon,
   CalendarPopover,
@@ -180,6 +184,8 @@ export function ComboboxCellEditor({
               <ChevronIcon className="size-4" />
             </Button>
           </Group>
+          {/* Spreadsheet-style: type "ca", Enter (or Tab) picks the first match. */}
+          <AutoHighlightFirst />
           <ComboboxPopover loading={loading} emptyMessage="No matches" />
         </AriaComboBox>
       )}
