@@ -132,9 +132,19 @@ export function AppShell({
           />
           <ModalOverlay
             isDismissable
-            className="fixed inset-0 z-50 bg-backdrop lg:hidden"
+            className={cn(
+              'fixed inset-0 z-50 bg-backdrop lg:hidden',
+              'motion-safe:data-entering:animate-overlay-in motion-safe:data-exiting:animate-overlay-out',
+            )}
           >
-            <Modal className="fixed inset-y-0 start-0 flex w-72 max-w-[85vw] flex-col border-e border-border bg-bg shadow-xl outline-hidden">
+            <Modal
+              className={cn(
+                'fixed inset-y-0 start-0 flex w-72 max-w-[85vw] flex-col border-e border-border bg-bg shadow-xl outline-hidden',
+                // Slides in from the start edge: the left, or the right in RTL.
+                '[--drawer-from:-100%] rtl:[--drawer-from:100%]',
+                'motion-safe:data-entering:animate-drawer-in motion-safe:data-exiting:animate-drawer-out',
+              )}
+            >
               <Dialog
                 aria-label="Navigation"
                 className="flex min-h-0 flex-1 flex-col outline-hidden"

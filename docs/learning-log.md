@@ -274,3 +274,9 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Remember the keys:** → or Enter opens the submenu on its first item; ← or Escape closes **only** the submenu and puts focus back on its parent item; Enter on an item runs it and closes the whole menu. In right-to-left languages ← and → swap.
 - **Remember: "alpha" APIs get the same care as `UNSTABLE_` ones.** One file imports `SubmenuTrigger`, nothing in our public types mentions it, and React Aria stays patch-pinned (recipe rule 22).
 - **Read:** https://react-aria.adobe.com/Menu#submenus
+
+## 2026-10-11 — Dialog and drawer animations
+- **Built:** Dialog/AlertDialog backdrop fade + panel pop (150ms in, 100ms out) and the AppShell drawer slide (mirrored in RTL), as named animations in `@theme` driven by React Aria's `data-entering` / `data-exiting`. No new dependency.
+- **Remember: React Aria waits for exit animations.** On close it keeps the dialog in the page with `data-exiting` until the animation ends, *then* removes it and returns focus to the button. (Checked in Chromium: still there right after Escape, gone and focus restored 250ms later.)
+- **Remember: animate with `motion-safe:`, don't cancel with `motion-reduce:`.** `.x[data-entering]` (class + attribute) beats `.y` in a media query, so `motion-reduce:animate-none` silently lost and reduced-motion users still got the animation. Only a real browser caught it; jsdom doesn't run CSS animations.
+- **Read:** https://react-aria.adobe.com/Modal#animation
