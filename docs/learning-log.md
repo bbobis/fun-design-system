@@ -394,3 +394,10 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Remember (the prediction): Escape is handled only when there's something to clear.** In a Dialog, the first Escape clears the search (focus stays), the second closes the dialog. React Aria lets Escape through when the field is empty. Verified in Chromium; a test checks the empty case reaches the parent.
 - **Gotcha (screenshots): wait for the theme.** The theme addon sets `data-theme` on `<html>` in an effect *after* the story renders, so a fast screenshot can be light in "dark". The scripts now wait for `html[data-theme=…]`. This was probably also the real cause of the light "Narrow" shot in #54, which I blamed on the viewport parameter.
 - **Read:** https://react-aria.adobe.com/SearchField
+
+## 2026-10-12 — Toolbar
+- **Built:** `Toolbar` (React Aria `Toolbar`, `role="toolbar"`) with `ToolbarGroup` (named `group`) and `ToolbarSeparator`. One Tab stop for a set of actions; ←/→ (or ↑/↓ when vertical) move between them. It holds our existing Button, Menu and icon Buttons with Tooltip.
+- **Remember (the prediction): the toolbar remembers.** Tab in → → → Tab out → Shift+Tab lands back on **"Archive"**, the last button used, not the first. That's the point: a keyboard user returning to the toolbar picks up where they left off.
+- **Remember: check what the library *actually* does.** I wrote "Home/End jump to the ends" in the JSDoc; Chromium showed React Aria's Toolbar doesn't do that, so the claim came out. Also React Aria didn't give the `<hr>` separator any orientation here (horizontal in both layouts), so the Toolbar passes its direction through a React context. Same fix as the Accordion.
+- **Remember: don't nest arrow-key controls in a toolbar** (inputs, SegmentedControl, Slider): both would claim ←/→. And in a vertical toolbar, tooltips go to the side (`placement="end"`) so they don't cover the neighbours.
+- **Read:** https://www.w3.org/WAI/ARIA/apg/patterns/toolbar/
