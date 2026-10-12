@@ -17,9 +17,9 @@ import {
   ChevronIcon,
   ComboboxPopover,
   SpinnerIcon,
-  XIcon,
 } from '../combobox/combobox-parts';
 import { useFieldContext } from '../field/field-context';
+import { TagRemoveButton, tagVariants } from '../tag-group/tag-parts';
 import type { SelectOption } from '../select';
 
 /** One choice in a MultiCombobox. Same shape as a Select / Combobox option. */
@@ -228,25 +228,12 @@ export function MultiCombobox({
                     <Tag
                       id={tag.value}
                       textValue={tag.label}
-                      className={cn(
-                        'flex h-6 max-w-full cursor-default items-center gap-0.5 rounded border border-border bg-surface ps-2 pe-0.5 text-sm text-fg outline-hidden',
-                        // outline-solid is required: outline-hidden above sets --tw-outline-style:none,
-                        // which outline-2 would otherwise inherit (same trap as Button).
-                        'data-focus-visible:outline-2 data-focus-visible:outline-offset-1 data-focus-visible:outline-solid data-focus-visible:outline-focus-ring',
-                      )}
+                      className={tagVariants({ size: 'sm' })}
                     >
                       {({ allowsRemoving }) => (
                         <>
                           <span className="truncate">{tag.label}</span>
-                          {allowsRemoving && (
-                            // slot="remove": React Aria names it ("Remove Germany") and wires the click.
-                            <Button
-                              slot="remove"
-                              className="rounded p-0.5 text-fg-muted outline-hidden hover:bg-border hover:text-fg"
-                            >
-                              <XIcon className="size-3.5" />
-                            </Button>
-                          )}
+                          {allowsRemoving && <TagRemoveButton />}
                         </>
                       )}
                     </Tag>

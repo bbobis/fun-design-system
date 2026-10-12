@@ -353,3 +353,10 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Remember: let the date library do month and year maths.** `startOfMonth`, `endOfMonth` and `subtract({ months: 1 })` from `@internationalized/date` get Feb 29, Dec 31 → Jan 1 and 30-vs-31-day months right. The tests cover a leap year and a year boundary.
 - **Remember: React Aria exposes each component's state through a context** (`DateRangePickerStateContext`). Our own part inside the popover can read and set the value (`state.setValue`, `state.setOpen(false)`) without new props.
 - **Read:** https://react-aria.adobe.com/internationalized/date/CalendarDate
+
+## 2026-10-12 — TagGroup (chips)
+- **Built:** `TagGroup` (React Aria `TagGroup`), with removable chips (`onRemove`: ✕ button + Delete/Backspace) and toggle chips (`selectionMode`, ✓ when selected). It has its own label, description and error, plus `emptyText`. The chip look moved to `tag-parts.tsx`, shared with `MultiCombobox`.
+- **Remember (the prediction): React Aria moves focus for you.** After a Delete, focus goes to the next chip, or the previous one at the end. When the *last* chip goes, focus moves to the empty list itself, now a `group` still named "Active filters". Focus never falls to `<body>`, but our `outline-hidden` made that spot invisible, so the list needed its own focus ring.
+- **Remember: never show state by color alone (WCAG 1.4.1).** Selected chips were a yellow tint only in the first screenshot; now they also get a ✓. Screen readers get `aria-selected`.
+- **Remember: a grid of chips is one Tab stop**, with ←/→ inside it. Fifty chips would otherwise be fifty Tab presses.
+- **Read:** https://react-aria.adobe.com/TagGroup
