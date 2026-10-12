@@ -360,3 +360,10 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Remember: never show state by color alone (WCAG 1.4.1).** Selected chips were a yellow tint only in the first screenshot; now they also get a ✓. Screen readers get `aria-selected`.
 - **Remember: a grid of chips is one Tab stop**, with ←/→ inside it. Fifty chips would otherwise be fifty Tab presses.
 - **Read:** https://react-aria.adobe.com/TagGroup
+
+## 2026-10-12 — SegmentedControl
+- **Built:** `SegmentedControl` (React Aria `ToggleButtonGroup`, single mode → `radiogroup` of `radio`s). One option is always on (`disallowEmptySelection`). It supports icons, `iconOnly` (the label becomes the name and a `Tooltip kind="label"`), disabled options and sizes.
+- **Remember (the prediction): ←/→ only move focus; Space/Enter choose.** Passing over "Month" doesn't load a month of data on the way to "Quarter". That's the reason to pick this over a RadioGroup (where arrows choose as they move) for settings that trigger work. Tabs are for switching *panels*, not settings.
+- **Remember: check what the ARIA role promises.** It says `radiogroup`, so Tab should land on the *checked* radio. React Aria starts on the first, as for a toolbar, so an `onFocusCapture` sends focus that enters from outside to the chosen segment.
+- **Remember: measure state contrast (WCAG 1.4.11, 3:1).** The selected pill was only 1.17:1 against the track in both themes. A `ring-border-strong` outline (3.7:1) fixed it. Also, `onChange` now fires only on a real change: React Aria reports the same segment again when it's pressed twice.
+- **Read:** https://react-aria.adobe.com/ToggleButtonGroup
