@@ -121,6 +121,18 @@ describe('DatePicker', () => {
     expect(onChange).not.toHaveBeenCalled();
   });
 
+  it('a typed day before min is marked invalid', () => {
+    render(
+      <DatePicker
+        aria-label="Due"
+        defaultValue="2026-10-10"
+        min="2026-10-05"
+      />,
+    );
+    typeInto(segment('day'), '01');
+    expect(segment('day').getAttribute('aria-invalid')).toBe('true');
+  });
+
   it('controlled: shows the value, and null clears it', () => {
     function Controlled() {
       const [value, setValue] = useState<string | null>('2026-10-04');

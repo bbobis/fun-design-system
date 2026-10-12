@@ -22,3 +22,15 @@ export function isIsoDate(text: string): boolean {
   // parseDate quietly fixes '2026-02-30' to Feb 28; a round trip catches that.
   return toCalendarDate(text)?.toString() === text;
 }
+
+/** A range of calendar days, both ends included, as ISO dates. */
+export type IsoDateRange = { start: string; end: string };
+
+/** `{ start, end }` ISO strings → React Aria's range, or null if either end is missing or malformed. */
+export function toCalendarRange(
+  value: IsoDateRange | null | undefined,
+): { start: CalendarDate; end: CalendarDate } | null {
+  const start = toCalendarDate(value?.start);
+  const end = toCalendarDate(value?.end);
+  return start && end ? { start, end } : null;
+}
