@@ -374,3 +374,10 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Remember: read the library's code when tests disagree.** jsdom's form submit gave mixed results. `useFormValidationState` settled it: shown error = our `isInvalid` if set, else React Aria's built-in checks. So `false` is a choice per component, not a bug pattern. It's wrong only where React Aria checks something users need (date ranges).
 - **Remember: Tab-lands-on-selected is checked in a real browser**, with the selected item *not* first. React Aria gets it right for Tabs, TagGroup, Select and Calendar. Only ToggleButtonGroup (SegmentedControl) didn't.
 - **Read:** https://react-aria.adobe.com/forms#validation
+
+## 2026-10-12 — Disclosure + Accordion
+- **Built:** `Disclosure` (one collapsible section, title = heading + button with `aria-expanded`, `headingLevel` default 3) and `Accordion` (React Aria `DisclosureGroup`: one open by default, `allowsMultiple`, controlled `expandedIds`). It slides open via React Aria's `--disclosure-panel-height`, `motion-safe` only.
+- **Remember (the prediction): Ctrl+F finds text in closed sections and opens them.** React Aria hides a closed panel with `hidden="until-found"`, not `display:none`. The browser searches it, fires `beforematch` on a match, and React Aria opens the section. Tested with a text-fragment link (`#:~:text=Credit notes`), which uses the same path. (`window.find()` doesn't: it's non-standard and fires no `beforematch`.)
+- **Remember: when two CSS rules fight, pass the fact in code.** `in-data-accordion:border-0` on each item also wiped out the group's `divide-y` dividers (both set border width). A React context (`InAccordion`) now lets the item pick its classes, so there's no specificity or ordering puzzle.
+- **Remember: accordions are headings + buttons, not one widget.** Tab moves between titles (no arrow-key roving), so screen-reader users can also jump by heading.
+- **Read:** https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/hidden#the_hidden_until_found_state
