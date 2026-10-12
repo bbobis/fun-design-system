@@ -37,4 +37,5 @@ export * from './components/tag-group';
 export * from './components/text';
 export * from './components/textarea';
 export * from './components/toast';
+export * from './components/toolbar';
 export * from './components/tooltip';
