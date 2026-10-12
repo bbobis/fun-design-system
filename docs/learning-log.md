@@ -381,3 +381,10 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Remember: when two CSS rules fight, pass the fact in code.** `in-data-accordion:border-0` on each item also wiped out the group's `divide-y` dividers (both set border width). A React context (`InAccordion`) now lets the item pick its classes, so there's no specificity or ordering puzzle.
 - **Remember: accordions are headings + buttons, not one widget.** Tab moves between titles (no arrow-key roving), so screen-reader users can also jump by heading.
 - **Read:** https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/hidden#the_hidden_until_found_state
+
+## 2026-10-12 — Stepper
+- **Built:** `Stepper` ("Details → Billing → Review"), an `<ol>` with `aria-current="step"` on the current step. Each status is also in words ("Details, completed", "Review, not started"). `onStepClick` turns *completed* steps into buttons (never upcoming ones). There's a vertical layout with descriptions, and on phones only the current label shows.
+- **Remember: not everything needs a headless library.** React Aria has no stepper because there's no widget, just a list that marks a position. Plain semantic HTML plus one ARIA attribute is the whole accessibility story.
+- **Remember (the prediction): the list and `aria-current` do the talking.** A screen reader says "list, 4 items" … "Billing, current step, 3 of 4". The "3 of 4" comes from the `<ol>`; "current step" comes from `aria-current="step"`. Chromium's DevTools accessibility API doesn't list `aria-current` at all (not even on a link), so that part is per spec, not observed.
+- **Remember: `flex-1` vs `flex-auto`.** `flex-1` starts every item at 0 and splits *all* the space, so a step with a longer label got a shorter line. `flex-auto` starts at content size and splits only the extra space, so the lines come out equal.
+- **Read:** https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Reference/Attributes/aria-current
