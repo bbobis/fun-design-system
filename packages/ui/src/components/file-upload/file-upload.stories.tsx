@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
 import { FileUpload } from './file-upload';
+import type { UploadFn } from './use-uploads';
 
 const meta = {
   title: 'Components/FileUpload',
@@ -62,6 +63,52 @@ export const SingleFile: Story = {
     description: 'PNG or SVG.',
     multiple: false,
     accept: ['image/png', 'image/svg+xml'],
+  },
+};
+
+/**
+ * A pretend server: bigger files take longer, and it honours Cancel through `signal`.
+ * A file with "offline" in its name fails at 40%, so you can try Retry.
+ */
+const fakeUpload: UploadFn = (file, { onProgress, signal }) =>
+  new Promise((resolve, reject) => {
+    const steps = Math.min(
+      40,
+      Math.max(6, Math.round(file.size / (64 * 1024))),
+    );
+    let step = 0;
+    const timer = setInterval(() => {
+      step += 1;
+      onProgress(step / steps);
+      if (/offline/i.test(file.name) && step / steps >= 0.4) {
+        clearInterval(timer);
+        reject(new Error('You’re offline. Check your connection, then retry.'));
+      } else if (step === steps) {
+        clearInterval(timer);
+        resolve(undefined);
+      }
+    }, 150);
+    signal.addEventListener('abort', () => clearInterval(timer));
+  });
+
+/**
+ * `upload`: each new file is sent right away. Progress per file, Retry when it fails,
+ * and the ✕ cancels while it's sending. Name a file "offline…" to see a failure.
+ */
+export const WithUpload: Story = {
+  render: function Render() {
+    const [files, setFiles] = useState<File[]>([]);
+    return (
+      <FileUpload
+        label="Receipts"
+        description="PDF or images, up to 10 MB each."
+        accept={['application/pdf', 'image/*']}
+        maxSize={10 * MB}
+        value={files}
+        onChange={setFiles}
+        upload={fakeUpload}
+      />
+    );
   },
 };
 
