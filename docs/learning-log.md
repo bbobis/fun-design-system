@@ -367,3 +367,10 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Remember: check what the ARIA role promises.** It says `radiogroup`, so Tab should land on the *checked* radio. React Aria starts on the first, as for a toolbar, so an `onFocusCapture` sends focus that enters from outside to the chosen segment.
 - **Remember: measure state contrast (WCAG 1.4.11, 3:1).** The selected pill was only 1.17:1 against the track in both themes. A `ring-border-strong` outline (3.7:1) fixed it. Also, `onChange` now fires only on a real change: React Aria reports the same segment again when it's pressed twice.
 - **Read:** https://react-aria.adobe.com/ToggleButtonGroup
+
+## 2026-10-12 — Audit: isInvalid and where Tab lands
+- **Did:** checked every component for the two bug kinds found this week. Result: **no new code bugs**. I added recipe rules 24 and 25, a comment at each `isInvalid`, and a CheckboxGroup test that locks the rule in.
+- **Remember (the prediction): `required` is not shown live in `aria` mode.** A required DatePicker cleared and blurred stays un-red. React Aria shows `required` only when validation is committed, so the #48 change caused no regression.
+- **Remember: read the library's code when tests disagree.** jsdom's form submit gave mixed results. `useFormValidationState` settled it: shown error = our `isInvalid` if set, else React Aria's built-in checks. So `false` is a choice per component, not a bug pattern. It's wrong only where React Aria checks something users need (date ranges).
+- **Remember: Tab-lands-on-selected is checked in a real browser**, with the selected item *not* first. React Aria gets it right for Tabs, TagGroup, Select and Calendar. Only ToggleButtonGroup (SegmentedControl) didn't.
+- **Read:** https://react-aria.adobe.com/forms#validation

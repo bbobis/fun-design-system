@@ -62,6 +62,8 @@ export function CheckboxGroup({
       name={name}
       isRequired={required}
       isDisabled={disabled}
+      // Boolean(error), so never undefined: React Aria's own `required` check would
+      // show its default message; the app owns that (component-recipe.md, rule 24).
       isInvalid={Boolean(error)}
       validationBehavior="aria"
       className={cn('flex flex-col gap-2', className)}

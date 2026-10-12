@@ -147,6 +147,23 @@ src/index.ts          export * from './components/<name>'
     on one control, so it can't sit inside `Field`. It takes the *same* prop names as
     Field (`label`, `description`, `error`, `required`, `disabled`), so the API feels
     the same.
+24. **`isInvalid`: `false` switches React Aria's own checks off.** React Aria shows our
+    `isInvalid` if it's set, and its *built-in* checks only if it's `undefined`
+    (`useFormValidationState`). So pick per component:
+    - It has checks users need (DatePicker/DateRangePicker: a typed day outside
+      `min`/`max`, an end before the start) → `isInvalid={invalid || field?.invalid || undefined}`.
+    - Its only built-in check is `required` (Select, Combobox, MultiCombobox,
+      RadioGroup, CheckboxGroup) or it clamps instead (NumberField) → `?? false` is
+      right: the app owns required messages (it passes `error`), so React Aria's default
+      "Please select an item" never shows.
+    Audited 2026-10-12: only the date pickers needed `undefined`.
+25. **The ARIA role decides where Tab lands.** A `radiogroup`, a selectable `grid`
+    (TagGroup), `tablist` and a calendar all promise that Tab lands on the *chosen*
+    item, not the first. React Aria does this for Tabs, TagGroup, Select, Calendar,
+    but not for `ToggleButtonGroup` (toolbar behaviour), which needs an
+    `onFocusCapture` redirect (SegmentedControl). Check it in Chromium for every new
+    composite: Tab in with the chosen item *not* first, and read `document.activeElement`.
+    Audited 2026-10-12: only SegmentedControl needed a fix.
 
 ## Tests to write for every component
 

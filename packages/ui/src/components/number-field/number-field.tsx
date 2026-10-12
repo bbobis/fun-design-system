@@ -122,6 +122,8 @@ export function NumberField({
       isWheelDisabled
       onBlur={onBlur}
       name={name}
+      // false on purpose: React Aria clamps to min/max on blur instead of flagging,
+      // so there's no own check to hide (component-recipe.md, rule 24).
       isInvalid={invalid ?? field?.invalid ?? false}
       isRequired={required ?? field?.required ?? false}
       isDisabled={disabled ?? field?.disabled ?? false}
