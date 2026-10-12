@@ -326,3 +326,9 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Remember: read the source, then test the real thing.** I first guessed Enter on the row; React Aria's source and a Chromium run showed the handle is the keyboard entry point when a list has one. jsdom can't run its drag manager at all, so drags are verified in Chromium.
 - **Gotcha:** `GridListItem` names a row from `textValue` and drops `aria-describedby`, so a second line has to go into the name ("Customer, Company name").
 - **Read:** https://react-aria.adobe.com/dnd
+
+## 2026-10-12 — ReorderableList: Alt+↑/↓ shortcut
+- **Built:** Alt+↑/↓ on a row (or its ⠿ handle) moves it one step and announces "Moved Status to position 4 of 6" (or "Invoice is already first"). It reuses `moveItems()`. The full keyboard drag still works for long moves.
+- **Remember: `onKeyDownCapture` sees a key before the handlers below it.** `GridListItem` has no `onKeyDown` prop, so a wrapper `div` catches Alt+arrows in the capture phase and calls `stopPropagation()`. That stops React Aria's own ↓ from also moving focus.
+- **Remember: moving a focused DOM node drops focus.** Moving "Status" **down** made React move that node. The browser then blurred it to `<body>`, and React Aria put focus back (it remembers the focused key). Moving **up** made React move the *neighbour*, so focus never left. Check this in a real browser, never assume.
+- **Read:** https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/addEventListener#capture
