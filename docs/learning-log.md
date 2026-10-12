@@ -332,3 +332,10 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Remember: `onKeyDownCapture` sees a key before the handlers below it.** `GridListItem` has no `onKeyDown` prop, so a wrapper `div` catches Alt+arrows in the capture phase and calls `stopPropagation()`. That stops React Aria's own ↓ from also moving focus.
 - **Remember: moving a focused DOM node drops focus.** Moving "Status" **down** made React move that node. The browser then blurred it to `<body>`, and React Aria put focus back (it remembers the focused key). Moving **up** made React move the *neighbour*, so focus never left. Check this in a real browser, never assume.
 - **Read:** https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/addEventListener#capture
+
+## 2026-10-12 — FileUpload: upload progress, Retry, Cancel
+- **Built:** an `upload(file, { onProgress, signal })` prop. Each new file is sent right away. Its row shows a progress bar and %, then ✓, or the reason plus **Retry**. The ✕ cancels while sending. State lives in a `useUploads` hook, keyed by the `File` object itself. `ProgressBar` gained `hideLabel`.
+- **Remember: `AbortController` is how you cancel async work.** The hook makes one per upload and passes `signal` to your function (and from there to `fetch`). Cancel, removing a file and unmounting all call `abort()`. A late answer from an aborted upload is ignored (`if (signal.aborted) return`).
+- **Remember (the prediction): when the focused button disappears, focus falls to `<body>`.** Retry vanishes once the row is uploading again, so the code moves focus to the row's ✕. That button stays in every state and only its name changes. The test fails without the fix (it was checked).
+- **Gotcha:** one `role="status"` region plus two uploads finishing at once means React merges the updates and the first message is lost. Collect messages for one tick, then announce them together.
+- **Read:** https://developer.mozilla.org/en-US/docs/Web/API/AbortController

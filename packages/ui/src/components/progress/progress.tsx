@@ -52,6 +52,12 @@ export type ProgressBarProps = {
   valueLabel?: string;
   /** Hide the value text (the percentage is still read out). @default false */
   hideValue?: boolean;
+  /**
+   * Hide the label row; the label still names the bar for screen readers. For when
+   * the text around the bar already says what it is (a file row in FileUpload).
+   * @default false
+   */
+  hideLabel?: boolean;
   className?: string;
 };
 
@@ -67,6 +73,7 @@ export function ProgressBar({
   max = 100,
   valueLabel,
   hideValue = false,
+  hideLabel = false,
   className,
 }: ProgressBarProps) {
   return (
@@ -80,12 +87,16 @@ export function ProgressBar({
     >
       {({ percentage, valueText, isIndeterminate }) => (
         <>
-          <div className="flex justify-between gap-4 text-sm">
-            <Label className="font-medium text-fg">{label}</Label>
-            {!hideValue && !isIndeterminate && (
-              <span className="text-fg-muted tabular-nums">{valueText}</span>
-            )}
-          </div>
+          {hideLabel ? (
+            <Label className="sr-only">{label}</Label>
+          ) : (
+            <div className="flex justify-between gap-4 text-sm">
+              <Label className="font-medium text-fg">{label}</Label>
+              {!hideValue && !isIndeterminate && (
+                <span className="text-fg-muted tabular-nums">{valueText}</span>
+              )}
+            </div>
+          )}
           <div className="relative h-2 overflow-hidden rounded-full bg-surface">
             {isIndeterminate ? (
               <div className="absolute inset-y-0 w-1/3 animate-[progress-slide_1.4s_ease-in-out_infinite] rounded-full bg-primary motion-reduce:w-full motion-reduce:animate-none motion-reduce:opacity-50" />

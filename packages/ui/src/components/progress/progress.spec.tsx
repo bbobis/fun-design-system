@@ -55,4 +55,12 @@ describe('ProgressBar', () => {
       '80%',
     );
   });
+
+  it('hideLabel keeps the name for screen readers but hides the label row', () => {
+    render(<ProgressBar label="Uploading a.pdf" value={40} hideLabel />);
+    const bar = screen.getByRole('progressbar', { name: 'Uploading a.pdf' });
+    expect(bar.getAttribute('aria-valuetext')).toBe('40%');
+    expect(screen.getByText('Uploading a.pdf').className).toContain('sr-only');
+    expect(screen.queryByText('40%')).toBeNull();
+  });
 });

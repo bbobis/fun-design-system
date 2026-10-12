@@ -1,4 +1,11 @@
-import { useId, useRef, useState, type ReactNode, type SVGProps } from 'react';
+import {
+  useCallback,
+  useId,
+  useRef,
+  useState,
+  type ReactNode,
+  type SVGProps,
+} from 'react';
 import {
   Button as AriaButton,
   DropZone,
@@ -8,7 +15,9 @@ import {
 } from 'react-aria-components';
 import { cn } from '../../utils/cn';
 import { Button, buttonVariants } from '../button/button';
+import { ProgressBar } from '../progress/progress';
 import { checkFiles, formatBytes, type RejectedFile } from './file-rules';
+import { useUploads, type UploadFn, type UploadState } from './use-uploads';
 
 export type FileUploadProps = {
   /** What the files are for ("Attachments"). Names the drop zone and the list. */
@@ -37,6 +46,14 @@ export type FileUploadProps = {
   defaultValue?: readonly File[];
   /** Called with the full new list whenever files are added or removed. */
   onChange?: (files: File[]) => void;
+  /**
+   * Uploads each file as soon as it's added, with a progress bar, Retry on failure and
+   * Cancel while sending. Leave out to only *choose* files and send them yourself.
+   * Files in `defaultValue` count as already uploaded.
+   * @example
+   * upload={(file, { onProgress, signal }) => api.upload(file, { onProgress, signal })}
+   */
+  upload?: UploadFn;
   /** Shows a required marker. Checking it is up to you (pass `error`). */
   required?: boolean;
   disabled?: boolean;
@@ -51,8 +68,9 @@ export type FileUploadProps = {
  * Built on React Aria `DropZone` (drag + paste, with a hidden drop button for screen
  * readers) and `FileTrigger` (the native file picker, filtered by `accept`).
  *
- * It only *chooses* files: uploading them is up to the app (send `value` with fetch or
- * your API client). The files can't be posted by a plain HTML form.
+ * Without `upload` it only *chooses* files: send `value` with fetch or your API client
+ * (a plain HTML form can't post them). With `upload`, each new file is sent right away,
+ * with progress, Retry and Cancel per file.
  *
  * @example
  * <FileUpload
@@ -75,6 +93,7 @@ export function FileUpload({
   value,
   defaultValue = [],
   onChange,
+  upload,
   required = false,
   disabled = false,
   className,
@@ -90,6 +109,11 @@ export function FileUpload({
   const [announcement, setAnnouncement] = useState('');
   const browseRef = useRef<HTMLButtonElement>(null);
   const removeRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const { states, start } = useUploads(
+    upload,
+    files,
+    useCallback((message: string) => setAnnouncement(message), []),
+  );
 
   const update = (next: File[]) => {
     setOwnFiles(next);
@@ -106,8 +130,10 @@ export function FileUpload({
       current: multiple ? files.length : 0,
     });
     setRejected(result.rejected);
-    if (result.accepted.length > 0)
+    if (result.accepted.length > 0) {
       update(multiple ? [...files, ...result.accepted] : result.accepted);
+      result.accepted.forEach(start);
+    }
     setAnnouncement(
       [
         result.accepted.length > 0 &&
@@ -120,10 +146,14 @@ export function FileUpload({
   };
 
   const remove = (index: number) => {
-    const name = files[index]?.name;
+    const file = files[index];
     const next = files.filter((_, i) => i !== index);
-    update(next);
-    setAnnouncement(`Removed ${name}.`);
+    update(next); // useUploads aborts its upload, if one is running
+    setAnnouncement(
+      states.get(file)?.status === 'uploading'
+        ? `Cancelled upload of ${file.name}.`
+        : `Removed ${file.name}.`,
+    );
     // The button that had focus is gone. Move to the next file's Remove button (or the
     // previous one at the end), or to Browse when the list is empty, so keyboard users
     // aren't dropped back at the top of the page.
@@ -134,6 +164,13 @@ export function FileUpload({
           : removeRefs.current[Math.min(index, next.length - 1)];
       target?.focus();
     });
+  };
+
+  const retry = (index: number) => {
+    start(files[index]);
+    // Retry disappears once the row is uploading again, which would drop focus to
+    // <body>. The row's ✕ (now "Cancel upload") stays, so focus goes there.
+    requestAnimationFrame(() => removeRefs.current[index]?.focus());
   };
 
   const onDrop = async (items: DropItem[]) => {
@@ -230,31 +267,17 @@ export function FileUpload({
           className="flex flex-col divide-y divide-border rounded-md border border-border"
         >
           {files.map((file, i) => (
-            <li
+            <FileRow
               key={`${file.name}-${file.size}-${file.lastModified}-${i}`}
-              className="flex items-center gap-3 px-3 py-2 text-sm"
-            >
-              <FileIcon className="size-4 shrink-0 text-fg-muted" />
-              <span className="min-w-0 flex-1 truncate text-fg">
-                {file.name}
-              </span>
-              <span className="shrink-0 text-fg-muted tabular-nums">
-                {formatBytes(file.size)}
-              </span>
-              <Button
-                ref={(el) => {
-                  removeRefs.current[i] = el;
-                }}
-                intent="ghost"
-                size="sm"
-                aria-label={`Remove ${file.name}`}
-                disabled={disabled}
-                onClick={() => remove(i)}
-                className="-me-2 px-2"
-              >
-                <XIcon className="size-4" />
-              </Button>
-            </li>
+              file={file}
+              state={states.get(file)}
+              disabled={disabled}
+              onRemove={() => remove(i)}
+              onRetry={() => retry(i)}
+              removeRef={(el) => {
+                removeRefs.current[i] = el;
+              }}
+            />
           ))}
         </ul>
       )}
@@ -265,6 +288,91 @@ export function FileUpload({
         </span>
       )}
     </div>
+  );
+}
+
+type FileRowProps = {
+  file: File;
+  state: UploadState | undefined;
+  disabled: boolean;
+  onRemove: () => void;
+  onRetry: () => void;
+  removeRef: (el: HTMLButtonElement | null) => void;
+};
+
+/** One chosen file: name, size or progress, and its buttons. */
+function FileRow({
+  file,
+  state,
+  disabled,
+  onRemove,
+  onRetry,
+  removeRef,
+}: FileRowProps) {
+  const uploading = state?.status === 'uploading';
+  const progress = uploading ? state.progress : undefined;
+  return (
+    <li className="flex flex-col gap-1.5 px-3 py-2 text-sm">
+      <div className="flex items-center gap-3">
+        <FileIcon
+          className={cn(
+            'size-4 shrink-0 text-fg-muted',
+            state?.status === 'error' && 'text-fg-danger',
+          )}
+        />
+        <span className="min-w-0 flex-1 truncate text-fg">{file.name}</span>
+        <span className="flex shrink-0 items-center gap-1 text-fg-muted tabular-nums">
+          {progress !== undefined
+            ? `${Math.round(progress * 100)}%`
+            : formatBytes(file.size)}
+          {state?.status === 'done' && (
+            <>
+              <CheckIcon className="size-4 text-success" />
+              <span className="sr-only">Uploaded</span>
+            </>
+          )}
+        </span>
+        {state?.status === 'error' && (
+          <Button
+            intent="secondary"
+            size="sm"
+            aria-label={`Retry ${file.name}`}
+            disabled={disabled}
+            onClick={onRetry}
+          >
+            Retry
+          </Button>
+        )}
+        {/* The same button in every state, so focus has somewhere to stay; only its
+            name changes: Cancel while sending (it also takes the file out), else Remove. */}
+        <Button
+          ref={removeRef}
+          intent="ghost"
+          size="sm"
+          aria-label={
+            uploading ? `Cancel upload of ${file.name}` : `Remove ${file.name}`
+          }
+          disabled={disabled}
+          onClick={onRemove}
+          className="-me-2 px-2"
+        >
+          <XIcon className="size-4" />
+        </Button>
+      </div>
+      {uploading && (
+        <ProgressBar
+          label={`Uploading ${file.name}`}
+          value={progress === undefined ? undefined : progress * 100}
+          hideLabel
+          className="ps-7"
+        />
+      )}
+      {state?.status === 'error' && (
+        <span className="ps-7 text-fg-danger">
+          Didn’t upload: {state.message}
+        </span>
+      )}
+    </li>
   );
 }
 
@@ -290,6 +398,11 @@ const UploadIcon = (p: SVGProps<SVGSVGElement>) => (
 const FileIcon = (p: SVGProps<SVGSVGElement>) => (
   <Svg {...p}>
     <path d="M4 1.5h5.5l3 3v10H4zM9.5 1.5v3h3" />
+  </Svg>
+);
+const CheckIcon = (p: SVGProps<SVGSVGElement>) => (
+  <Svg {...p} strokeWidth={1.75}>
+    <path d="m3.5 8.5 3 3 6-7" />
   </Svg>
 );
 const XIcon = (p: SVGProps<SVGSVGElement>) => (

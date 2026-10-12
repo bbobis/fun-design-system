@@ -157,3 +157,170 @@ describe('FileUpload', () => {
     );
   });
 });
+
+/** A hand-controlled upload: each call waits until the test resolves or rejects it. */
+function fakeUploads() {
+  const calls: {
+    file: File;
+    signal: AbortSignal;
+    progress: (f: number) => void;
+    resolve: () => void;
+    reject: (e: unknown) => void;
+  }[] = [];
+  const upload = vi.fn(
+    (
+      file: File,
+      {
+        onProgress,
+        signal,
+      }: { onProgress: (f: number) => void; signal: AbortSignal },
+    ) =>
+      new Promise<void>((resolve, reject) =>
+        calls.push({ file, signal, progress: onProgress, resolve, reject }),
+      ),
+  );
+  return { upload, calls };
+}
+// Lets promises settle and the one-tick announcement batch flush.
+const settle = () => act(() => new Promise((r) => setTimeout(r, 10)));
+
+describe('FileUpload with upload', () => {
+  it('uploads each new file: progress bar, then done, announced', async () => {
+    const { upload, calls } = fakeUploads();
+    const { container } = render(
+      <FileUpload label="Receipts" upload={upload} />,
+    );
+    pick(container, [file('a.pdf', 'application/pdf')]);
+    await settle();
+    expect(upload).toHaveBeenCalledTimes(1);
+    expect(
+      screen.getByRole('button', { name: 'Cancel upload of a.pdf' }),
+    ).toBeTruthy();
+
+    act(() => calls[0].progress(0.45));
+    const bar = screen.getByRole('progressbar', { name: 'Uploading a.pdf' });
+    expect(bar.getAttribute('aria-valuenow')).toBe('45');
+    expect(screen.getByText('45%')).toBeTruthy();
+
+    calls[0].resolve();
+    await settle();
+    expect(screen.queryByRole('progressbar')).toBeNull();
+    expect(screen.getByText('Uploaded')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Remove a.pdf' })).toBeTruthy();
+    expect(screen.getByRole('status').textContent).toBe('Uploaded a.pdf.');
+  });
+
+  it('a failure shows the reason and Retry; Retry starts again and keeps focus in the row', async () => {
+    const { upload, calls } = fakeUploads();
+    const { container } = render(
+      <FileUpload label="Receipts" upload={upload} />,
+    );
+    pick(container, [file('a.pdf', 'application/pdf')]);
+    await settle();
+    calls[0].reject(new Error('The server is busy. Try again in a minute.'));
+    await settle();
+    expect(
+      screen.getByText(
+        'Didn’t upload: The server is busy. Try again in a minute.',
+      ),
+    ).toBeTruthy();
+    expect(screen.getByRole('status').textContent).toBe(
+      'a.pdf didn’t upload: The server is busy. Try again in a minute.',
+    );
+
+    const retryButton = screen.getByRole('button', { name: 'Retry a.pdf' });
+    act(() => retryButton.focus());
+    fireEvent.click(retryButton);
+    await frame();
+    expect(upload).toHaveBeenCalledTimes(2);
+    expect(screen.queryByRole('button', { name: 'Retry a.pdf' })).toBeNull();
+    // Retry is gone; focus moved to the row's button instead of falling to <body>.
+    expect(document.activeElement).toBe(
+      screen.getByRole('button', { name: 'Cancel upload of a.pdf' }),
+    );
+  });
+
+  it('two uploads finishing together are both announced', async () => {
+    const { upload, calls } = fakeUploads();
+    const { container } = render(
+      <FileUpload label="Receipts" upload={upload} />,
+    );
+    pick(container, [
+      file('a.pdf', 'application/pdf'),
+      file('b.pdf', 'application/pdf'),
+    ]);
+    await settle();
+    calls[0].resolve();
+    calls[1].reject(new Error('Too big for the server.'));
+    await settle();
+    expect(screen.getByRole('status').textContent).toBe(
+      'Uploaded a.pdf. b.pdf didn’t upload: Too big for the server.',
+    );
+  });
+
+  it('a non-Error rejection still gets a readable message', async () => {
+    const { upload, calls } = fakeUploads();
+    const { container } = render(
+      <FileUpload label="Receipts" upload={upload} />,
+    );
+    pick(container, [file('a.pdf', 'application/pdf')]);
+    await settle();
+    calls[0].reject('500');
+    await settle();
+    expect(
+      screen.getByText('Didn’t upload: Something went wrong.'),
+    ).toBeTruthy();
+  });
+
+  it('Cancel aborts the request and takes the file out', async () => {
+    const { upload, calls } = fakeUploads();
+    const onChange = vi.fn();
+    const { container } = render(
+      <FileUpload label="Receipts" upload={upload} onChange={onChange} />,
+    );
+    pick(container, [file('a.pdf', 'application/pdf')]);
+    await settle();
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Cancel upload of a.pdf' }),
+    );
+    await settle();
+    expect(calls[0].signal.aborted).toBe(true);
+    expect(onChange).toHaveBeenLastCalledWith([]);
+    expect(screen.getByRole('status').textContent).toBe(
+      'Cancelled upload of a.pdf.',
+    );
+    // A late answer from the server changes nothing.
+    calls[0].resolve();
+    await settle();
+    expect(screen.getByRole('status').textContent).toBe(
+      'Cancelled upload of a.pdf.',
+    );
+  });
+
+  it('unmounting aborts uploads still running', async () => {
+    const { upload, calls } = fakeUploads();
+    const { container, unmount } = render(
+      <FileUpload label="Receipts" upload={upload} />,
+    );
+    pick(container, [file('a.pdf', 'application/pdf')]);
+    await settle();
+    unmount();
+    expect(calls[0].signal.aborted).toBe(true);
+  });
+
+  it('defaultValue files count as uploaded already; refused files are never sent', async () => {
+    const { upload } = fakeUploads();
+    const { container } = render(
+      <FileUpload
+        label="Receipts"
+        upload={upload}
+        accept={['application/pdf']}
+        defaultValue={[file('old.pdf', 'application/pdf')]}
+      />,
+    );
+    pick(container, [file('x.exe', 'application/x-msdownload')]);
+    await settle();
+    expect(upload).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: 'Remove old.pdf' })).toBeTruthy();
+  });
+});
