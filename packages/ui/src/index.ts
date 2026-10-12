@@ -29,6 +29,7 @@ export * from './components/reorderable-list';
 export * from './components/segmented-control';
 export * from './components/select';
 export * from './components/skeleton';
+export * from './components/stepper';
 export * from './components/switch';
 export * from './components/tabs';
 export * from './components/tag-group';
