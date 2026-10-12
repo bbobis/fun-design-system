@@ -12,6 +12,7 @@ import {
   dateFieldVariants,
 } from './date-field-parts';
 import { toCalendarDate, toCalendarRange, type IsoDateRange } from './iso-date';
+import type { RangePreset } from './range-presets';
 
 export type DateRangePickerProps = VariantProps<typeof dateFieldVariants> & {
   /**
@@ -48,6 +49,11 @@ export type DateRangePickerProps = VariantProps<typeof dateFieldVariants> & {
   'aria-label'?: string;
   'aria-labelledby'?: string;
   'aria-describedby'?: string;
+  /**
+   * Quick picks beside the calendar ("Last 7 days"). `commonRangePresets()` gives the
+   * usual set; or pass your own `{ label, value: { start, end } }` list.
+   */
+  presets?: readonly RangePreset[];
   /** Classes for the outer wrapper (width, margins). */
   className?: string;
 };
@@ -60,6 +66,10 @@ export type DateRangePickerProps = VariantProps<typeof dateFieldVariants> & {
  * Built on React Aria's `DateRangePicker` + `RangeCalendar`. Like DatePicker, values are
  * ISO date strings, so they survive JSON, forms and time zones unchanged.
  *
+ * @example
+ * <Field label="Report period">
+ *   <DateRangePicker value={period} onChange={setPeriod} presets={commonRangePresets()} />
+ * </Field>
  * @example
  * <Field label="Report period">
  *   <DateRangePicker value={period} onChange={setPeriod} max={today} />
@@ -82,6 +92,7 @@ export function DateRangePicker({
   'aria-label': ariaLabel,
   'aria-labelledby': ariaLabelledBy,
   'aria-describedby': ariaDescribedBy,
+  presets,
   className,
 }: DateRangePickerProps) {
   const field = useFieldContext();
@@ -130,7 +141,7 @@ export function DateRangePicker({
         <DatePieces slot="end" />
         <CalendarButton />
       </Group>
-      <RangeCalendarPopover />
+      <RangeCalendarPopover presets={presets} min={min} max={max} />
     </AriaDateRangePicker>
   );
 }

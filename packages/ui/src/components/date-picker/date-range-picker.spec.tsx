@@ -231,4 +231,83 @@ describe('DateRangePicker', () => {
     expect(text).toContain('Pick a shorter period');
     expect(first.getAttribute('aria-invalid')).toBe('true');
   });
+
+  describe('presets', () => {
+    const presets = [
+      {
+        label: 'Last 7 days',
+        value: { start: '2026-10-06', end: '2026-10-12' },
+      },
+      {
+        label: 'Last month',
+        value: { start: '2026-09-01', end: '2026-09-30' },
+      },
+    ];
+
+    it('picking one sets the whole range and closes the calendar', async () => {
+      const onChange = vi.fn();
+      render(
+        <DateRangePicker
+          aria-label="Period"
+          defaultValue={october}
+          presets={presets}
+          onChange={onChange}
+        />,
+      );
+      openCalendar();
+      const group = screen.getByRole('group', { name: 'Quick picks' });
+      act(() =>
+        fireEvent.click(
+          within(group).getByRole('button', { name: 'Last 7 days' }),
+        ),
+      );
+      await nextFrame();
+      expect(onChange).toHaveBeenLastCalledWith(presets[0].value);
+      expect(screen.queryByRole('dialog')).toBeNull();
+      expect(segments()).toEqual(['10', '6', '2026', '10', '12', '2026']);
+    });
+
+    it('marks the preset that matches the current range as pressed', () => {
+      render(
+        <DateRangePicker
+          aria-label="Period"
+          defaultValue={presets[1].value}
+          presets={presets}
+        />,
+      );
+      openCalendar();
+      const pressed = (name: string) =>
+        screen.getByRole('button', { name }).getAttribute('aria-pressed');
+      expect(pressed('Last month')).toBe('true');
+      expect(pressed('Last 7 days')).toBe('false');
+    });
+
+    it('disables a preset that reaches outside min / max', () => {
+      render(
+        <DateRangePicker
+          aria-label="Period"
+          defaultValue={october}
+          min="2026-10-01"
+          presets={presets}
+        />,
+      );
+      openCalendar();
+      expect(
+        screen
+          .getByRole('button', { name: 'Last month' })
+          .hasAttribute('disabled'),
+      ).toBe(true);
+      expect(
+        screen
+          .getByRole('button', { name: 'Last 7 days' })
+          .hasAttribute('disabled'),
+      ).toBe(false);
+    });
+
+    it('no presets, no extra column', () => {
+      render(<DateRangePicker aria-label="Period" defaultValue={october} />);
+      openCalendar();
+      expect(screen.queryByRole('group', { name: 'Quick picks' })).toBeNull();
+    });
+  });
 });

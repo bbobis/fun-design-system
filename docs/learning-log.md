@@ -346,3 +346,10 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Remember: in React Aria, `isInvalid={false}` means "never invalid".** It switched off React Aria's own checks: a typed day outside `min`/`max`, an end before the start. Pass `true` or `undefined`, never `false`. This fixed the same bug in `DatePicker`.
 - **Gotcha (tests):** calendar day names carry extras ("Selected Range: … to …", "First available date"), so the tests find days by their number instead of their name.
 - **Read:** https://react-aria.adobe.com/DateRangePicker
+
+## 2026-10-12 — DateRangePicker: quick picks (presets)
+- **Built:** a `presets` prop on `DateRangePicker`, shown as a column of buttons beside the calendar. One click sets both ends and closes the popover; the matching one is `aria-pressed`, and one reaching outside `min`/`max` is disabled. `commonRangePresets(today?)` gives the usual six: Today, Last 7/30 days, Month to date, Last month, Year to date.
+- **Remember (the prediction): ranges count both ends.** "Last 7 days" on Oct 12 is **Oct 6 – 12** (`today.subtract({ days: 6 })`), not Oct 5. Off-by-one here gives an 8-day report.
+- **Remember: let the date library do month and year maths.** `startOfMonth`, `endOfMonth` and `subtract({ months: 1 })` from `@internationalized/date` get Feb 29, Dec 31 → Jan 1 and 30-vs-31-day months right. The tests cover a leap year and a year boundary.
+- **Remember: React Aria exposes each component's state through a context** (`DateRangePickerStateContext`). Our own part inside the popover can read and set the value (`state.setValue`, `state.setOpen(false)`) without new props.
+- **Read:** https://react-aria.adobe.com/internationalized/date/CalendarDate

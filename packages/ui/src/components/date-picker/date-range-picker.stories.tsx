@@ -1,8 +1,10 @@
+import { parseDate } from '@internationalized/date';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
 import { Field } from '../field';
 import { DateRangePicker } from './date-range-picker';
 import type { IsoDateRange } from './iso-date';
+import { commonRangePresets } from './range-presets';
 
 const meta = {
   title: 'Components/DateRangePicker',
@@ -79,6 +81,42 @@ export const MinMax: Story = {
     min: '2026-10-05',
     max: '2026-10-24',
     defaultValue: { start: '2026-10-08', end: '2026-10-14' },
+  },
+};
+
+/**
+ * `presets`: quick picks beside the calendar. One click sets both ends and closes it;
+ * the one matching the current range is highlighted. "Today" is fixed to Oct 12, 2026
+ * here so the story looks the same every day; in an app, call `commonRangePresets()`.
+ */
+export const WithPresets: Story = {
+  render: () => {
+    function Example() {
+      const [value, setValue] = useState<IsoDateRange | null>({
+        start: '2026-10-06',
+        end: '2026-10-12',
+      });
+      return (
+        <div className="flex flex-col gap-2">
+          <Field label="Report period">
+            <DateRangePicker
+              value={value}
+              onChange={setValue}
+              presets={commonRangePresets(parseDate('2026-10-12'))}
+            />
+          </Field>
+          <p className="text-sm text-fg-muted">
+            Value:{' '}
+            <code>
+              {value === null
+                ? 'null'
+                : `{ start: '${value.start}', end: '${value.end}' }`}
+            </code>
+          </p>
+        </div>
+      );
+    }
+    return <Example />;
   },
 };
 
