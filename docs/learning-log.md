@@ -319,3 +319,10 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Remember: when a focused button disappears, put focus somewhere sensible.** Remove moves focus to the next file's Remove, or Browse when the list is empty.
 - **Gotcha (testing):** a page script can't fake a desktop file drag (`effectAllowed` stays "none" outside a real drag). Chrome DevTools' `Input.dispatchDragEvent` drags real files from disk.
 - **Read:** https://react-aria.adobe.com/DropZone
+
+## 2026-10-12 — ReorderableList
+- **Built:** `ReorderableList` (React Aria `GridList` + `useDragAndDrop`): ⠿ handle per row, a drop line, the dragged row faded in place, optional `renderEnd` (e.g. a Switch per column). Controlled only (`items` + `onReorder`); the move itself is a pure `moveItems()`.
+- **Remember the keyboard flow:** ↑↓ to a row, **→ onto its ⠿ handle**, Enter picks it up; ↑↓ then walk the *gaps* ("Insert between Status and Issued"), Enter drops, Escape cancels. React Aria announces each step. In a grid, → moves *into* a row's controls.
+- **Remember: read the source, then test the real thing.** I first guessed Enter on the row; React Aria's source and a Chromium run showed the handle is the keyboard entry point when a list has one. jsdom can't run its drag manager at all, so drags are verified in Chromium.
+- **Gotcha:** `GridListItem` names a row from `textValue` and drops `aria-describedby`, so a second line has to go into the name ("Customer, Company name").
+- **Read:** https://react-aria.adobe.com/dnd
