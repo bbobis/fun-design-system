@@ -122,9 +122,12 @@ export function PopoverEditorShell({
         const action = toCommit(e);
         if (!action) return;
         e.stopPropagation();
-        // Tab with the list open: React Aria picked the highlighted option and closed
-        // the list (or nothing changed). Either way, now commit and move.
-        if (e.key === 'Tab' && !openRef.current) {
+        // Tab or Enter with the list open: React Aria picked the highlighted option and
+        // closed the list, or nothing changed (re-picking the current value only closes
+        // it, and fires no change). Either way, now commit and move: one key press.
+        // If a pick already committed, finish() does nothing. Not Escape: closing the
+        // list must not cancel the edit.
+        if ((e.key === 'Tab' || e.key === 'Enter') && !openRef.current) {
           e.preventDefault();
           finish(action);
         }

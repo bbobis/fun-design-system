@@ -305,3 +305,9 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Remember: "1" waits, "2" jumps.** After "1" the month could still be 10–12, so the segment waits; after "12" no month is longer, so focus moves to the day. React Aria decides this per segment.
 - **Remember: drive components through the platform's own events.** React Aria date segments read typed text from the native `beforeinput` event, so dispatching one is the same path a real key takes. Verified with a real (trusted) key press in Chromium, not only the synthetic event in jsdom.
 - **Read:** https://developer.mozilla.org/en-US/docs/Web/API/Element/beforeinput_event
+
+## 2026-10-11 — Grid combobox: one Enter on an unchanged value
+- **Fixed:** Enter on a combobox (or date) cell whose value you didn't change now commits and moves down in one press, like Tab already did. Before, the first Enter only closed the list.
+- **Remember: capture vs. bubble.** The editor shell sees keys twice: in the *capture* phase (before React Aria) and the *bubble* phase (after). With the list open, Enter must reach React Aria first so it can pick the highlighted option; only afterwards, in bubble, do we check "is the list closed now?" and commit. Committing in capture would save the old value instead of the pick.
+- **Remember: prove a test catches the bug.** Run it against the old code once and watch it fail; a test that passes either way protects nothing.
+- **Read:** https://developer.mozilla.org/en-US/docs/Web/API/Event/eventPhase
