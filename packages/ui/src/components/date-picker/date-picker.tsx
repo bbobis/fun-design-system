@@ -1,41 +1,16 @@
-import { cva, type VariantProps } from 'class-variance-authority';
-import {
-  Button,
-  DateInput,
-  DatePicker as AriaDatePicker,
-  DateSegment,
-  Group,
-} from 'react-aria-components';
+import type { VariantProps } from 'class-variance-authority';
+import { DatePicker as AriaDatePicker, Group } from 'react-aria-components';
 import { cn } from '../../utils/cn';
 import { useFieldContext } from '../field/field-context';
-import { CalendarIcon, CalendarPopover } from './calendar-popover';
+import { CalendarPopover } from './calendar-popover';
+import {
+  CalendarButton,
+  DatePieces,
+  dateFieldVariants,
+} from './date-field-parts';
 import { toCalendarDate } from './iso-date';
 
-// Same heights as Input / Select / Combobox. The Group is the box; the segments and the
-// calendar button sit inside it.
-const fieldVariants = cva(
-  [
-    'flex w-full min-w-0 items-center rounded-md border border-border-strong bg-bg text-fg',
-    'transition-colors',
-    // Ring while any segment is focused, by mouse too: it's a text-like field (same as Input).
-    // outline-solid is explicit on purpose; see component-recipe.md (outline trap).
-    'data-focus-within:outline-2 data-focus-within:outline-offset-2 data-focus-within:outline-solid data-focus-within:outline-focus-ring',
-    'group-data-invalid:border-danger',
-    'group-data-disabled:cursor-not-allowed group-data-disabled:bg-surface group-data-disabled:opacity-60',
-  ],
-  {
-    variants: {
-      size: {
-        sm: 'h-8 ps-2 text-sm',
-        md: 'h-10 ps-2.5 text-sm',
-        lg: 'h-12 ps-3.5 text-base',
-      },
-    },
-    defaultVariants: { size: 'md' },
-  },
-);
-
-export type DatePickerProps = VariantProps<typeof fieldVariants> & {
+export type DatePickerProps = VariantProps<typeof dateFieldVariants> & {
   /**
    * The chosen day as an ISO date, `'YYYY-MM-DD'` (controlled). `null` = no date.
    * A plain string on purpose: a JS `Date` is a moment in time, so the same `Date`
@@ -54,7 +29,10 @@ export type DatePickerProps = VariantProps<typeof fieldVariants> & {
   onBlur?: () => void;
   /** Form field name. Posts `'YYYY-MM-DD'`. */
   name?: string;
-  /** Marks the control invalid. Inside a Field, set for you when it has an `error`. */
+  /**
+   * Marks the control invalid. Inside a Field, set for you when it has an `error`.
+   * Days outside `min`/`max` are marked invalid on their own.
+   */
   invalid?: boolean;
   required?: boolean;
   disabled?: boolean;
@@ -107,7 +85,9 @@ export function DatePicker({
       maxValue={toCalendarDate(max)}
       onBlur={onBlur}
       name={name}
-      isInvalid={invalid ?? field?.invalid ?? false}
+      // true or undefined, never false: an explicit false would also switch off React
+      // Aria's own checks (a typed day outside min/max, an end before the start).
+      isInvalid={invalid || field?.invalid || undefined}
       isRequired={required ?? field?.required ?? false}
       isDisabled={disabled ?? field?.disabled ?? false}
       validationBehavior="aria"
@@ -121,23 +101,9 @@ export function DatePicker({
       aria-describedby={describedBy}
       className={cn('group flex w-full flex-col', className)}
     >
-      <Group className={fieldVariants({ size })}>
-        <DateInput className="flex flex-1 items-center">
-          {(segment) => (
-            <DateSegment
-              segment={segment}
-              className={cn(
-                'rounded px-0.5 tabular-nums caret-transparent outline-hidden',
-                'focus:bg-primary focus:text-on-primary',
-                'data-placeholder:text-fg-muted',
-                'data-[type=literal]:px-0 data-[type=literal]:text-fg-muted',
-              )}
-            />
-          )}
-        </DateInput>
-        <Button className="flex h-full shrink-0 items-center rounded-e-md px-2.5 text-fg-muted outline-hidden hover:text-fg data-focus-visible:text-fg data-focus-visible:outline-2 data-focus-visible:-outline-offset-2 data-focus-visible:outline-solid data-focus-visible:outline-focus-ring">
-          <CalendarIcon className="size-4" />
-        </Button>
+      <Group className={dateFieldVariants({ size })}>
+        <DatePieces className="flex-1" />
+        <CalendarButton />
       </Group>
       <CalendarPopover />
     </AriaDatePicker>

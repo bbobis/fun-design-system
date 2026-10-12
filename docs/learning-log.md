@@ -339,3 +339,10 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Remember (the prediction): when the focused button disappears, focus falls to `<body>`.** Retry vanishes once the row is uploading again, so the code moves focus to the row's ✕. That button stays in every state and only its name changes. The test fails without the fix (it was checked).
 - **Gotcha:** one `role="status"` region plus two uploads finishing at once means React merges the updates and the first message is lost. Collect messages for one tick, then announce them together.
 - **Read:** https://developer.mozilla.org/en-US/docs/Web/API/AbortController
+
+## 2026-10-12 — DateRangePicker
+- **Built:** `DateRangePicker` (React Aria `DateRangePicker` + `RangeCalendar`). Value is `{ start, end }` ISO strings, plus `min`/`max`, Field support and `startName`/`endName` for forms. The field box, date pieces and calendar button moved to `date-field-parts.tsx`; the month header and day grid are shared in `calendar-popover.tsx`, so both pickers use one copy.
+- **Remember (the prediction):** after the first click, React Aria keeps an *anchor*. The band follows the mouse (or arrow keys) as a preview, and `onChange` is **not** called until the second click. Half a range is not a value. With the keyboard, Enter on the start also moves focus one day on, so the preview shows at once (`focusNearestAvailableDate`).
+- **Remember: in React Aria, `isInvalid={false}` means "never invalid".** It switched off React Aria's own checks: a typed day outside `min`/`max`, an end before the start. Pass `true` or `undefined`, never `false`. This fixed the same bug in `DatePicker`.
+- **Gotcha (tests):** calendar day names carry extras ("Selected Range: … to …", "First available date"), so the tests find days by their number instead of their name.
+- **Read:** https://react-aria.adobe.com/DateRangePicker
