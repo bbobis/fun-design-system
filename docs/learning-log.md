@@ -401,3 +401,10 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Remember: check what the library *actually* does.** I wrote "Home/End jump to the ends" in the JSDoc; Chromium showed React Aria's Toolbar doesn't do that, so the claim came out. Also React Aria didn't give the `<hr>` separator any orientation here (horizontal in both layouts), so the Toolbar passes its direction through a React context. Same fix as the Accordion.
 - **Remember: don't nest arrow-key controls in a toolbar** (inputs, SegmentedControl, Slider): both would claim ←/→. And in a vertical toolbar, tooltips go to the side (`placement="end"`) so they don't cover the neighbours.
 - **Read:** https://www.w3.org/WAI/ARIA/apg/patterns/toolbar/
+
+## 2026-10-12 — ToggleGroup
+- **Built:** `ToggleGroup` (React Aria `ToggleButtonGroup`, `selectionMode="multiple"`): any number of options on, including none. `value`/`onChange` use a plain `string[]` in option order. It shares its look with `SegmentedControl` through a new `segment-parts.tsx` (track, `segmentVariants`, `SegmentButton`), so the two stay in sync.
+- **Remember: "pick any" vs "pick one" changes the ARIA.** SegmentedControl is a `radiogroup` of radios (`aria-checked`, one on). ToggleGroup is buttons with `aria-pressed` (each on/off on its own). Same pills, different meaning for a screen reader.
+- **Remember (the prediction): a toolbar inside a toolbar becomes a group.** On its own, ToggleGroup is `role="toolbar"`. Inside our `Toolbar`, React Aria turns it into `role="group"` and the outer toolbar owns ←/→, so Undo → Redo → Bold → Italic… is one arrow trail with one Tab stop. So unlike SegmentedControl, it's safe in a Toolbar.
+- **Remember: refactor with tests as the safety net.** SegmentedControl's 6 tests passed unchanged after its styles moved to `segment-parts.tsx`.
+- **Read:** https://react-aria.adobe.com/ToggleButtonGroup
