@@ -311,3 +311,11 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Remember: capture vs. bubble.** The editor shell sees keys twice: in the *capture* phase (before React Aria) and the *bubble* phase (after). With the list open, Enter must reach React Aria first so it can pick the highlighted option; only afterwards, in bubble, do we check "is the list closed now?" and commit. Committing in capture would save the old value instead of the pick.
 - **Remember: prove a test catches the bug.** Run it against the old code once and watch it fail; a test that passes either way protects nothing.
 - **Read:** https://developer.mozilla.org/en-US/docs/Web/API/Event/eventPhase
+
+## 2026-10-11 — FileUpload
+- **Built:** `FileUpload`: drop zone (React Aria `DropZone`: drag, and paste with Ctrl/⌘+V), "Browse files" (`FileTrigger`), `accept` / `maxSize` / `maxFiles` / `multiple`, a file list with Remove, refusals with reasons, and a live status for screen readers. It chooses files; uploading stays the app's job.
+- **Remember: three ways in, so nobody is stuck.** Drag (mouse), Browse (keyboard, touch), paste (keyboard). React Aria's DropZone also has a hidden drop button so screen-reader users can paste into it.
+- **Remember: accept the drop, then explain.** Refusing a drag only shows a "no entry" cursor with no reason. Taking the files and listing "archive.zip isn't an accepted file type" tells people what to fix.
+- **Remember: when a focused button disappears, put focus somewhere sensible.** Remove moves focus to the next file's Remove, or Browse when the list is empty.
+- **Gotcha (testing):** a page script can't fake a desktop file drag (`effectAllowed` stays "none" outside a real drag). Chrome DevTools' `Input.dispatchDragEvent` drags real files from disk.
+- **Read:** https://react-aria.adobe.com/DropZone
