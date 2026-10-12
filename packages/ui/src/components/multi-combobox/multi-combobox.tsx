@@ -191,6 +191,8 @@ export function MultiCombobox({
       formValue="key"
       name={name}
       onBlur={onBlur}
+      // false on purpose: React Aria's only own check here is `required`, and the app
+      // owns that message (component-recipe.md, rule 24).
       isInvalid={invalid ?? field?.invalid ?? false}
       isRequired={required ?? field?.required ?? false}
       isDisabled={isDisabled}

@@ -54,6 +54,24 @@ describe('CheckboxGroup', () => {
     expect(ids).toContain(screen.getByText('Choose who gets a copy').id);
   });
 
+  it('required without an error: React Aria never marks it invalid or adds its own message', () => {
+    // Raw React Aria flags an empty required group on submit, with a default message.
+    // We pass isInvalid={Boolean(error)} so the app owns that message (recipe rule 24).
+    const { container } = render(
+      <form onSubmit={(e) => e.preventDefault()}>
+        <CheckboxGroup label="Notify me" required>
+          <CheckboxGroupItem value="email">Email</CheckboxGroupItem>
+        </CheckboxGroup>
+      </form>,
+    );
+    act(() => {
+      fireEvent.submit(container.querySelector('form') as HTMLFormElement);
+    });
+    const group = screen.getByRole('group', { name: /Notify me/ });
+    expect(group.hasAttribute('data-invalid')).toBe(false);
+    expect(group.getAttribute('aria-describedby')).toBeNull();
+  });
+
   it('each box is its own Tab stop (unlike radios)', () => {
     render(<Copies />);
     const enabled = screen
