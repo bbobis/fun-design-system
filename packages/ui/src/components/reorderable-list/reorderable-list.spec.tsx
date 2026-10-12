@@ -63,10 +63,10 @@ function Columns({
     />
   );
 }
-const press = (key: string) =>
+const press = (key: string, altKey = false) =>
   act(() => {
-    fireEvent.keyDown(document.activeElement as Element, { key });
-    fireEvent.keyUp(document.activeElement as Element, { key });
+    fireEvent.keyDown(document.activeElement as Element, { key, altKey });
+    fireEvent.keyUp(document.activeElement as Element, { key, altKey });
   });
 
 describe('ReorderableList', () => {
@@ -95,5 +95,88 @@ describe('ReorderableList', () => {
     expect(document.activeElement).toBe(
       screen.getByRole('button', { name: 'Drag Status' }),
     );
+  });
+
+  describe('Alt+↑/↓ shortcut', () => {
+    const focusRow = (name: string) =>
+      act(() => screen.getByRole('row', { name }).focus());
+
+    it('moves the focused row one step, announces it, and keeps focus on it', () => {
+      const onReorder = vi.fn();
+      render(<Columns onReorder={onReorder} />);
+      focusRow('Status');
+      press('ArrowDown', true);
+      expect(ids(onReorder.mock.lastCall?.[0])).toEqual([
+        'invoice',
+        'customer',
+        'due',
+        'status',
+      ]);
+      expect(screen.getByRole('status').textContent).toBe(
+        'Moved Status to position 4 of 4.',
+      );
+      press('ArrowUp', true);
+      press('ArrowUp', true);
+      expect(ids(onReorder.mock.lastCall?.[0])).toEqual([
+        'invoice',
+        'status',
+        'customer',
+        'due',
+      ]);
+      expect(screen.getByRole('status').textContent).toBe(
+        'Moved Status to position 2 of 4.',
+      );
+      expect(document.activeElement).toBe(
+        screen.getByRole('row', { name: 'Status' }),
+      );
+    });
+
+    it('also works from the drag handle', () => {
+      const onReorder = vi.fn();
+      render(<Columns onReorder={onReorder} />);
+      act(() => screen.getByRole('button', { name: 'Drag Invoice' }).focus());
+      press('ArrowDown', true);
+      expect(ids(onReorder.mock.lastCall?.[0])).toEqual([
+        'customer',
+        'invoice',
+        'status',
+        'due',
+      ]);
+    });
+
+    it('at the ends: no change, and says why', () => {
+      const onReorder = vi.fn();
+      render(<Columns onReorder={onReorder} />);
+      focusRow('Invoice');
+      press('ArrowUp', true);
+      expect(onReorder).not.toHaveBeenCalled();
+      expect(screen.getByRole('status').textContent).toBe(
+        'Invoice is already first.',
+      );
+    });
+
+    it('plain ↓ still just moves focus; disabled ignores the shortcut', () => {
+      const onReorder = vi.fn();
+      const { unmount } = render(<Columns onReorder={onReorder} />);
+      focusRow('Invoice');
+      press('ArrowDown');
+      expect(onReorder).not.toHaveBeenCalled();
+      expect(document.activeElement).toBe(
+        screen.getByRole('row', { name: 'Customer, Company name' }),
+      );
+      unmount();
+
+      render(
+        <ReorderableList
+          aria-label="Column order"
+          items={columns}
+          onReorder={onReorder}
+          disabled
+        />,
+      );
+      focusRow('Invoice');
+      press('ArrowDown', true);
+      expect(onReorder).not.toHaveBeenCalled();
+    });
   });
 });

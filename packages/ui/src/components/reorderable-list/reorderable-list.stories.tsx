@@ -33,6 +33,7 @@ const columns: ReorderableItem[] = [
 /**
  * Drag a row by its ⠿ handle. Keyboard: ↑↓ to a row, → onto its handle, Enter to pick
  * it up, ↑↓ through the gaps ("Insert between …"), Enter to drop (Escape cancels).
+ * Shortcut: Alt+↑/↓ on a row moves it one step.
  */
 export const Default: Story = {
   render: function Render() {
