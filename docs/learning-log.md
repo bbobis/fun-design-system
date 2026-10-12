@@ -388,3 +388,9 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Remember (the prediction): the list and `aria-current` do the talking.** A screen reader says "list, 4 items" … "Billing, current step, 3 of 4". The "3 of 4" comes from the `<ol>`; "current step" comes from `aria-current="step"`. Chromium's DevTools accessibility API doesn't list `aria-current` at all (not even on a link), so that part is per spec, not observed.
 - **Remember: `flex-1` vs `flex-auto`.** `flex-1` starts every item at 0 and splits *all* the space, so a step with a longer label got a shorter line. `flex-auto` starts at content size and splits only the extra space, so the lines come out equal.
 - **Read:** https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Reference/Attributes/aria-current
+
+## 2026-10-12 — SearchField
+- **Built:** `SearchField` (React Aria `SearchField`): 🔍 + `type="search"` input + ✕. Enter → `onSubmit`, Escape or ✕ → clear (`onClear`). `loading` swaps the 🔍 for a spinner, and it works in `Field` like `Input`. The ✕ shows only with text, is named "Clear search", and isn't a Tab stop.
+- **Remember (the prediction): Escape is handled only when there's something to clear.** In a Dialog, the first Escape clears the search (focus stays), the second closes the dialog. React Aria lets Escape through when the field is empty. Verified in Chromium; a test checks the empty case reaches the parent.
+- **Gotcha (screenshots): wait for the theme.** The theme addon sets `data-theme` on `<html>` in an effect *after* the story renders, so a fast screenshot can be light in "dark". The scripts now wait for `html[data-theme=…]`. This was probably also the real cause of the light "Narrow" shot in #54, which I blamed on the viewport parameter.
+- **Read:** https://react-aria.adobe.com/SearchField

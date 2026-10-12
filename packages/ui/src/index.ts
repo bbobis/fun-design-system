@@ -26,6 +26,7 @@ export * from './components/popover';
 export * from './components/progress';
 export * from './components/radio-group';
 export * from './components/reorderable-list';
+export * from './components/search-field';
 export * from './components/segmented-control';
 export * from './components/select';
 export * from './components/skeleton';
