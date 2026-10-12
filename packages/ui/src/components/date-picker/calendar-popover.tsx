@@ -1,4 +1,4 @@
-import type { ReactNode, SVGProps } from 'react';
+import { useContext, type ReactNode, type SVGProps } from 'react';
 import {
   Button,
   Calendar,
@@ -7,6 +7,7 @@ import {
   CalendarGridBody,
   CalendarGridHeader,
   CalendarHeaderCell,
+  DateRangePickerStateContext,
   Dialog,
   Heading,
   Popover,
@@ -14,6 +15,8 @@ import {
 } from 'react-aria-components';
 import { cn } from '../../utils/cn';
 import { popoverMotion } from '../../utils/motion';
+import { toCalendarRange } from './iso-date';
+import type { RangePreset } from './range-presets';
 
 /**
  * The calendar dropdown shared by DatePicker and the DataGrid's date cell editor.
@@ -33,16 +36,88 @@ export function CalendarPopover() {
 
 /**
  * The calendar dropdown for DateRangePicker. First click sets the start, second the end;
- * the start and end days are filled, the days between get a light band.
+ * the start and end days are filled, the days between get a light band. With `presets`,
+ * a column of quick picks sits before the calendar.
  */
-export function RangeCalendarPopover() {
+export function RangeCalendarPopover({
+  presets,
+  min,
+  max,
+}: {
+  presets?: readonly RangePreset[];
+  min?: string;
+  max?: string;
+}) {
   return (
     <CalendarShell>
-      <RangeCalendar>
-        <MonthHeader />
-        <DayGrid range />
-      </RangeCalendar>
+      <div className="flex gap-3">
+        {presets && presets.length > 0 && (
+          <PresetList presets={presets} min={min} max={max} />
+        )}
+        <RangeCalendar>
+          <MonthHeader />
+          <DayGrid range />
+        </RangeCalendar>
+      </div>
     </CalendarShell>
+  );
+}
+
+/**
+ * Quick picks. Plain buttons (Tab reaches them; Shift+Tab from the calendar), each
+ * marked pressed when it matches the current range, and disabled when the range
+ * reaches outside min / max. Picking one sets the whole range and closes the popover.
+ */
+function PresetList({
+  presets,
+  min,
+  max,
+}: {
+  presets: readonly RangePreset[];
+  min?: string;
+  max?: string;
+}) {
+  // The picker's own state, from React Aria (the same one the calendar uses).
+  const state = useContext(DateRangePickerStateContext);
+  const current = state?.value;
+  return (
+    <div
+      role="group"
+      aria-label="Quick picks"
+      className="flex min-w-32 flex-col gap-0.5 border-e border-border pe-3"
+    >
+      {presets.map((preset) => {
+        const range = toCalendarRange(preset.value);
+        // ISO strings compare like dates ('2026-09-30' < '2026-10-01').
+        const outside =
+          !range ||
+          (min !== undefined && preset.value.start < min) ||
+          (max !== undefined && preset.value.end > max);
+        const pressed =
+          current?.start?.toString() === preset.value.start &&
+          current?.end?.toString() === preset.value.end;
+        return (
+          <Button
+            key={preset.label}
+            aria-pressed={pressed}
+            isDisabled={outside}
+            onPress={() => {
+              if (!range || !state) return;
+              state.setValue(range);
+              state.setOpen(false);
+            }}
+            className={cn(
+              'rounded-md px-2.5 py-1.5 text-start text-sm text-fg outline-hidden hover:bg-surface',
+              'aria-pressed:bg-primary/15 aria-pressed:font-medium',
+              'data-disabled:cursor-not-allowed data-disabled:opacity-40 data-disabled:hover:bg-transparent',
+              'data-focus-visible:outline-2 data-focus-visible:-outline-offset-2 data-focus-visible:outline-solid data-focus-visible:outline-focus-ring',
+            )}
+          >
+            {preset.label}
+          </Button>
+        );
+      })}
+    </div>
   );
 }
 
