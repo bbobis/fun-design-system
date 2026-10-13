@@ -14,7 +14,7 @@ const ToolbarOrientation = createContext<'horizontal' | 'vertical'>(
 export type ToolbarProps = {
   /** What the controls act on ("Invoice actions", "Text formatting"). Required. */
   'aria-label': string;
-  /** Our controls: Button, Menu, icon Buttons with Tooltip, ToolbarGroup, ToolbarSeparator. */
+  /** Our controls: Button, Menu, icon Buttons with Tooltip, ToggleGroup, ToolbarGroup, ToolbarSeparator. */
   children: ReactNode;
   /** @default 'horizontal' (←/→ move); 'vertical' uses ↑/↓ */
   orientation?: 'horizontal' | 'vertical';

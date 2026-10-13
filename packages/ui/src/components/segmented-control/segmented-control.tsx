@@ -1,46 +1,13 @@
-import { cva } from 'class-variance-authority';
-import { useRef, type FocusEvent, type ReactNode } from 'react';
-import {
-  ToggleButton,
-  ToggleButtonGroup,
-  type Key,
-} from 'react-aria-components';
+import { useRef, type FocusEvent } from 'react';
+import { ToggleButtonGroup, type Key } from 'react-aria-components';
 import { cn } from '../../utils/cn';
-import { Tooltip } from '../tooltip';
+import {
+  SegmentButton,
+  segmentTrack,
+  type SegmentedOption,
+} from './segment-parts';
 
-export type SegmentedOption = {
-  /** Stable and unique within the control. What `value` and `onChange` use. */
-  id: string;
-  /** The text. With `iconOnly`, it's the button's name and its tooltip instead. */
-  label: string;
-  /** A small icon before the label (16px). Decorative: hide it from screen readers. */
-  icon?: ReactNode;
-  disabled?: boolean;
-};
-
-const segmentVariants = cva(
-  [
-    'inline-flex flex-1 cursor-pointer items-center justify-center gap-1.5 rounded font-medium whitespace-nowrap text-fg-muted outline-hidden transition-colors',
-    'hover:text-fg',
-    // The chosen segment is raised: its own background, a shadow and an outline. The
-    // fill alone is only 1.2:1 against the track; the border-strong ring reaches 3:1
-    // (WCAG 1.4.11), so the choice is visible without relying on the text color.
-    'data-selected:bg-bg data-selected:text-fg data-selected:shadow-sm data-selected:ring-1 data-selected:ring-border-strong',
-    'data-disabled:cursor-not-allowed data-disabled:opacity-40 data-disabled:hover:text-fg-muted',
-    'data-focus-visible:outline-2 data-focus-visible:outline-offset-1 data-focus-visible:outline-solid data-focus-visible:outline-focus-ring',
-  ],
-  {
-    variants: {
-      size: { sm: 'h-7 px-2.5 text-xs', md: 'h-8 px-3 text-sm' },
-      iconOnly: { true: 'px-0', false: '' },
-    },
-    compoundVariants: [
-      { size: 'sm', iconOnly: true, class: 'w-7' },
-      { size: 'md', iconOnly: true, class: 'w-8' },
-    ],
-    defaultVariants: { size: 'md', iconOnly: false },
-  },
-);
+export type { SegmentedOption } from './segment-parts';
 
 export type SegmentedControlProps = {
   /** Names the control ("View"). Required: the segments alone don't say what they set. */
@@ -134,35 +101,16 @@ export function SegmentedControl({
           onChange?.(String(next));
         }}
         isDisabled={disabled}
-        className="inline-flex gap-0.5 rounded-md border border-border bg-surface p-0.5"
+        className={segmentTrack}
       >
-        {options.map((option) => {
-          const segment = (
-            <ToggleButton
-              key={option.id}
-              id={option.id}
-              isDisabled={option.disabled}
-              aria-label={iconOnly ? option.label : undefined}
-              className={segmentVariants({ size, iconOnly })}
-            >
-              {option.icon && (
-                <span aria-hidden="true" className="flex size-4 shrink-0">
-                  {option.icon}
-                </span>
-              )}
-              {!iconOnly && option.label}
-            </ToggleButton>
-          );
-          // Icon-only: the label is the name already, so the tooltip only shows it
-          // (kind="label": screen readers don't hear it twice).
-          return iconOnly ? (
-            <Tooltip key={option.id} content={option.label} kind="label">
-              {segment}
-            </Tooltip>
-          ) : (
-            segment
-          );
-        })}
+        {options.map((option) => (
+          <SegmentButton
+            key={option.id}
+            option={option}
+            size={size}
+            iconOnly={iconOnly}
+          />
+        ))}
       </ToggleButtonGroup>
     </div>
   );
