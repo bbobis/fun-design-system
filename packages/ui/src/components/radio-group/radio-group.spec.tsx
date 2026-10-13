@@ -50,7 +50,7 @@ describe('RadioGroup', () => {
         <Terms />
       </form>,
     );
-    act(() => fireEvent.click(screen.getByRole('radio', { name: /Net 30/ })));
+    fireEvent.click(screen.getByRole('radio', { name: /Net 30/ }));
     const data = new FormData(
       container.querySelector('form') as HTMLFormElement,
     );

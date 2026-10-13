@@ -23,7 +23,7 @@ const trigger = (name = 'Filters') =>
   screen.getByRole('button', { name, hidden: true });
 async function open(name?: string) {
   act(() => trigger(name).focus());
-  act(() => fireEvent.click(trigger(name)));
+  fireEvent.click(trigger(name));
   await nextFrame();
 }
 
@@ -80,7 +80,7 @@ describe('Popover', () => {
       </Popover>,
     );
     await open();
-    act(() => fireEvent.click(screen.getByRole('button', { name: 'Apply' })));
+    fireEvent.click(screen.getByRole('button', { name: 'Apply' }));
     expect(onApply).toHaveBeenCalledTimes(1);
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
   });

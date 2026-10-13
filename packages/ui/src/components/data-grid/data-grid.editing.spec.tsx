@@ -82,9 +82,7 @@ const setEditorValue = (value: string) =>
   });
 
 function enterEdit() {
-  act(() =>
-    fireEvent.click(screen.getByRole('button', { name: 'Edit table' })),
-  );
+  fireEvent.click(screen.getByRole('button', { name: 'Edit table' }));
 }
 
 describe('DataGrid edit mode', () => {
@@ -282,22 +280,20 @@ describe('DataGrid edit mode', () => {
     press('ArrowRight');
     typeKey('A');
     press('Enter');
-    act(() => fireEvent.click(screen.getByRole('button', { name: 'Discard' })));
+    fireEvent.click(screen.getByRole('button', { name: 'Discard' }));
     expect(screen.getByText('Discard 1 change?')).toBeTruthy();
     expect(active().textContent).toBe('Keep editing'); // safe choice gets focus
     // Only the confirm button is called Discard now.
-    act(() => fireEvent.click(screen.getByRole('button', { name: 'Discard' })));
+    fireEvent.click(screen.getByRole('button', { name: 'Discard' }));
     expect(screen.queryByText(/change/)).toBeNull();
     expect(screen.getByText('Customer 2')).toBeTruthy();
   });
 
   it('freezes sorting while editing and restores it after Done', () => {
     setup();
-    act(() =>
-      fireEvent.click(
-        within(
-          screen.getByRole('columnheader', { name: /Customer/ }),
-        ).getByRole('button'),
+    fireEvent.click(
+      within(screen.getByRole('columnheader', { name: /Customer/ })).getByRole(
+        'button',
       ),
     );
     enterEdit();
@@ -306,7 +302,7 @@ describe('DataGrid edit mode', () => {
         screen.getByRole('columnheader', { name: /Customer/ }),
       ).queryByRole('button'),
     ).toBeNull();
-    act(() => fireEvent.click(screen.getByRole('button', { name: 'Done' })));
+    fireEvent.click(screen.getByRole('button', { name: 'Done' }));
     expect(
       screen
         .getByRole('columnheader', { name: /Customer/ })
@@ -477,7 +473,7 @@ describe('DataGrid edit mode: Excel feel', () => {
     goTo(1, 1);
     typeKey('X');
     press('Enter');
-    act(() => fireEvent.click(screen.getByRole('button', { name: 'Undo' })));
+    fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
     expect(cellText('inv-2', 'customer')).toBe('Customer 2');
   });
 });
@@ -580,9 +576,7 @@ describe('DataGrid edit mode: validation, save results, new rows', () => {
     typeInto('Mine Inc');
     await saveAll();
     expect(screen.getByText(/INV-10002 was changed by Dana/)).toBeTruthy();
-    act(() =>
-      fireEvent.click(screen.getByRole('button', { name: 'Keep mine' })),
-    );
+    fireEvent.click(screen.getByRole('button', { name: 'Keep mine' }));
     await saveAll();
     expect(onSave).toHaveBeenLastCalledWith({
       operations: [
@@ -608,9 +602,7 @@ describe('DataGrid edit mode: validation, save results, new rows', () => {
     goTo(1, 1);
     typeInto('Mine Inc');
     await saveAll();
-    act(() =>
-      fireEvent.click(screen.getByRole('button', { name: 'Use theirs' })),
-    );
+    fireEvent.click(screen.getByRole('button', { name: 'Use theirs' }));
     expect(cell('inv-2', 'customer')?.textContent).toBe('Dana Co');
     expect(screen.queryByRole('button', { name: 'Save all' })).toBeNull();
   });

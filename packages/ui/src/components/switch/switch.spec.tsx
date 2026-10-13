@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { Switch } from './switch';
 
 describe('Switch', () => {
@@ -16,7 +16,7 @@ describe('Switch', () => {
     const sw = screen.getByRole('switch', {
       name: 'Dark mode',
     }) as HTMLInputElement;
-    act(() => fireEvent.click(sw));
+    fireEvent.click(sw);
     expect(onChange).toHaveBeenLastCalledWith(true);
     expect(sw.checked).toBe(true);
   });

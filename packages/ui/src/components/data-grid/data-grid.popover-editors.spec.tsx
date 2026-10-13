@@ -56,9 +56,7 @@ function setup() {
     );
   }
   render(<App />);
-  act(() =>
-    fireEvent.click(screen.getByRole('button', { name: 'Edit table' })),
-  );
+  fireEvent.click(screen.getByRole('button', { name: 'Edit table' }));
   return { onSave };
 }
 
@@ -182,7 +180,7 @@ describe('DataGrid combobox editor', () => {
     setup();
     goTo(2, 1); // t3 Team (empty)
     press('Enter');
-    act(() => fireEvent.click(screen.getByRole('option', { name: 'Data' })));
+    fireEvent.click(screen.getByRole('option', { name: 'Data' }));
     await tick();
     expect(screen.queryByRole('combobox', { name: 'Team' })).toBeNull();
     expect(cellText('t3', 'team')).toBe('Data');
@@ -212,9 +210,7 @@ describe('DataGrid combobox editor with server search', () => {
         editing={{ onSave: async () => ({ ok: true }) }}
       />,
     );
-    act(() =>
-      fireEvent.click(screen.getByRole('button', { name: 'Edit table' })),
-    );
+    fireEvent.click(screen.getByRole('button', { name: 'Edit table' }));
     goTo(0, 1);
     press('Enter');
     typeSearch('d');
@@ -236,13 +232,9 @@ describe('DataGrid date editor', () => {
     const { onSave } = setup();
     goTo(0, 2); // t1 Due
     press('Enter');
-    act(() =>
-      fireEvent.click(screen.getByRole('button', { name: /calendar/i })),
-    );
+    fireEvent.click(screen.getByRole('button', { name: /calendar/i }));
     expect(screen.getByRole('dialog')).toBeTruthy();
-    act(() =>
-      fireEvent.click(screen.getByRole('button', { name: /October 15, 2026/ })),
-    );
+    fireEvent.click(screen.getByRole('button', { name: /October 15, 2026/ }));
     await tick();
     expect(screen.queryByRole('dialog')).toBeNull();
     expect(screen.queryByRole('group', { name: 'Due' })).toBeNull();

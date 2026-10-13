@@ -42,7 +42,7 @@ function EditDialog({ dismissable }: { dismissable?: boolean }) {
 function openFromTrigger(name: string) {
   const trigger = screen.getByRole('button', { name });
   act(() => trigger.focus()); // as a keyboard user would
-  act(() => fireEvent.click(trigger));
+  fireEvent.click(trigger);
   return trigger;
 }
 
@@ -80,7 +80,7 @@ describe('Dialog', () => {
   it('the × button closes it', async () => {
     render(<EditDialog />);
     openFromTrigger('Edit invoice');
-    act(() => fireEvent.click(screen.getByRole('button', { name: 'Close' })));
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
     await nextFrame();
     expect(screen.queryByRole('dialog')).toBeNull();
   });
@@ -133,9 +133,7 @@ describe('AlertDialog', () => {
     const onConfirm = vi.fn();
     render(<Confirm onConfirm={onConfirm} />);
     openFromTrigger('Delete');
-    act(() =>
-      fireEvent.click(screen.getByRole('button', { name: 'Delete invoices' })),
-    );
+    fireEvent.click(screen.getByRole('button', { name: 'Delete invoices' }));
     await nextFrame();
     expect(onConfirm).toHaveBeenCalledTimes(1);
     expect(screen.queryByRole('alertdialog')).toBeNull();
@@ -150,7 +148,7 @@ describe('AlertDialog', () => {
     render(<Confirm onConfirm={onConfirm} />);
     openFromTrigger('Delete');
     const confirm = screen.getByRole('button', { name: 'Delete invoices' });
-    act(() => fireEvent.click(confirm));
+    fireEvent.click(confirm);
     expect(confirm.getAttribute('aria-busy')).toBe('true');
     press('Escape'); // the outcome is unknown while it runs: stay open
     expect(screen.getByRole('alertdialog')).toBeTruthy();

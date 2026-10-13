@@ -7,7 +7,7 @@ import type { IsoDateRange } from './iso-date';
 const segments = () =>
   screen.getAllByRole('spinbutton').map((s) => s.textContent);
 const openCalendar = () =>
-  act(() => fireEvent.click(screen.getByRole('button', { name: /calendar/i })));
+  fireEvent.click(screen.getByRole('button', { name: /calendar/i }));
 // A day's accessible name carries extras ("Selected Range: … to …", "First available
 // date"), so find days by their number, skipping the faded days of other months.
 const day = (n: number) => {
@@ -70,11 +70,11 @@ describe('DateRangePicker', () => {
       />,
     );
     openCalendar();
-    act(() => fireEvent.click(day(12)));
+    fireEvent.click(day(12));
     // Half a range is not a value yet.
     expect(onChange).not.toHaveBeenCalled();
     expect(screen.getByRole('dialog')).toBeTruthy();
-    act(() => fireEvent.click(day(20)));
+    fireEvent.click(day(20));
     await nextFrame();
     expect(onChange).toHaveBeenLastCalledWith({
       start: '2026-10-12',
@@ -93,8 +93,8 @@ describe('DateRangePicker', () => {
       />,
     );
     openCalendar();
-    act(() => fireEvent.click(day(20)));
-    act(() => fireEvent.click(day(12)));
+    fireEvent.click(day(20));
+    fireEvent.click(day(12));
     await nextFrame();
     expect(onChange).toHaveBeenLastCalledWith({
       start: '2026-10-12',
@@ -178,7 +178,7 @@ describe('DateRangePicker', () => {
     }
     render(<Controlled />);
     expect(segments()).toEqual(['10', '5', '2026', '10', '9', '2026']);
-    act(() => fireEvent.click(screen.getByText('clear')));
+    fireEvent.click(screen.getByText('clear'));
     expect(segments()).toEqual(['mm', 'dd', 'yyyy', 'mm', 'dd', 'yyyy']);
   });
 
@@ -256,10 +256,8 @@ describe('DateRangePicker', () => {
       );
       openCalendar();
       const group = screen.getByRole('group', { name: 'Quick picks' });
-      act(() =>
-        fireEvent.click(
-          within(group).getByRole('button', { name: 'Last 7 days' }),
-        ),
+      fireEvent.click(
+        within(group).getByRole('button', { name: 'Last 7 days' }),
       );
       await nextFrame();
       expect(onChange).toHaveBeenLastCalledWith(presets[0].value);

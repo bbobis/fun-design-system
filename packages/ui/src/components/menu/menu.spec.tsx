@@ -105,9 +105,9 @@ describe('Menu', () => {
   it('a click on an item runs it', async () => {
     const onEdit = vi.fn();
     render(<Actions onEdit={onEdit} />);
-    act(() => fireEvent.click(trigger()));
+    fireEvent.click(trigger());
     await nextFrame();
-    act(() => fireEvent.click(screen.getByRole('menuitem', { name: 'Edit' })));
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Edit' }));
     expect(onEdit).toHaveBeenCalledTimes(1);
   });
 
@@ -162,7 +162,7 @@ describe('MenuSection with selectionMode', () => {
         .getByRole('menuitemcheckbox', { name: 'Customer' })
         .getAttribute('aria-checked'),
     ).toBe('true');
-    act(() => fireEvent.click(status));
+    fireEvent.click(status);
     expect(onChange).toHaveBeenLastCalledWith(['customer', 'total', 'status']);
     expect(screen.getByRole('menu')).toBeTruthy(); // still open
     expect(status.getAttribute('aria-checked')).toBe('true');
