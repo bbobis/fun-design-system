@@ -408,3 +408,10 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Remember (the prediction): a toolbar inside a toolbar becomes a group.** On its own, ToggleGroup is `role="toolbar"`. Inside our `Toolbar`, React Aria turns it into `role="group"` and the outer toolbar owns ←/→, so Undo → Redo → Bold → Italic… is one arrow trail with one Tab stop. So unlike SegmentedControl, it's safe in a Toolbar.
 - **Remember: refactor with tests as the safety net.** SegmentedControl's 6 tests passed unchanged after its styles moved to `segment-parts.tsx`.
 - **Read:** https://react-aria.adobe.com/ToggleButtonGroup
+
+## 2026-10-13 — Clickable Card (CardLink)
+- **Built:** `CardLink`, a React Aria `Link` you put around a Card's title. Its `::after` overlay (`after:absolute after:inset-0`) stretches over the card, so a click anywhere opens the link. The Card notices it with Tailwind `has-[[data-card-link]]:` classes and adds `relative`, a hover border, and a focus ring around the whole card. No new prop is needed.
+- **Remember: the "stretched link" pattern.** The link text is just the title, so a screen reader says "INV-1042, link", not the whole card. It's a real `<a>`, so middle-click and "open in new tab" work. Wrapping the card in `<a>` would make the whole card the link name, and putting a button inside it is invalid HTML.
+- **Remember (the prediction): the overlay eats clicks.** Without a fix, clicking "Download PDF" hits the `<a>`, which opens the invoice. In Chromium, `elementFromPoint` returned `A INV-1042`. The Card gives its inner controls `relative z-10`, so they sit above the overlay: the click hits the button and the URL doesn't change.
+- **Trade-off:** you can't drag to select text in a clickable card. That's why the overlay is opt-in.
+- **Read:** https://tailwindcss.com/docs/hover-focus-and-other-states#styling-based-on-descendants
