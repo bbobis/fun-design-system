@@ -9,11 +9,11 @@ import { cn } from '../../utils/cn';
  */
 
 /** The × in the corner. `slot="close"`: React Aria wires it to close the dialog. */
-export function DialogCloseButton() {
+export function DialogCloseButton({ label = 'Close' }: { label?: string }) {
   return (
     <AriaButton
       slot="close"
-      aria-label="Close"
+      aria-label={label}
       className="-me-2 -mt-1 flex size-8 shrink-0 items-center justify-center rounded-md text-fg-muted outline-hidden hover:bg-surface hover:text-fg data-focus-visible:outline-2 data-focus-visible:outline-solid data-focus-visible:outline-focus-ring"
     >
       <XIcon className="size-4" />

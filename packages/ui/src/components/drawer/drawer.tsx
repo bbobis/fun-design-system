@@ -35,6 +35,13 @@ const panelVariants = cva(
   },
 );
 
+/** Inner spacing per `padding`. The footer keeps DialogFooter's gap and alignment. */
+const spacing = {
+  md: { header: 'px-6 py-4', body: 'px-6 py-4', footer: 'px-6 py-4' },
+  // sm's header matches the app's top bar (h-14), so a nav drawer lines up with it.
+  sm: { header: 'h-14 items-center px-3', body: 'p-3', footer: 'px-3 py-3' },
+} as const;
+
 export type DrawerProps = VariantProps<typeof panelVariants> & {
   /** Open or closed (controlled). Pair with `onOpenChange`. */
   open: boolean;
@@ -47,6 +54,16 @@ export type DrawerProps = VariantProps<typeof panelVariants> & {
   title: string;
   /** One or two sentences under the title. Read out with the title. */
   description?: ReactNode;
+  /**
+   * Shown at the top **instead of** `title` and `description`, e.g. a logo. `title`
+   * still names the drawer for screen readers (as `aria-label`).
+   */
+  header?: ReactNode;
+  /**
+   * The × button's accessible name. Say what closes when that's clearer.
+   * @default 'Close'
+   */
+  closeLabel?: string;
   /** The content: a form, details, filters. It scrolls; the header and footer don't. */
   children?: ReactNode;
   /** Action buttons, pinned to the bottom (main action last). */
@@ -57,6 +74,12 @@ export type DrawerProps = VariantProps<typeof panelVariants> & {
    * @default 'end'
    */
   placement?: 'start' | 'end';
+  /**
+   * Space inside the header, body and footer: `md` for forms and details, `sm` for
+   * dense content like navigation. Same names as Card's `padding`.
+   * @default 'md'
+   */
+  padding?: 'sm' | 'md';
   /**
    * A click on the dimmed page closes the drawer. Turn it off when closing would lose
    * typed work (a long form). Escape and the × always close.
@@ -89,14 +112,18 @@ export function Drawer({
   onOpenChange,
   title,
   description,
+  header,
+  closeLabel,
   children,
   footer,
   placement = 'end',
   size,
+  padding = 'md',
   dismissable = true,
   className,
 }: DrawerProps) {
   const descriptionId = useId();
+  const space = spacing[padding];
   return (
     <ModalOverlay
       isOpen={open}
@@ -118,25 +145,41 @@ export function Drawer({
         )}
       >
         <AriaDialog
-          aria-describedby={description ? descriptionId : undefined}
+          // With a custom header there's no visible title heading, so the title
+          // names the dialog directly.
+          aria-label={header ? title : undefined}
+          aria-describedby={description && !header ? descriptionId : undefined}
           className="flex min-h-0 flex-1 flex-col outline-hidden"
         >
-          <header className="flex items-start gap-4 border-b border-border px-6 py-4">
+          <header
+            className={cn(
+              'flex items-start gap-4 border-b border-border',
+              space.header,
+            )}
+          >
             <div className="min-w-0 flex-1">
-              <DialogTitle>{title}</DialogTitle>
-              {description && (
-                <DialogDescription id={descriptionId}>
-                  {description}
-                </DialogDescription>
+              {header ?? (
+                <>
+                  <DialogTitle>{title}</DialogTitle>
+                  {description && (
+                    <DialogDescription id={descriptionId}>
+                      {description}
+                    </DialogDescription>
+                  )}
+                </>
               )}
             </div>
-            <DialogCloseButton />
+            <DialogCloseButton label={closeLabel} />
           </header>
-          <div className="min-h-0 flex-1 overflow-y-auto px-6 py-4 text-sm">
+          <div
+            className={cn('min-h-0 flex-1 overflow-y-auto text-sm', space.body)}
+          >
             {children}
           </div>
           {footer && (
-            <DialogFooter className="border-t border-border pt-4 pb-4">
+            <DialogFooter
+              className={cn('border-t border-border', space.footer)}
+            >
               {footer}
             </DialogFooter>
           )}

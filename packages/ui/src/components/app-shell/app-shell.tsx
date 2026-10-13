@@ -7,14 +7,9 @@ import {
   type ReactNode,
   type SVGProps,
 } from 'react';
-import {
-  Button as AriaButton,
-  Dialog,
-  DialogTrigger,
-  Modal,
-  ModalOverlay,
-} from 'react-aria-components';
+import { DialogTrigger } from 'react-aria-components';
 import { Button } from '../button';
+import { Drawer } from '../drawer';
 import { TriggerButton } from '../button/trigger-button';
 import { Tooltip } from '../tooltip';
 import { cn } from '../../utils/cn';
@@ -130,48 +125,26 @@ export function AppShell({
             size="sm"
             className="px-2 lg:hidden"
           />
-          <ModalOverlay
-            isDismissable
-            className={cn(
-              'fixed inset-0 z-50 bg-backdrop lg:hidden',
-              'motion-safe:data-entering:animate-overlay-in motion-safe:data-exiting:animate-overlay-out',
-            )}
+          {/* Our Drawer: modal, focus in and back, Escape / × / click outside close. */}
+          <Drawer
+            open={drawerOpen}
+            onOpenChange={setDrawerOpen}
+            placement="start"
+            title="Navigation"
+            header={<div className="truncate font-semibold">{brand}</div>}
+            closeLabel="Close navigation"
+            padding="sm"
+            className="w-72 max-w-[85vw]"
           >
-            <Modal
-              className={cn(
-                'fixed inset-y-0 start-0 flex w-72 max-w-[85vw] flex-col border-e border-border bg-bg shadow-xl outline-hidden',
-                // Slides in from the start edge: the left, or the right in RTL.
-                '[--drawer-from:-100%] rtl:[--drawer-from:100%]',
-                'motion-safe:data-entering:animate-drawer-in motion-safe:data-exiting:animate-drawer-out',
-              )}
+            <ShellNavContext.Provider
+              value={{
+                collapsed: false,
+                closeDrawer: () => setDrawerOpen(false),
+              }}
             >
-              <Dialog
-                aria-label="Navigation"
-                className="flex min-h-0 flex-1 flex-col outline-hidden"
-              >
-                <div className="flex h-14 shrink-0 items-center justify-between gap-2 border-b border-border px-3">
-                  <div className="min-w-0 truncate font-semibold">{brand}</div>
-                  <AriaButton
-                    slot="close"
-                    aria-label="Close navigation"
-                    className="flex size-8 items-center justify-center rounded-md text-fg-muted outline-hidden hover:bg-surface hover:text-fg data-focus-visible:outline-2 data-focus-visible:outline-solid data-focus-visible:outline-focus-ring"
-                  >
-                    <XIcon className="size-4" />
-                  </AriaButton>
-                </div>
-                <ShellNavContext.Provider
-                  value={{
-                    collapsed: false,
-                    closeDrawer: () => setDrawerOpen(false),
-                  }}
-                >
-                  <div className="min-h-0 flex-1 overflow-y-auto p-3">
-                    {sidebar}
-                  </div>
-                </ShellNavContext.Provider>
-              </Dialog>
-            </Modal>
-          </ModalOverlay>
+              {sidebar}
+            </ShellNavContext.Provider>
+          </Drawer>
         </DialogTrigger>
 
         <div className="min-w-0 truncate font-semibold">{brand}</div>
@@ -272,13 +245,6 @@ function CollapseIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <Svg {...props} strokeLinejoin="round">
       <path d="M2.5 2.5v11M10 4.5 6.5 8l3.5 3.5M6.5 8h7" />
-    </Svg>
-  );
-}
-function XIcon(props: SVGProps<SVGSVGElement>) {
-  return (
-    <Svg {...props} strokeWidth={1.75}>
-      <path d="m4.5 4.5 7 7m0-7-7 7" />
     </Svg>
   );
 }

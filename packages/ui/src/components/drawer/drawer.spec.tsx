@@ -106,4 +106,39 @@ describe('Drawer', () => {
       expect(panel.closest('.fixed')?.className).toContain(justify);
     },
   );
+
+  it('header: shown instead of the title, which still names the drawer', async () => {
+    const user = userEvent.setup();
+    render(
+      <EditDrawer
+        title="Navigation"
+        header={<span>Acme Billing</span>}
+        closeLabel="Close navigation"
+      />,
+    );
+    await user.click(screen.getByRole('button', { name: 'Edit invoice' }));
+    expect(screen.getByRole('dialog', { name: 'Navigation' })).toBeTruthy();
+    expect(screen.getByText('Acme Billing')).toBeTruthy();
+    // No visible "Navigation" heading, and the description isn't shown or linked.
+    expect(screen.queryByRole('heading')).toBeNull();
+    expect(screen.queryByText('Northwind Traders')).toBeNull();
+    expect(screen.getByRole('dialog').hasAttribute('aria-describedby')).toBe(
+      false,
+    );
+    expect(
+      screen.getByRole('button', { name: 'Close navigation' }),
+    ).toBeTruthy();
+  });
+
+  it('padding="sm" tightens header, body and footer (navigation)', async () => {
+    const user = userEvent.setup();
+    render(<EditDrawer padding="sm" />);
+    await user.click(screen.getByRole('button', { name: 'Edit invoice' }));
+    const dialog = screen.getByRole('dialog');
+    expect(dialog.querySelector('header')?.className).toContain('h-14');
+    expect(
+      screen.getByLabelText('Customer').parentElement?.className,
+    ).toContain('p-3');
+    expect(dialog.querySelector('footer')?.className).toContain('px-3');
+  });
 });

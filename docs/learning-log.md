@@ -457,3 +457,9 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Remember: a test must be able to fail.** "`dismissable={false}`: a click outside doesn't close it" would also pass if the click never reached the overlay. So there's a matching test that the same click *does* close a default drawer.
 - **Gotcha:** the drawer is portalled to `<body>`, so a `dir="rtl"` on a wrapper `<div>` doesn't reach it. The RTL story sets `dir` on `<html>`, which is what a real Arabic app does anyway.
 - **Read:** https://react-aria.adobe.com/Modal
+
+## 2026-10-13 — AppShell uses Drawer
+- **Changed:** AppShell's phone navigation drawer is now our `Drawer` (`placement="start"`, `padding="sm"`, `header={brand}`, `closeLabel="Close navigation"`) instead of about 40 lines of hand-built `ModalOverlay`/`Modal`/`Dialog`. Drawer gained 3 small props for it: `header` (shown instead of the title; `title` still names the dialog), `closeLabel`, and `padding` (`sm`/`md`, the same names as Card's). AppShell's 10 tests passed unchanged.
+- **Remember: a refactor should be invisible, so prove it.** I built Storybook from `main` and from the branch and compared them. In Chromium both have the same dialog name, width (288px), Escape → focus back to ☰, link click closes, and growing the window to 1200px closes. In the pixel diff, the first try showed roomier padding and a taller header, which led to `padding="sm"`. The final diff is the ✕ moving a few px (it now aligns like every other dialog's ✕). The default Drawer's 6 screenshots are pixel-identical to #64.
+- **Remember: let a real second user shape the API.** Drawer's first user (its own stories) needed only `title`. AppShell needed a logo header, a specific close label and tighter spacing. Adding props when a real case asks for them keeps the API small and every prop justified.
+- **Read:** https://react-aria.adobe.com/Dialog#accessibility
