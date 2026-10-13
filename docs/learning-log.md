@@ -437,3 +437,10 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Remember: share internals, not APIs.** A radio and a checkbox mean different things, so they stay two public components. Only the look and the naming wiring are shared. RadioCard's 9 tests passed unchanged after the refactor.
 - **Gotcha: jsdom isn't a browser.** A `click` on label text didn't reach React Aria's Checkbox in jsdom, even for the old `CheckboxGroupItem`, but it does in Chromium. The unit test presses the checkbox itself, and the "click anywhere on the card" check lives in the Chromium script. `@testing-library/user-event` is only installed because Storybook needs it, so using it would need your OK as a new dependency.
 - **Read:** https://react-aria.adobe.com/CheckboxGroup
+
+## 2026-10-13 — user-event
+- **Added:** `@testing-library/user-event` 14.6.7 as our own dev dependency. It was already installed through Storybook; now `npm ls` shows Storybook's copy as "deduped" against ours. The CheckboxCard tests use it to click the price text (a real "click anywhere on the card") and to walk the Tab trail. `component-recipe.md` says to use it for interactions from now on.
+- **Remember: `fireEvent` fires one event; `user-event` acts like a user.** `user.click` plays pointerdown → mousedown → focus → pointerup → mouseup → click, and lets the `<label>` pass it to the input. React Aria listens to the pointer part, which is why a bare `fireEvent.click` on label text didn't reach the Checkbox.
+- **Remember (the prediction): always `await` it.** Without `await`, the assertion runs before the click has happened, and the test fails with "expected … to have been called with ['audit']". It could also pass by luck, which is worse. A lint rule (`@typescript-eslint/no-floating-promises`) can catch this; it needs type-aware linting, so it's left for later.
+- **Gotcha: npm 10 vs 11 lockfiles.** Re-running the install with npm 11 added 66 unrelated lines (bundled extras for Tailwind's wasm build). The PR keeps the one-line change.
+- **Read:** https://testing-library.com/docs/user-event/intro

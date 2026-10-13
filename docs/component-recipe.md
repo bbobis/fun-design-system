@@ -175,6 +175,12 @@ src/index.ts          export * from './components/<name>'
 - `className` override wins over the component's own class
 - native attributes pass through; `ref` reaches the DOM node
 
+- interactions: use `@testing-library/user-event` (`const user = userEvent.setup()`,
+  then `await user.click(...)`, `await user.tab()`, `await user.keyboard('{ArrowRight}')`).
+  It plays the whole sequence a browser would (pointer, mouse, focus, click, label →
+  input), so it reaches React Aria's press handling where a bare `fireEvent.click` may
+  not (CheckboxCard). Always `await` it. Keep `fireEvent` for one low-level event on
+  purpose (`pointerDown` on a Dialog overlay). Existing specs move over when touched.
 - jsdom gaps every real browser fills (e.g. `CSS.escape`, used by React Aria) go in
   `src/test-setup.ts`, which Vitest runs before every spec. Not in individual specs.
 - React Aria components: focus is
