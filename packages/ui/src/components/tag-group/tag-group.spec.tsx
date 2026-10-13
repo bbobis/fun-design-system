@@ -56,6 +56,17 @@ describe('TagGroup', () => {
     expect(screen.queryByRole('row', { name: 'Owner: Me' })).toBeNull();
   });
 
+  it('the ✕ shows a focus ring (outline-hidden needs outline-solid to come back)', () => {
+    render(<Removable />);
+    const x = screen.getByRole('button', { name: /Remove Status: Open/ });
+    for (const c of [
+      'data-focus-visible:outline-2',
+      'data-focus-visible:outline-solid',
+      'data-focus-visible:outline-focus-ring',
+    ])
+      expect(x.className).toContain(c);
+  });
+
   it('keyboard: ←/→ move between chips, Delete removes and focus moves to the next', () => {
     render(<Removable />);
     act(() => row('Status: Open').focus());

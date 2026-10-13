@@ -483,3 +483,10 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Remember (the prediction): a `<span>` trigger is reachable but not a button.** React Aria's `Pressable` gives it `tabindex="0"` and Enter/Space, so a keyboard user can open it. But it has no role, so a screen reader reads "Ben" as plain text with no hint that it opens something, and React Aria warns "child must have an interactive ARIA role". Use a Button.
 - **Remember: check names in the real accessibility tree.** Without a `title`, a panel is named after its trigger (`aria-labelledby`). For an avatar trigger, Playwright's spec-based name was "Dana Okafor", but Chrome's own tree said "DO", because it included the hidden initials. Give popovers with custom triggers a `title`.
 - **Read:** https://react-aria.adobe.com/Popover
+
+## 2026-10-13 — Fix: focus ring on the tag ✕ button
+- **Built:** the ✕ "Remove" button on chips (TagGroup, MultiCombobox) now shows the focus ring. It took keyboard focus with nothing visible, which fails WCAG 2.4.7 (Focus Visible).
+- **Remember:** in Tailwind v4, `outline-hidden` sets the outline *style* to none. `data-focus-visible:outline-2` only sets the *width*, so you also need `data-focus-visible:outline-solid`. Same bug as TreeView rows: copy all three classes together (`outline-2 outline-solid outline-focus-ring`).
+- **Remember:** a shared part (`TagRemoveButton` in `tag-parts.tsx`) means one fix covers both components. That is the payoff of sharing parts.
+- **How we found it:** the ring audit script now flags "NO RING": an element that has focus-visible but no outline, shadow or background change.
+- Docs: https://tailwindcss.com/docs/outline-style
