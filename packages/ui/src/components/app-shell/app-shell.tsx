@@ -131,7 +131,11 @@ export function AppShell({
             onOpenChange={setDrawerOpen}
             placement="start"
             title="Navigation"
-            header={<div className="truncate font-semibold">{brand}</div>}
+            // p-1 / -m-1: room for the brand link's focus ring, which `truncate`
+            // (overflow: hidden) would otherwise cut off. The text doesn't move.
+            header={
+              <div className="-m-1 truncate p-1 font-semibold">{brand}</div>
+            }
             closeLabel="Close navigation"
             padding="sm"
             className="w-72 max-w-[85vw]"
@@ -147,7 +151,8 @@ export function AppShell({
           </Drawer>
         </DialogTrigger>
 
-        <div className="min-w-0 truncate font-semibold">{brand}</div>
+        {/* p-1 / -m-1: room for the link's focus ring inside `truncate`. */}
+        <div className="-m-1 min-w-0 truncate p-1 font-semibold">{brand}</div>
         {actions && (
           <div className="ms-auto flex items-center gap-1">{actions}</div>
         )}
