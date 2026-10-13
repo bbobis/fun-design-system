@@ -1,5 +1,9 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
-import { CheckboxGroup, CheckboxGroupItem } from './checkbox-group';
+import {
+  CheckboxCard,
+  CheckboxGroup,
+  CheckboxGroupItem,
+} from './checkbox-group';
 
 function Copies(props: Partial<Parameters<typeof CheckboxGroup>[0]>) {
   return (
@@ -81,5 +85,73 @@ describe('CheckboxGroup', () => {
       .getAllByRole('checkbox')
       .filter((c) => !(c as HTMLInputElement).disabled);
     enabled.forEach((c) => expect(c.tabIndex).toBe(0));
+  });
+});
+
+describe('CheckboxCard', () => {
+  function AddOns(props: Partial<Parameters<typeof CheckboxGroup>[0]>) {
+    return (
+      <CheckboxGroup label="Add-ons" orientation="horizontal" {...props}>
+        <CheckboxCard value="sso" title="SSO" description="Okta, Azure AD">
+          $5 / user
+        </CheckboxCard>
+        <CheckboxCard value="audit" title="Audit log">
+          $2 / user
+        </CheckboxCard>
+        <CheckboxCard value="api" title="API access" disabled>
+          $3 / user
+        </CheckboxCard>
+      </CheckboxGroup>
+    );
+  }
+
+  it('each card is a checkbox named by its title only, and described by its description', () => {
+    render(<AddOns />);
+    const sso = screen.getByRole('checkbox', { name: 'SSO' });
+    const described = (sso.getAttribute('aria-describedby') ?? '')
+      .split(' ')
+      .map((id) => document.getElementById(id)?.textContent)
+      .join(' ');
+    expect(described).toContain('Okta, Azure AD');
+    expect(described).not.toContain('$5');
+    // No description: nothing of its own to describe it with.
+    expect(screen.getByRole('checkbox', { name: 'Audit log' })).toBeTruthy();
+  });
+
+  it('toggling cards: onChange gets every checked value, in any order of clicks', () => {
+    const onChange = vi.fn();
+    render(<AddOns defaultValue={['sso']} onChange={onChange} />);
+    // jsdom doesn't pass a click on the label text through to React Aria's Checkbox
+    // (not even for CheckboxGroupItem), so press the checkbox itself. Clicking anywhere
+    // on the card is checked in Chromium instead (see the PR).
+    act(() =>
+      fireEvent.click(screen.getByRole('checkbox', { name: 'Audit log' })),
+    );
+    expect(onChange).toHaveBeenLastCalledWith(['sso', 'audit']);
+    act(() => fireEvent.click(screen.getByRole('checkbox', { name: 'SSO' })));
+    expect(onChange).toHaveBeenLastCalledWith(['audit']);
+  });
+
+  it('each card is its own Tab stop (no roving focus), and disabled ones are skipped', () => {
+    render(<AddOns />);
+    const boxes = screen.getAllByRole('checkbox');
+    expect(boxes.map((b) => b.tabIndex)).toEqual([0, 0, 0]);
+    expect(boxes[2]).toHaveProperty('disabled', true);
+  });
+
+  it('the row knows its orientation, so cards can share it', () => {
+    render(<AddOns />);
+    const row = screen
+      .getByRole('checkbox', { name: 'SSO' })
+      .closest('[data-orientation]');
+    expect(row?.getAttribute('data-orientation')).toBe('horizontal');
+  });
+
+  it('shares the group error', () => {
+    render(<AddOns required error="Choose at least one." />);
+    for (const box of screen.getAllByRole('checkbox')) {
+      expect(box.getAttribute('aria-invalid')).toBe('true');
+    }
+    expect(screen.getByText('Choose at least one.')).toBeTruthy();
   });
 });

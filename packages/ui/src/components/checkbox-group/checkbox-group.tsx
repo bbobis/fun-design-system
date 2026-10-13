@@ -7,6 +7,12 @@ import {
   Text,
 } from 'react-aria-components';
 import { cn } from '../../utils/cn';
+import {
+  SelectableCardText,
+  selectableCardClasses,
+  useSelectableCardIds,
+  type SelectableCardBaseProps,
+} from '../card/selectable-card';
 
 export type CheckboxGroupProps = {
   /** The question over the choices ("Send copies to"). It names the group. */
@@ -27,7 +33,7 @@ export type CheckboxGroupProps = {
   /** At least one must be checked. */
   required?: boolean;
   disabled?: boolean;
-  /** `CheckboxGroupItem` elements. */
+  /** `CheckboxGroupItem` or `CheckboxCard` elements. */
   children: ReactNode;
   className?: string;
 };
@@ -82,6 +88,9 @@ export function CheckboxGroup({
         </Text>
       )}
       <div
+        // React Aria's RadioGroup sets this itself; CheckboxGroup doesn't. CheckboxCard
+        // reads it to share the row when horizontal.
+        data-orientation={orientation}
         className={cn(
           'flex gap-x-6 gap-y-2',
           orientation === 'vertical' ? 'flex-col' : 'flex-row flex-wrap',
@@ -123,29 +132,7 @@ export function CheckboxGroupItem({
       aria-describedby={description ? descriptionId : undefined}
       className="group flex cursor-pointer items-start gap-2 text-sm text-fg data-disabled:cursor-not-allowed data-disabled:opacity-50"
     >
-      <span
-        aria-hidden="true"
-        className={cn(
-          'mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-[4px] border-[1.5px] border-border-strong bg-bg transition-colors',
-          'group-hover:border-fg',
-          'group-data-selected:border-primary group-data-selected:bg-primary',
-          'group-data-invalid:border-danger',
-          'group-data-focus-visible:outline-2 group-data-focus-visible:outline-offset-2 group-data-focus-visible:outline-solid group-data-focus-visible:outline-focus-ring',
-        )}
-      >
-        {/* The same tick as Checkbox. */}
-        <svg
-          viewBox="0 0 12 12"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={2}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          className="size-3 text-on-primary opacity-0 group-data-selected:opacity-100"
-        >
-          <path d="m2.5 6.5 2.25 2L9.5 3.5" />
-        </svg>
-      </span>
+      <CheckboxBox focusRing />
       <span className="flex flex-col">
         <span id={labelId}>{children}</span>
         {description && (
@@ -154,6 +141,87 @@ export function CheckboxGroupItem({
           </span>
         )}
       </span>
+    </AriaCheckbox>
+  );
+}
+
+/**
+ * The square with the tick. Needs a `group` ancestor that is a React Aria Checkbox (it
+ * reads `data-selected` etc. from it). `focusRing`: draw the focus ring on the box.
+ */
+function CheckboxBox({ focusRing = false }: { focusRing?: boolean }) {
+  return (
+    <span
+      aria-hidden="true"
+      className={cn(
+        'mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-[4px] border-[1.5px] border-border-strong bg-bg transition-colors',
+        'group-hover:border-fg',
+        'group-data-selected:border-primary group-data-selected:bg-primary',
+        'group-data-invalid:border-danger',
+        focusRing &&
+          'group-data-focus-visible:outline-2 group-data-focus-visible:outline-offset-2 group-data-focus-visible:outline-solid group-data-focus-visible:outline-focus-ring',
+      )}
+    >
+      {/* The same tick as Checkbox. */}
+      <svg
+        viewBox="0 0 12 12"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className="size-3 text-on-primary opacity-0 group-data-selected:opacity-100"
+      >
+        <path d="m2.5 6.5 2.25 2L9.5 3.5" />
+      </svg>
+    </span>
+  );
+}
+
+export type CheckboxCardProps = SelectableCardBaseProps;
+
+/**
+ * One choice in a CheckboxGroup, shown as a card (add-ons, features to enable). Put
+ * several in a `CheckboxGroup`, usually with `orientation="horizontal"`.
+ *
+ * Like any checkbox, **each card is its own Tab stop** and Space toggles it; arrow keys
+ * do nothing. (RadioCard is one Tab stop with arrows, because only one can be chosen.)
+ * The checked card gets a dark border and a ticked box, and the focus ring goes around
+ * the whole card. Named by `title` only; `description` is read after it.
+ *
+ * @example
+ * <CheckboxGroup label="Add-ons" orientation="horizontal">
+ *   <CheckboxCard value="sso" title="SSO" description="Okta, Azure AD">$5/user</CheckboxCard>
+ *   <CheckboxCard value="audit" title="Audit log">$2/user</CheckboxCard>
+ * </CheckboxGroup>
+ */
+export function CheckboxCard({
+  value,
+  title,
+  description,
+  children,
+  disabled,
+  className,
+}: CheckboxCardProps) {
+  const { titleId, descriptionId, ariaProps } = useSelectableCardIds(
+    Boolean(description),
+  );
+  return (
+    <AriaCheckbox
+      value={value}
+      isDisabled={disabled}
+      {...ariaProps}
+      className={cn(selectableCardClasses, className)}
+    >
+      <CheckboxBox />
+      <SelectableCardText
+        titleId={titleId}
+        descriptionId={descriptionId}
+        title={title}
+        description={description}
+      >
+        {children}
+      </SelectableCardText>
     </AriaCheckbox>
   );
 }

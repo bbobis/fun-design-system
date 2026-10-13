@@ -7,7 +7,12 @@ import {
   Text,
 } from 'react-aria-components';
 import { cn } from '../../utils/cn';
-import { cardVariants } from '../card/card';
+import {
+  SelectableCardText,
+  selectableCardClasses,
+  useSelectableCardIds,
+  type SelectableCardBaseProps,
+} from '../card/selectable-card';
 
 export type RadioGroupProps = {
   /** The question, shown above the choices. It names the group. Required. */
@@ -27,7 +32,7 @@ export type RadioGroupProps = {
   orientation?: 'vertical' | 'horizontal';
   required?: boolean;
   disabled?: boolean;
-  /** `Radio` elements. */
+  /** `Radio` or `RadioCard` elements. */
   children: ReactNode;
   className?: string;
 };
@@ -157,18 +162,7 @@ function RadioDot({ focusRing = false }: { focusRing?: boolean }) {
   );
 }
 
-export type RadioCardProps = {
-  /** The value this choice gives the group. */
-  value: string;
-  /** The card's title. This alone is the radio's name ("Pro"). */
-  title: ReactNode;
-  /** A muted line under the title. Read as the radio's description. */
-  description?: ReactNode;
-  /** Extra content: a price, a feature list. Visible, but not read with the name. */
-  children?: ReactNode;
-  disabled?: boolean;
-  className?: string;
-};
+export type RadioCardProps = SelectableCardBaseProps;
 
 /**
  * One choice in a RadioGroup, shown as a card (a plan picker, a shipping option).
@@ -177,6 +171,8 @@ export type RadioCardProps = {
  *
  * The whole card is the click target. The selected card gets a dark border and a
  * filled dot, not just color, and the focus ring goes around the whole card.
+ * Named by `title` only; `description` is read after it. For "pick any", use
+ * `CheckboxCard`.
  *
  * @example
  * <RadioGroup label="Plan" orientation="horizontal" defaultValue="pro">
@@ -192,43 +188,25 @@ export function RadioCard({
   disabled,
   className,
 }: RadioCardProps) {
-  const titleId = useId();
-  const descriptionId = useId();
+  const { titleId, descriptionId, ariaProps } = useSelectableCardIds(
+    Boolean(description),
+  );
   return (
     <AriaRadio
       value={value}
       isDisabled={disabled}
-      // A Radio is a <label> around everything, so by default its name would be ALL
-      // the text inside (title, description, price). Name it by the title only, and
-      // describe it with the description.
-      aria-labelledby={titleId}
-      aria-describedby={description ? descriptionId : undefined}
-      className={cn(
-        cardVariants({ padding: 'sm' }),
-        'group flex cursor-pointer items-start gap-3 transition-colors',
-        // In a horizontal group, cards share the row equally and wrap below ~12rem.
-        // (Only there: in a column, a flex-basis would set the card's *height*.)
-        'in-data-[orientation=horizontal]:min-w-48 in-data-[orientation=horizontal]:flex-[1_1_12rem]',
-        'hover:border-border-strong',
-        'data-selected:border-fg data-selected:ring-1 data-selected:ring-fg',
-        'data-invalid:border-danger',
-        'data-focus-visible:outline-2 data-focus-visible:outline-offset-2 data-focus-visible:outline-solid data-focus-visible:outline-focus-ring',
-        'data-disabled:cursor-not-allowed data-disabled:opacity-50 data-disabled:hover:border-border',
-        className,
-      )}
+      {...ariaProps}
+      className={cn(selectableCardClasses, className)}
     >
       <RadioDot />
-      <span className="flex min-w-0 flex-col gap-1 text-sm">
-        <span id={titleId} className="font-medium text-fg">
-          {title}
-        </span>
-        {description && (
-          <span id={descriptionId} className="text-fg-muted">
-            {description}
-          </span>
-        )}
-        {children && <span className="mt-1 text-fg">{children}</span>}
-      </span>
+      <SelectableCardText
+        titleId={titleId}
+        descriptionId={descriptionId}
+        title={title}
+        description={description}
+      >
+        {children}
+      </SelectableCardText>
     </AriaRadio>
   );
 }
