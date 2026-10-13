@@ -1,14 +1,18 @@
 import { cva, type VariantProps } from 'class-variance-authority';
-import { useId, useState, type ReactNode, type SVGProps } from 'react';
+import { useId, useState, type ReactNode } from 'react';
 import {
-  Button as AriaButton,
   Dialog as AriaDialog,
-  Heading,
   Modal,
   ModalOverlay,
 } from 'react-aria-components';
 import { cn } from '../../utils/cn';
 import { Button } from '../button';
+import {
+  DialogCloseButton,
+  DialogDescription,
+  DialogFooter,
+  DialogTitle,
+} from './dialog-parts';
 
 // The panel. Width by `size`; never taller than the screen (the body scrolls instead).
 const panelVariants = cva(
@@ -102,14 +106,7 @@ export function Dialog({
             </DialogDescription>
           )}
         </div>
-        {/* slot="close": React Aria wires it to close the dialog. */}
-        <AriaButton
-          slot="close"
-          aria-label="Close"
-          className="-me-2 -mt-1 flex size-8 shrink-0 items-center justify-center rounded-md text-fg-muted outline-hidden hover:bg-surface hover:text-fg data-focus-visible:outline-2 data-focus-visible:outline-solid data-focus-visible:outline-focus-ring"
-        >
-          <XIcon className="size-4" />
-        </AriaButton>
+        <DialogCloseButton />
       </header>
       {children !== undefined && (
         <div className="min-h-0 flex-1 overflow-y-auto px-6 py-4 text-sm">
@@ -263,52 +260,5 @@ function DialogFrame({
         </AriaDialog>
       </Modal>
     </ModalOverlay>
-  );
-}
-
-function DialogTitle({ children }: { children: ReactNode }) {
-  // slot="title": React Aria uses this heading as the dialog's accessible name.
-  return (
-    <Heading slot="title" className="text-lg font-semibold text-balance">
-      {children}
-    </Heading>
-  );
-}
-
-function DialogDescription({
-  id,
-  children,
-}: {
-  id: string;
-  children: ReactNode;
-}) {
-  return (
-    <p id={id} className="mt-1 text-sm text-fg-muted">
-      {children}
-    </p>
-  );
-}
-
-function DialogFooter({ children }: { children: ReactNode }) {
-  return (
-    <footer className="flex flex-wrap justify-end gap-2 px-6 pt-2 pb-5">
-      {children}
-    </footer>
-  );
-}
-
-function XIcon(props: SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      aria-hidden="true"
-      viewBox="0 0 16 16"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.75}
-      strokeLinecap="round"
-      {...props}
-    >
-      <path d="m4.5 4.5 7 7m0-7-7 7" />
-    </svg>
   );
 }
