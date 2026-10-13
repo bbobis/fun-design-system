@@ -1,7 +1,14 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { Button } from '../button';
 import { Heading } from '../heading';
-import { Card, CardLink } from './card';
+import {
+  Card,
+  CardBody,
+  CardFooter,
+  CardHeader,
+  CardLink,
+  CardMedia,
+} from './card';
 
 describe('Card', () => {
   it('renders a div by default', () => {
@@ -80,5 +87,71 @@ describe('CardLink', () => {
     expect(onOpen).toHaveBeenCalledTimes(1);
     // The button isn't inside the link (that would be invalid HTML).
     expect(link.contains(screen.getByRole('button'))).toBe(false);
+  });
+});
+
+describe('Card parts', () => {
+  it('CardHeader: an h3 title by default, with description and actions', () => {
+    render(
+      <Card>
+        <CardHeader
+          title="Northwind"
+          description="Customer since 2019"
+          actions={<button>More</button>}
+        />
+        <CardBody>Body</CardBody>
+        <CardFooter>
+          <button>Save</button>
+        </CardFooter>
+      </Card>,
+    );
+    const heading = screen.getByRole('heading', { name: 'Northwind' });
+    expect(heading.tagName).toBe('H3');
+    expect(screen.getByText('Customer since 2019')).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'More' })).toBeTruthy();
+    expect(screen.getByText('Body')).toBeTruthy();
+  });
+
+  it('headingLevel changes the tag; titleId lets a section be named by the title', () => {
+    render(
+      <Card as="section" aria-labelledby="t">
+        <CardHeader title="Outstanding" headingLevel={2} titleId="t" />
+      </Card>,
+    );
+    expect(screen.getByRole('heading', { level: 2 })).toBeTruthy();
+    expect(screen.getByRole('region', { name: 'Outstanding' })).toBeTruthy();
+  });
+
+  it.each([
+    ['sm', '-mx-3'],
+    ['md', '-mx-5'],
+    ['lg', '-mx-8'],
+  ] as const)(
+    'CardMedia cancels the Card padding (%s → %s)',
+    (padding, bleed) => {
+      render(
+        <Card padding={padding}>
+          <CardMedia>
+            <img alt="" data-testid="img" />
+          </CardMedia>
+        </Card>,
+      );
+      expect(screen.getByTestId('img').parentElement?.className).toContain(
+        bleed,
+      );
+    },
+  );
+
+  it('CardMedia with padding="none" adds no negative margin', () => {
+    render(
+      <Card padding="none">
+        <CardMedia>
+          <img alt="" data-testid="img" />
+        </CardMedia>
+      </Card>,
+    );
+    expect(screen.getByTestId('img').parentElement?.className).not.toMatch(
+      /-m[xt]-/,
+    );
   });
 });

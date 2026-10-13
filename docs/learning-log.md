@@ -415,3 +415,12 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Remember (the prediction): the overlay eats clicks.** Without a fix, clicking "Download PDF" hits the `<a>`, which opens the invoice. In Chromium, `elementFromPoint` returned `A INV-1042`. The Card gives its inner controls `relative z-10`, so they sit above the overlay: the click hits the button and the URL doesn't change.
 - **Trade-off:** you can't drag to select text in a clickable card. That's why the overlay is opt-in.
 - **Read:** https://tailwindcss.com/docs/hover-focus-and-other-states#styling-based-on-descendants
+
+## 2026-10-13 — Card parts + RadioCard
+- **Built:** Card parts: `CardMedia` (edge-to-edge image, first), `CardHeader` (title, description, actions; h3 by default), `CardBody`, and `CardFooter` (divider, actions on the right). Also `RadioCard`, a card that is a radio and goes inside our existing `RadioGroup`, so it gets the label, error, required and arrow keys for free. Radio and RadioCard now share one `RadioDot`.
+- **Remember (the prediction): a label names its input with *all* its text.** React Aria's `Radio` is a `<label>` around the card, so without help the name was "Pro Up to 10 users $29 / month" (read from Chromium's accessibility tree). `aria-labelledby={titleId}` makes the name "Pro", and `aria-describedby` reads "Up to 10 users" after it. The price stays visible but isn't read with the name.
+- **Remember: context again, for CardMedia.** It needs the Card's padding to cancel it out (`-mx-5 -mt-5` for `md`), so Card shares `padding` through a React context. Same trick as Accordion and Toolbar.
+- **Gotchas:**
+  - `flex-basis` sets *height* in a column, so stacked RadioCards were 12rem tall. The basis now only applies inside a horizontal group (`in-data-[orientation=horizontal]:`).
+  - A grey "dark" screenshot was `transition-colors` fading after the theme switch, so the screenshot script now waits a moment first.
+- **Read:** https://react-aria.adobe.com/RadioGroup

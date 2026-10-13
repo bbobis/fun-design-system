@@ -4,7 +4,15 @@ import { Badge } from '../badge';
 import { Button } from '../button';
 import { Heading } from '../heading';
 import { Text } from '../text';
-import { Card, CardLink } from './card';
+import { Menu, MenuItem } from '../menu';
+import {
+  Card,
+  CardBody,
+  CardFooter,
+  CardHeader,
+  CardLink,
+  CardMedia,
+} from './card';
 
 const meta = {
   title: 'Components/Card',
@@ -135,4 +143,125 @@ export const WithActions: Story = {
       </div>
     );
   },
+};
+
+/** A stand-in illustration (the stories don't load outside images). */
+const Illustration = () => (
+  <svg
+    aria-hidden="true"
+    viewBox="0 0 320 120"
+    className="block h-28 w-full bg-surface"
+  >
+    <circle cx="70" cy="60" r="34" className="fill-primary" />
+    <rect
+      x="130"
+      y="34"
+      width="150"
+      height="14"
+      rx="7"
+      className="fill-border-strong"
+    />
+    <rect
+      x="130"
+      y="62"
+      width="110"
+      height="10"
+      rx="5"
+      className="fill-border"
+    />
+    <rect
+      x="130"
+      y="82"
+      width="80"
+      height="10"
+      rx="5"
+      className="fill-border"
+    />
+  </svg>
+);
+
+/**
+ * The parts: `CardMedia` (edge to edge, first), `CardHeader` (title, description,
+ * actions), `CardBody`, `CardFooter` (divider, actions on the right).
+ */
+export const Parts: Story = {
+  render: () => (
+    <Card as="article" className="w-80">
+      <CardMedia>
+        <Illustration />
+      </CardMedia>
+      <CardHeader
+        title="Northwind Traders"
+        description="Customer since 2019"
+        actions={<Badge tone="success">Active</Badge>}
+      />
+      <CardBody>
+        12 invoices this year, $18,400 paid. Usually pays within 21 days.
+      </CardBody>
+      <CardFooter>
+        <Button size="sm" intent="ghost">
+          View invoices
+        </Button>
+        <Button size="sm">New invoice</Button>
+      </CardFooter>
+    </Card>
+  ),
+};
+
+/**
+ * `CardMedia` follows the Card's padding, whatever it is. A `section` named by its
+ * title (`titleId` + `aria-labelledby`) shows up as a landmark region.
+ */
+export const PartsPadding: Story = {
+  render: () => (
+    <div className="flex flex-wrap items-start gap-4">
+      {(['sm', 'md', 'lg'] as const).map((padding) => (
+        <Card
+          key={padding}
+          as="section"
+          aria-labelledby={`title-${padding}`}
+          padding={padding}
+          className="w-56"
+        >
+          <CardMedia>
+            <Illustration />
+          </CardMedia>
+          <CardHeader
+            title={{ sm: 'Small', md: 'Medium', lg: 'Large' }[padding]}
+            description={`padding="${padding}"`}
+            titleId={`title-${padding}`}
+            actions={
+              <Menu label="More" intent="ghost" size="sm">
+                <MenuItem>Rename</MenuItem>
+                <MenuItem>Delete</MenuItem>
+              </Menu>
+            }
+          />
+          <CardBody>The image still reaches the edges.</CardBody>
+        </Card>
+      ))}
+    </div>
+  ),
+};
+
+/** The parts work with `CardLink` too: put it in the header's `title`. */
+export const PartsClickable: Story = {
+  render: () => (
+    <Card as="article" className="w-80">
+      <CardMedia>
+        <Illustration />
+      </CardMedia>
+      <CardHeader
+        title={
+          <CardLink href="#customer-northwind">Northwind Traders</CardLink>
+        }
+        description="Customer since 2019"
+      />
+      <CardFooter>
+        <Button size="sm" intent="secondary">
+          New invoice
+        </Button>
+      </CardFooter>
+    </Card>
+  ),
 };

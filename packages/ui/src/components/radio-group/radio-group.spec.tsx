@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
-import { Radio, RadioGroup } from './radio-group';
+import { Radio, RadioCard, RadioGroup } from './radio-group';
 
 function Terms(props: Partial<Parameters<typeof RadioGroup>[0]>) {
   return (
@@ -67,5 +67,65 @@ describe('RadioGroup', () => {
     const group = screen.getByRole('radiogroup');
     const help = screen.getByText('Applies to new invoices.');
     expect(group.getAttribute('aria-describedby')).toContain(help.id);
+  });
+});
+
+describe('RadioCard', () => {
+  function Plans(props: Partial<Parameters<typeof RadioGroup>[0]>) {
+    return (
+      <RadioGroup label="Plan" orientation="horizontal" {...props}>
+        <RadioCard value="free" title="Free" description="1 user">
+          $0
+        </RadioCard>
+        <RadioCard value="pro" title="Pro" description="Up to 10 users">
+          $29 / month
+        </RadioCard>
+        <RadioCard value="ent" title="Enterprise" disabled>
+          Custom
+        </RadioCard>
+      </RadioGroup>
+    );
+  }
+
+  it('each card is a radio named by its title only, and described by its description', () => {
+    render(<Plans />);
+    const pro = screen.getByRole('radio', { name: 'Pro' });
+    const described = (pro.getAttribute('aria-describedby') ?? '')
+      .split(' ')
+      .map((id) => document.getElementById(id)?.textContent)
+      .join(' ');
+    expect(described).toContain('Up to 10 users');
+    expect(described).not.toContain('$29');
+  });
+
+  it('clicking anywhere on the card chooses it', () => {
+    const onChange = vi.fn();
+    render(<Plans onChange={onChange} />);
+    fireEvent.click(screen.getByText('$29 / month'));
+    expect(onChange).toHaveBeenLastCalledWith('pro');
+    expect(screen.getByRole('radio', { name: 'Pro' })).toHaveProperty(
+      'checked',
+      true,
+    );
+  });
+
+  it('→ moves and chooses, skipping the disabled card', () => {
+    const onChange = vi.fn();
+    render(<Plans defaultValue="pro" onChange={onChange} />);
+    const pro = screen.getByRole('radio', { name: 'Pro' });
+    act(() => pro.focus());
+    fireEvent.keyDown(pro, { key: 'ArrowRight' });
+    expect(onChange).toHaveBeenLastCalledWith('free');
+    expect(screen.getByRole('radio', { name: 'Enterprise' })).toHaveProperty(
+      'disabled',
+      true,
+    );
+  });
+
+  it('shares the group error', () => {
+    render(<Plans required error="Choose a plan." />);
+    const group = screen.getByRole('radiogroup', { name: 'Plan' });
+    expect(group.getAttribute('aria-invalid')).toBe('true');
+    expect(screen.getByText('Choose a plan.')).toBeTruthy();
   });
 });
