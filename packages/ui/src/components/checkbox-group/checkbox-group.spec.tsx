@@ -20,7 +20,10 @@ describe('CheckboxGroup', () => {
     render(<Copies />);
     expect(screen.getByRole('group', { name: 'Send copies to' })).toBeTruthy();
     expect(screen.getAllByRole('checkbox')).toHaveLength(3);
-    expect(screen.getByRole('checkbox', { name: /Sales rep/ })).toBeTruthy();
+    // Named by the label only; the description is read after it, not as part of it.
+    const rep = screen.getByRole('checkbox', { name: 'Sales rep' });
+    const help = screen.getByText("The account's sales rep");
+    expect(rep.getAttribute('aria-describedby')).toContain(help.id);
   });
 
   it('reports the full list of checked values', () => {

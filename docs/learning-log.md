@@ -424,3 +424,9 @@ Short notes after each task: what was built, what to remember, one link to read.
   - `flex-basis` sets *height* in a column, so stacked RadioCards were 12rem tall. The basis now only applies inside a horizontal group (`in-data-[orientation=horizontal]:`).
   - A grey "dark" screenshot was `transition-colors` fading after the theme switch, so the screenshot script now waits a moment first.
 - **Read:** https://react-aria.adobe.com/RadioGroup
+
+## 2026-10-13 — Fix: Radio and CheckboxGroupItem names
+- **Fixed:** a `Radio` or `CheckboxGroupItem` with a `description` was named by both lines ("Net 30 What most customers get"). Now the name is the label ("Net 30"), and the description is read after it through `aria-describedby`. This is the same fix RadioCard got in #59.
+- **Remember: name vs description.** The *name* is what a screen reader says when you land on a control, and what you'd say aloud to pick it ("check Sales rep"). The *description* is extra info read after a short pause. Keep names short and put extra info in the description.
+- **Remember: write the test so it fails first.** The new assertions use the exact name `'Net 30'`, not the old regex `/Net 30/`, which also matched the long name. I ran them on the old code, saw 2 failures, then applied the fix.
+- **Read:** https://www.w3.org/WAI/ARIA/apg/practices/names-and-descriptions/
