@@ -7,7 +7,7 @@ const type = (text: string) =>
   act(() => {
     fireEvent.change(input(), { target: { value: text } });
   });
-const blur = () => act(() => fireEvent.blur(input()));
+const blur = () => fireEvent.blur(input());
 const press = (key: string) =>
   act(() => {
     fireEvent.keyDown(input(), { key });

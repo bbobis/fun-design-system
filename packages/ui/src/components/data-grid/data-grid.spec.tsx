@@ -72,7 +72,7 @@ describe('DataGrid', () => {
     const header = screen.getByRole('columnheader', { name: /Customer/ });
     expect(header.hasAttribute('aria-sort')).toBe(false);
 
-    act(() => fireEvent.click(within(header).getByRole('button')));
+    fireEvent.click(within(header).getByRole('button'));
     expect(header.getAttribute('aria-sort')).toBe('ascending');
     const asc = columnText(1);
     expect(asc).toHaveLength(5); // guard: an empty list would "pass" any sort check
@@ -80,14 +80,14 @@ describe('DataGrid', () => {
       [...asc].sort((a, b) => (a ?? '').localeCompare(b ?? '')),
     );
 
-    act(() => fireEvent.click(within(header).getByRole('button')));
+    fireEvent.click(within(header).getByRole('button'));
     expect(header.getAttribute('aria-sort')).toBe('descending');
   });
 
   it('sorts numbers numerically, not as text', () => {
     renderGrid({ data: small });
     const header = screen.getByRole('columnheader', { name: /^Items/ });
-    act(() => fireEvent.click(within(header).getByRole('button')));
+    fireEvent.click(within(header).getByRole('button'));
     const items = columnText(16).map(Number);
     expect(items).toHaveLength(5);
     expect(items).toEqual([...items].sort((a, b) => a - b));
@@ -138,7 +138,7 @@ describe('DataGrid', () => {
     it('labels every checkbox and selects one row', () => {
       renderGrid({ data: small, enableRowSelection: true });
       const box = screen.getByRole('checkbox', { name: 'Select row inv-2' });
-      act(() => fireEvent.click(box));
+      fireEvent.click(box);
       expect((box as HTMLInputElement).checked).toBe(true);
       expect(screen.getByRole('status').textContent).toContain('1 selected');
     });
@@ -148,14 +148,12 @@ describe('DataGrid', () => {
       const all = screen.getByRole('checkbox', {
         name: 'Select all rows',
       }) as HTMLInputElement;
-      act(() =>
-        fireEvent.click(
-          screen.getByRole('checkbox', { name: 'Select row inv-1' }),
-        ),
+      fireEvent.click(
+        screen.getByRole('checkbox', { name: 'Select row inv-1' }),
       );
       expect(all.indeterminate).toBe(true);
 
-      act(() => fireEvent.click(all));
+      fireEvent.click(all);
       expect(all.indeterminate).toBe(false);
       expect(screen.getByRole('status').textContent).toContain(
         '10,000 selected',
@@ -172,15 +170,11 @@ describe('DataGrid', () => {
       ).toBeNull();
       expect(renderBulkActions).not.toHaveBeenCalled();
 
-      act(() =>
-        fireEvent.click(
-          screen.getByRole('checkbox', { name: 'Select row inv-2' }),
-        ),
+      fireEvent.click(
+        screen.getByRole('checkbox', { name: 'Select row inv-2' }),
       );
-      act(() =>
-        fireEvent.click(
-          screen.getByRole('checkbox', { name: 'Select row inv-4' }),
-        ),
+      fireEvent.click(
+        screen.getByRole('checkbox', { name: 'Select row inv-4' }),
       );
       expect(screen.getByRole('button', { name: 'Export 2' })).toBeTruthy();
       expect(renderBulkActions).toHaveBeenLastCalledWith(
@@ -190,14 +184,12 @@ describe('DataGrid', () => {
 
     it('"Clear selection" empties the selection and moves focus back to the grid', () => {
       renderGrid({ data: small, enableRowSelection: true });
-      act(() =>
-        fireEvent.click(
-          screen.getByRole('checkbox', { name: 'Select row inv-1' }),
-        ),
+      fireEvent.click(
+        screen.getByRole('checkbox', { name: 'Select row inv-1' }),
       );
       const clear = screen.getByRole('button', { name: 'Clear selection' });
       clear.focus();
-      act(() => fireEvent.click(clear));
+      fireEvent.click(clear);
       expect(
         screen.queryByRole('button', { name: 'Clear selection' }),
       ).toBeNull();
@@ -237,10 +229,8 @@ describe('DataGrid', () => {
           }) as HTMLInputElement
         ).checked,
       ).toBe(true);
-      act(() =>
-        fireEvent.click(
-          screen.getByRole('checkbox', { name: 'Select row inv-1' }),
-        ),
+      fireEvent.click(
+        screen.getByRole('checkbox', { name: 'Select row inv-1' }),
       );
       expect(screen.getByTestId('app').textContent).toBe('inv-3,inv-1');
     });

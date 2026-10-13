@@ -49,7 +49,7 @@ describe('Toast', () => {
   it('the × closes it', async () => {
     render(<ToastRegion />);
     act(() => void track(toast.success('Invoice saved')));
-    act(() => fireEvent.click(screen.getByRole('button', { name: 'Close' })));
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
     await waitFor(() => expect(screen.queryByText('Invoice saved')).toBeNull());
   });
 
@@ -78,7 +78,7 @@ describe('Toast', () => {
           ),
         ),
     );
-    act(() => fireEvent.click(screen.getByRole('button', { name: 'Undo' })));
+    fireEvent.click(screen.getByRole('button', { name: 'Undo' }));
     expect(undo).toHaveBeenCalledTimes(1);
     await waitFor(() =>
       expect(screen.queryByText('Deleted 3 rows')).toBeNull(),

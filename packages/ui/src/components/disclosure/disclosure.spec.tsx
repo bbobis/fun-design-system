@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { useState } from 'react';
 import { Accordion, Disclosure } from './disclosure';
 
@@ -85,7 +85,7 @@ describe('Disclosure', () => {
     }
     render(<Controlled />);
     expect(trigger('Details').getAttribute('aria-expanded')).toBe('true');
-    act(() => fireEvent.click(screen.getByText('close')));
+    fireEvent.click(screen.getByText('close'));
     expect(trigger('Details').getAttribute('aria-expanded')).toBe('false');
   });
 });

@@ -76,7 +76,7 @@ describe('MultiCombobox', () => {
     );
     const buttons = screen.getAllByRole('button', { name: /remove/i });
     expect(buttons).toHaveLength(2);
-    act(() => fireEvent.click(buttons[0] as HTMLElement));
+    fireEvent.click(buttons[0] as HTMLElement);
     expect(onChange).toHaveBeenLastCalledWith(['de']);
     expect(tagTexts()).toEqual(['Germany']);
   });
@@ -105,7 +105,7 @@ describe('MultiCombobox', () => {
         defaultValue={['ca']}
       />,
     );
-    act(() => fireEvent.click(screen.getByRole('button', { name: /remove/i })));
+    fireEvent.click(screen.getByRole('button', { name: /remove/i }));
     expect(tagTexts()).toEqual([]);
     expect(document.activeElement).toBe(input());
   });

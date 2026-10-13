@@ -44,10 +44,10 @@ describe('Tooltip', () => {
       fireEvent.pointerUp(document.body, { pointerType: 'mouse' });
     });
     // React's onPointerEnter / onPointerLeave are built from pointerover / pointerout.
-    act(() => fireEvent.pointerOver(button(), { pointerType: 'mouse' }));
+    fireEvent.pointerOver(button(), { pointerType: 'mouse' });
     await wait(10);
     expect(screen.getByRole('tooltip')).toBeTruthy();
-    act(() => fireEvent.pointerOut(button(), { pointerType: 'mouse' }));
+    fireEvent.pointerOut(button(), { pointerType: 'mouse' });
     await wait(400); // closeDelay
     expect(screen.queryByRole('tooltip')).toBeNull();
   });
@@ -77,7 +77,7 @@ describe('Tooltip', () => {
   it('disabled: never shows', async () => {
     render(<Example disabled />);
     keyboardFocus(button());
-    act(() => fireEvent.pointerOver(button(), { pointerType: 'mouse' }));
+    fireEvent.pointerOver(button(), { pointerType: 'mouse' });
     await wait(10);
     expect(screen.queryByRole('tooltip')).toBeNull();
   });

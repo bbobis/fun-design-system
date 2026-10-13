@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { Button } from '../button';
 import { Alert } from './alert';
 
@@ -43,7 +43,7 @@ describe('Alert', () => {
       />,
     );
     expect(screen.getByRole('button', { name: 'Open draft' })).toBeTruthy();
-    act(() => fireEvent.click(screen.getByRole('button', { name: 'Dismiss' })));
+    fireEvent.click(screen.getByRole('button', { name: 'Dismiss' }));
     expect(onDismiss).toHaveBeenCalledTimes(1);
   });
 

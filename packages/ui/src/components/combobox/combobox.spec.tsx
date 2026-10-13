@@ -116,7 +116,7 @@ describe('Combobox', () => {
     act(() => input().focus());
     press('ArrowDown');
     press('Enter'); // Acme
-    act(() => fireEvent.click(screen.getByText('new results')));
+    fireEvent.click(screen.getByText('new results'));
     act(() => input().blur());
     await act(() => new Promise((r) => setTimeout(r, 10)));
     // Without pinning, React Aria empties the text here while the value stays "a".

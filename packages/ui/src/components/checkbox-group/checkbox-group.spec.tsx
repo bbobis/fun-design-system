@@ -34,9 +34,7 @@ describe('CheckboxGroup', () => {
   it('reports the full list of checked values', () => {
     const onChange = vi.fn();
     render(<Copies defaultValue={['customer']} onChange={onChange} />);
-    act(() =>
-      fireEvent.click(screen.getByRole('checkbox', { name: /Sales rep/ })),
-    );
+    fireEvent.click(screen.getByRole('checkbox', { name: /Sales rep/ }));
     expect(onChange).toHaveBeenLastCalledWith(['customer', 'rep']);
   });
 

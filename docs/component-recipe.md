@@ -181,6 +181,11 @@ src/index.ts          export * from './components/<name>'
   input), so it reaches React Aria's press handling where a bare `fireEvent.click` may
   not (CheckboxCard). Always `await` it. Keep `fireEvent` for one low-level event on
   purpose (`pointerDown` on a Dialog overlay). Existing specs move over when touched.
+- don't wrap `fireEvent` in `act`: Testing Library already does. `act(() => el.focus())`
+  is still needed for things Testing Library doesn't wrap. Lint
+  (`@typescript-eslint/no-floating-promises`) fails on any Promise that isn't awaited,
+  such as `user.click(...)` without `await`, or `act(() => fireEvent.click(x))`. The
+  arrow *returns* the boolean from `fireEvent`, so `act` picks its Promise overload.
 - jsdom gaps every real browser fills (e.g. `CSS.escape`, used by React Aria) go in
   `src/test-setup.ts`, which Vitest runs before every spec. Not in individual specs.
 - React Aria components: focus is

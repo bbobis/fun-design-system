@@ -83,9 +83,7 @@ describe('DatePicker', () => {
         onChange={onChange}
       />,
     );
-    act(() =>
-      fireEvent.click(screen.getByRole('button', { name: /calendar/i })),
-    );
+    fireEvent.click(screen.getByRole('button', { name: /calendar/i }));
     expect(screen.getByRole('dialog')).toBeTruthy();
     expect(screen.getByRole('grid').getAttribute('aria-label')).toContain(
       'October 2026',
@@ -95,7 +93,7 @@ describe('DatePicker', () => {
       'October 4, 2026',
     );
     const day15 = screen.getByRole('button', { name: /October 15, 2026/ });
-    act(() => fireEvent.click(day15));
+    fireEvent.click(day15);
     await nextFrame();
     expect(onChange).toHaveBeenLastCalledWith('2026-10-15');
     expect(screen.queryByRole('dialog')).toBeNull();
@@ -112,12 +110,10 @@ describe('DatePicker', () => {
         onChange={onChange}
       />,
     );
-    act(() =>
-      fireEvent.click(screen.getByRole('button', { name: /calendar/i })),
-    );
+    fireEvent.click(screen.getByRole('button', { name: /calendar/i }));
     const day3 = screen.getByRole('button', { name: /October 3, 2026/ });
     expect(day3.getAttribute('aria-disabled')).toBe('true');
-    act(() => fireEvent.click(day3));
+    fireEvent.click(day3);
     expect(onChange).not.toHaveBeenCalled();
   });
 
@@ -147,7 +143,7 @@ describe('DatePicker', () => {
     }
     render(<Controlled />);
     expect(segments().map((s) => s.textContent)).toEqual(['10', '4', '2026']);
-    act(() => fireEvent.click(screen.getByText('clear')));
+    fireEvent.click(screen.getByText('clear'));
     expect(segments().map((s) => s.textContent)).toEqual(['mm', 'dd', 'yyyy']);
   });
 
