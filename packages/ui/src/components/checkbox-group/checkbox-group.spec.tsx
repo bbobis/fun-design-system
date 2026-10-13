@@ -1,4 +1,5 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import {
   CheckboxCard,
   CheckboxGroup,
@@ -118,25 +119,46 @@ describe('CheckboxCard', () => {
     expect(screen.getByRole('checkbox', { name: 'Audit log' })).toBeTruthy();
   });
 
-  it('toggling cards: onChange gets every checked value, in any order of clicks', () => {
+  it('clicking anywhere on a card toggles it; onChange gets every checked value', async () => {
+    const user = userEvent.setup();
     const onChange = vi.fn();
     render(<AddOns defaultValue={['sso']} onChange={onChange} />);
-    // jsdom doesn't pass a click on the label text through to React Aria's Checkbox
-    // (not even for CheckboxGroupItem), so press the checkbox itself. Clicking anywhere
-    // on the card is checked in Chromium instead (see the PR).
-    act(() =>
-      fireEvent.click(screen.getByRole('checkbox', { name: 'Audit log' })),
-    );
+    // The price text, not the checkbox: user.click plays the whole pointer sequence,
+    // and the <label> passes it on to the input, as in a browser. (fireEvent.click
+    // alone didn't reach React Aria's Checkbox.)
+    await user.click(screen.getByText('$2 / user'));
     expect(onChange).toHaveBeenLastCalledWith(['sso', 'audit']);
-    act(() => fireEvent.click(screen.getByRole('checkbox', { name: 'SSO' })));
+    await user.click(screen.getByText('$5 / user'));
     expect(onChange).toHaveBeenLastCalledWith(['audit']);
   });
 
-  it('each card is its own Tab stop (no roving focus), and disabled ones are skipped', () => {
-    render(<AddOns />);
-    const boxes = screen.getAllByRole('checkbox');
-    expect(boxes.map((b) => b.tabIndex)).toEqual([0, 0, 0]);
-    expect(boxes[2]).toHaveProperty('disabled', true);
+  it('each card is its own Tab stop; arrows do nothing; disabled ones are skipped', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(
+      <>
+        <AddOns onChange={onChange} />
+        <button>After</button>
+      </>,
+    );
+    await user.tab();
+    expect(document.activeElement).toBe(
+      screen.getByRole('checkbox', { name: 'SSO' }),
+    );
+    await user.keyboard('{ArrowRight}');
+    expect(document.activeElement).toBe(
+      screen.getByRole('checkbox', { name: 'SSO' }),
+    );
+    await user.tab();
+    expect(document.activeElement).toBe(
+      screen.getByRole('checkbox', { name: 'Audit log' }),
+    );
+    await user.keyboard(' ');
+    expect(onChange).toHaveBeenLastCalledWith(['audit']);
+    await user.tab(); // API access is disabled
+    expect(document.activeElement).toBe(
+      screen.getByRole('button', { name: 'After' }),
+    );
   });
 
   it('the row knows its orientation, so cards can share it', () => {
