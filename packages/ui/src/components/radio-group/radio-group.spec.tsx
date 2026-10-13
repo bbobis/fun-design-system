@@ -22,7 +22,10 @@ describe('RadioGroup', () => {
       screen.getByRole('radiogroup', { name: 'Payment terms' }),
     ).toBeTruthy();
     expect(screen.getAllByRole('radio')).toHaveLength(3);
-    expect(screen.getByRole('radio', { name: /Net 30/ })).toBeTruthy();
+    // Named by the label only; the description is read after it, not as part of it.
+    const net30 = screen.getByRole('radio', { name: 'Net 30' });
+    const help = screen.getByText('Most customers');
+    expect(net30.getAttribute('aria-describedby')).toContain(help.id);
   });
 
   it('↓ moves to the next radio and chooses it; disabled ones are skipped', () => {

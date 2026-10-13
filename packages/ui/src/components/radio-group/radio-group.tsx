@@ -102,25 +102,34 @@ export function RadioGroup({
 export type RadioProps = {
   /** The value this choice gives the group. */
   value: string;
-  /** Visible text; also the radio's name. */
+  /** Visible text; this alone is the radio's name. */
   children: ReactNode;
-  /** A second line under the label ("Billed every month"). */
+  /** A second line under the label ("Billed every month"). Read as the description. */
   description?: ReactNode;
   disabled?: boolean;
 };
 
 /** One choice in a RadioGroup. */
 export function Radio({ value, children, description, disabled }: RadioProps) {
+  const labelId = useId();
+  const descriptionId = useId();
   return (
     <AriaRadio
       value={value}
       isDisabled={disabled}
+      // Named by the label text only; the description is read after it (see RadioCard).
+      aria-labelledby={labelId}
+      aria-describedby={description ? descriptionId : undefined}
       className="group flex cursor-pointer items-start gap-2 text-sm text-fg data-disabled:cursor-not-allowed data-disabled:opacity-50"
     >
       <RadioDot focusRing />
       <span className="flex flex-col">
-        <span>{children}</span>
-        {description && <span className="text-fg-muted">{description}</span>}
+        <span id={labelId}>{children}</span>
+        {description && (
+          <span id={descriptionId} className="text-fg-muted">
+            {description}
+          </span>
+        )}
       </span>
     </AriaRadio>
   );

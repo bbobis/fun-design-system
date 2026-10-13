@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useId, type ReactNode } from 'react';
 import {
   Checkbox as AriaCheckbox,
   CheckboxGroup as AriaCheckboxGroup,
@@ -97,9 +97,9 @@ export function CheckboxGroup({
 export type CheckboxGroupItemProps = {
   /** The value this box adds to the group when checked. */
   value: string;
-  /** Visible text; also the box's name. */
+  /** Visible text; this alone is the box's name. */
   children: ReactNode;
-  /** A second line under the label. */
+  /** A second line under the label. Read as the description. */
   description?: ReactNode;
   disabled?: boolean;
 };
@@ -111,10 +111,16 @@ export function CheckboxGroupItem({
   description,
   disabled,
 }: CheckboxGroupItemProps) {
+  const labelId = useId();
+  const descriptionId = useId();
   return (
     <AriaCheckbox
       value={value}
       isDisabled={disabled}
+      // A <label> names its input with ALL its text. Name it by the label only, and
+      // read the description after it.
+      aria-labelledby={labelId}
+      aria-describedby={description ? descriptionId : undefined}
       className="group flex cursor-pointer items-start gap-2 text-sm text-fg data-disabled:cursor-not-allowed data-disabled:opacity-50"
     >
       <span
@@ -141,8 +147,12 @@ export function CheckboxGroupItem({
         </svg>
       </span>
       <span className="flex flex-col">
-        <span>{children}</span>
-        {description && <span className="text-fg-muted">{description}</span>}
+        <span id={labelId}>{children}</span>
+        {description && (
+          <span id={descriptionId} className="text-fg-muted">
+            {description}
+          </span>
+        )}
       </span>
     </AriaCheckbox>
   );
