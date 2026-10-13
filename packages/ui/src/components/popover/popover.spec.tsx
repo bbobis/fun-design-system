@@ -5,6 +5,7 @@ import {
   screen,
   waitFor,
 } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { Button } from '../button';
 import { Field } from '../field';
@@ -166,5 +167,114 @@ describe('Popover', () => {
     await nextFrame();
     press('Escape');
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+  });
+
+  describe('header, body and footer', () => {
+    it('description is linked; the × and a footer `close` both close it', async () => {
+      const user = userEvent.setup();
+      const onApply = vi.fn();
+      render(
+        <Popover
+          label="Status"
+          title="Filter by status"
+          description="Applies to this list."
+          closeButton
+          footer={({ close }) => (
+            <Button
+              onClick={() => {
+                onApply();
+                close();
+              }}
+            >
+              Apply
+            </Button>
+          )}
+        >
+          <input aria-label="Search" />
+        </Popover>,
+      );
+      await user.click(screen.getByRole('button', { name: 'Status' }));
+      const dialog = screen.getByRole('dialog', { name: 'Filter by status' });
+      const help = screen.getByText('Applies to this list.');
+      expect(dialog.getAttribute('aria-describedby')).toBe(help.id);
+
+      await user.click(screen.getByRole('button', { name: 'Apply' }));
+      expect(onApply).toHaveBeenCalledTimes(1);
+      await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+
+      await user.click(screen.getByRole('button', { name: 'Status' }));
+      await user.click(screen.getByRole('button', { name: 'Close' }));
+      await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
+    });
+
+    it('the footer sits outside the scrolling body', async () => {
+      const user = userEvent.setup();
+      render(
+        <Popover label="Activity" footer={<Button>Done</Button>}>
+          <p>Long content</p>
+        </Popover>,
+      );
+      await user.click(screen.getByRole('button', { name: 'Activity' }));
+      const body = screen.getByText('Long content')
+        .parentElement as HTMLElement;
+      expect(body.className).toContain('overflow-y-auto');
+      expect(body.contains(screen.getByRole('button', { name: 'Done' }))).toBe(
+        false,
+      );
+    });
+  });
+
+  describe('custom trigger', () => {
+    it('any Button opens it, with aria-expanded; Escape returns focus to it', async () => {
+      const user = userEvent.setup();
+      render(
+        <Popover
+          title="Dana Okafor"
+          trigger={<Button intent="ghost">Dana Okafor</Button>}
+        >
+          Details
+        </Popover>,
+      );
+      const button = screen.getByRole('button', { name: 'Dana Okafor' });
+      expect(button.getAttribute('aria-expanded')).toBe('false');
+      await user.tab();
+      await user.keyboard('{Enter}');
+      await nextFrame();
+      expect(screen.getByRole('dialog', { name: 'Dana Okafor' })).toBeTruthy();
+      expect(button.getAttribute('aria-expanded')).toBe('true');
+      await user.keyboard('{Escape}');
+      await nextFrame();
+      expect(screen.queryByRole('dialog')).toBeNull();
+      expect(document.activeElement).toBe(button);
+    });
+
+    it('a <span> trigger: React Aria warns it has no button role (screen readers read it as text)', () => {
+      const warn = vi
+        .spyOn(console, 'warn')
+        .mockImplementation(() => undefined);
+      render(
+        <Popover title="Ben" trigger={<span>Ben</span>}>
+          Details
+        </Popover>,
+      );
+      expect(screen.queryByRole('button', { name: 'Ben' })).toBeNull();
+      expect(warn.mock.calls.flat().join(' ')).toMatch(/interactive ARIA role/);
+      warn.mockRestore();
+    });
+  });
+
+  describe('arrow and width', () => {
+    it('arrow adds an arrow pointing at the trigger; panelSize="auto" sizes to content', async () => {
+      const user = userEvent.setup();
+      render(
+        <Popover label="Help" arrow panelSize="auto">
+          Short help
+        </Popover>,
+      );
+      await user.click(screen.getByRole('button', { name: 'Help' }));
+      const panel = screen.getByRole('dialog').parentElement as HTMLElement;
+      expect(panel.querySelector('svg[aria-hidden="true"] path')).toBeTruthy();
+      expect(panel.className).toContain('w-auto');
+    });
   });
 });
