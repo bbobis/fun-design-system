@@ -143,6 +143,16 @@ describe('DataGrid', () => {
       expect(screen.getByRole('status').textContent).toContain('1 selected');
     });
 
+    it('checkboxes are not inside a truncate box (it would cut off their focus ring)', () => {
+      renderGrid({ data: small, enableRowSelection: true });
+      // Real clipping needs a browser (checked in Chromium); this guards the wrapper.
+      for (const name of ['Select all rows', 'Select row inv-1']) {
+        expect(
+          screen.getByRole('checkbox', { name }).closest('.truncate'),
+        ).toBeNull();
+      }
+    });
+
     it('select-all becomes mixed with some rows, and selects every row (including unrendered ones)', () => {
       renderGrid({ enableRowSelection: true });
       const all = screen.getByRole('checkbox', {

@@ -187,7 +187,11 @@ export const DataGridRow = memo(function DataGridRow<TData extends RowData>({
               </span>
             ) : null;
         } else {
-          content = (
+          // `truncate` is for text. The select column holds a checkbox, and
+          // overflow: hidden would cut off its focus ring (component recipe rule 26).
+          content = isSelectColumn ? (
+            <FlexRender cell={cell} />
+          ) : (
             <span className="truncate">
               <FlexRender cell={cell} />
             </span>

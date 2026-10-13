@@ -164,6 +164,14 @@ src/index.ts          export * from './components/<name>'
     `onFocusCapture` redirect (SegmentedControl). Check it in Chromium for every new
     composite: Tab in with the chosen item *not* first, and read `document.activeElement`.
     Audited 2026-10-12: only SegmentedControl needed a fix.
+26. **Focus rings need room.** Our ring is an `outline` drawn *outside* the element
+    (2px offset + 2px width = 4px). Any ancestor with `overflow: hidden`, including
+    `truncate` and `overflow-auto` scroll areas, cuts it off. Don't wrap a focusable
+    element in `truncate` (that's for text). When a clipping box must hold one, give it
+    the room back: `p-1 -m-1` (4px padding, same layout). Check it in Chromium by
+    tabbing through every story and comparing each ring box with its clipping ancestors.
+    Audited 2026-10-13 (all 163 stories): AppShell brand (fixed in #65), DataGrid
+    select-all and row checkboxes.
 
 ## Tests to write for every component
 
