@@ -457,3 +457,9 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Remember: a test must be able to fail.** "`dismissable={false}`: a click outside doesn't close it" would also pass if the click never reached the overlay. So there's a matching test that the same click *does* close a default drawer.
 - **Gotcha:** the drawer is portalled to `<body>`, so a `dir="rtl"` on a wrapper `<div>` doesn't reach it. The RTL story sets `dir` on `<html>`, which is what a real Arabic app does anyway.
 - **Read:** https://react-aria.adobe.com/Modal
+
+## 2026-10-13 — Fix: clipped focus rings
+- **Fixed:** Ben noticed the AppShell brand link's focus ring was cut off on the left and right. A check across all 163 stories found 3 places, all for the same reason: a `truncate` (`overflow: hidden`) wrapper around something focusable. That's the AppShell brand (fixed in #65 with `p-1 -m-1`) and the DataGrid select-all and row checkboxes (no more `truncate` around the select column).
+- **Remember: an outline is drawn *outside* the element, and `overflow: hidden` clips it.** Our ring is 2px offset + 2px width = 4px outside. `truncate` is for text; don't wrap controls in it. If a clipping box must hold a control, give it room with `p-1 -m-1`: 4px padding, and the negative margin cancels it so nothing moves. It measured identical: the brand stayed at x=16, y=17.5. This is now recipe rule 26.
+- **Remember: tools need tuning.** The first run of the check flagged every radio, checkbox and switch. React Aria keeps the real `<input>` in a 1px visually-hidden box and draws the ring on the dot or box instead. Skipping elements inside such boxes left only the real problems.
+- **Read:** https://developer.mozilla.org/en-US/docs/Web/CSS/outline

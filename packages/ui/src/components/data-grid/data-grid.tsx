@@ -1460,9 +1460,15 @@ export function DataGrid<TData extends RowData>({
                         </button>
                       ) : (
                         <>
-                          <span className="truncate">
+                          {/* Text truncates; the select-all checkbox must not, or its
+                              focus ring is cut off (component recipe rule 26). */}
+                          {column.id === SELECT_COLUMN_ID ? (
                             <table.FlexRender header={header} />
-                          </span>
+                          ) : (
+                            <span className="truncate">
+                              <table.FlexRender header={header} />
+                            </span>
+                          )}
                           {isEditing && meta?.editor && (
                             <PencilIcon
                               className={cn(
