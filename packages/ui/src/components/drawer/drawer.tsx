@@ -11,6 +11,7 @@ import {
   DialogDescription,
   DialogFooter,
   DialogTitle,
+  DialogBody,
 } from '../dialog/dialog-parts';
 
 // The panel: full height, pinned to one side. On a phone it leaves a 3rem strip of the
@@ -171,11 +172,7 @@ export function Drawer({
             </div>
             <DialogCloseButton label={closeLabel} />
           </header>
-          <div
-            className={cn('min-h-0 flex-1 overflow-y-auto text-sm', space.body)}
-          >
-            {children}
-          </div>
+          <DialogBody className={space.body}>{children}</DialogBody>
           {footer && (
             <DialogFooter
               className={cn('border-t border-border', space.footer)}

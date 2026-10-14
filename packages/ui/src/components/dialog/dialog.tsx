@@ -12,6 +12,7 @@ import {
   DialogDescription,
   DialogFooter,
   DialogTitle,
+  DialogBody,
 } from './dialog-parts';
 
 // The panel. Width by `size`; never taller than the screen (the body scrolls instead).
@@ -109,9 +110,7 @@ export function Dialog({
         <DialogCloseButton />
       </header>
       {children !== undefined && (
-        <div className="min-h-0 flex-1 overflow-y-auto px-6 py-4 text-sm">
-          {children}
-        </div>
+        <DialogBody className="px-6 py-4">{children}</DialogBody>
       )}
       {footer && <DialogFooter>{footer}</DialogFooter>}
     </DialogFrame>
