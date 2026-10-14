@@ -1,5 +1,6 @@
 import { cva } from 'class-variance-authority';
 import { Button } from 'react-aria-components';
+import { cn } from '../../utils/cn';
 import { XIcon } from '../combobox/combobox-parts';
 
 /**
@@ -37,7 +38,12 @@ export function TagRemoveButton() {
   return (
     <Button
       slot="remove"
-      className="rounded p-0.5 text-fg-muted outline-hidden hover:bg-border hover:text-fg"
+      className={cn(
+        'rounded p-0.5 text-fg-muted outline-hidden hover:bg-border hover:text-fg',
+        // It takes keyboard focus, so it needs a visible ring (WCAG 2.4.7). outline-solid
+        // is required: outline-hidden sets the style to none, outline-2 only the width.
+        'data-focus-visible:outline-2 data-focus-visible:outline-solid data-focus-visible:outline-focus-ring',
+      )}
     >
       <XIcon className="size-3.5" />
     </Button>
