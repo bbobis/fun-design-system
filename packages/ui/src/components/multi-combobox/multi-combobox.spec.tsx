@@ -1,5 +1,6 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { useState } from 'react';
+import userEvent from '@testing-library/user-event';
 import { Field } from '../field';
 import { MultiCombobox, type MultiComboboxOption } from './multi-combobox';
 
@@ -157,18 +158,29 @@ describe('MultiCombobox', () => {
     expect(data.getAll('countries')).toEqual(['de', 'us']);
   });
 
-  it('disabled: tags stay visible but cannot be removed', () => {
+  it('disabled: tags stay visible as plain text, with no Tab stop and no ✕', async () => {
+    const user = userEvent.setup();
     render(
-      <MultiCombobox
-        aria-label="Countries"
-        options={countries}
-        defaultValue={['ca']}
-        disabled
-      />,
+      <>
+        <MultiCombobox
+          aria-label="Countries"
+          options={countries}
+          defaultValue={['ca']}
+          disabled
+        />
+        <button>After</button>
+      </>,
     );
-    expect(tagTexts()).toEqual(['Canada']);
+    expect(screen.getByText('Canada')).toBeTruthy();
+    // Not a grid of rows: React Aria keeps a grid tabbable even if all rows are disabled.
+    expect(screen.queryByRole('grid')).toBeNull();
     expect(screen.queryByRole('button', { name: /remove/i })).toBeNull();
     expect(input().disabled).toBe(true);
+    // Tab skips the whole field.
+    await user.tab();
+    expect(document.activeElement).toBe(
+      screen.getByRole('button', { name: 'After' }),
+    );
   });
 
   it('wires the Field description and error', () => {
