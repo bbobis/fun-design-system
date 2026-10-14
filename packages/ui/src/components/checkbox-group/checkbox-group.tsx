@@ -149,7 +149,7 @@ export function CheckboxGroupItem({
  * The square with the tick. Needs a `group` ancestor that is a React Aria Checkbox (it
  * reads `data-selected` etc. from it). `focusRing`: draw the focus ring on the box.
  */
-function CheckboxBox({ focusRing = false }: { focusRing?: boolean }) {
+export function CheckboxBox({ focusRing = false }: { focusRing?: boolean }) {
   return (
     <span
       aria-hidden="true"
