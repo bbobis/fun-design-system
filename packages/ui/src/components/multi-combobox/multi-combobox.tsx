@@ -214,7 +214,19 @@ export function MultiCombobox({
         }}
       >
         <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1">
-          {tags.length > 0 && (
+          {tags.length > 0 && isDisabled && (
+            // Disabled: plain chips, not a TagGroup. React Aria keeps a grid as a Tab
+            // stop even when every row is disabled, so Tab would land on something
+            // you can't use. Plain text has no Tab stop; the input says "dimmed".
+            <ComboBoxValue className="contents">
+              {tags.map((tag) => (
+                <span key={tag.value} className={tagVariants({ size: 'sm' })}>
+                  <span className="truncate">{tag.label}</span>
+                </span>
+              ))}
+            </ComboBoxValue>
+          )}
+          {tags.length > 0 && !isDisabled && (
             // ComboBoxValue is a "hideable" component: React Aria builds the option list by
             // rendering the ComboBox's children in a hidden pass, and hideable components
             // skip that pass. A bare TagGroup here would be rendered in it and crash.
@@ -222,7 +234,7 @@ export function MultiCombobox({
             <ComboBoxValue className="contents">
               <TagGroup
                 aria-label="Selected"
-                onRemove={isDisabled ? undefined : remove}
+                onRemove={remove}
                 className="max-w-full"
               >
                 <TagList items={tags} className="flex flex-wrap gap-1">

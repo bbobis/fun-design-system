@@ -497,3 +497,10 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Remember:** a shared part (`TagRemoveButton` in `tag-parts.tsx`) means one fix covers both components. That is the payoff of sharing parts.
 - **How we found it:** the ring audit script now flags "NO RING": an element that has focus-visible but no outline, shadow or background change.
 - Docs: https://tailwindcss.com/docs/outline-style
+
+## 2026-10-14 — Quality pass: axe-core and the ring audit on every story
+- **Ran:** axe-core 4.13 (WCAG 2.1 A + AA rules) on all 178 stories in light and dark, plus the focus-ring audit at 1024px and 390px. Result: 0 ring problems and 2 axe findings. axe-core was already in `node_modules` because `eslint-plugin-jsx-a11y` uses it, so no new dependency.
+- **Fixed:** a disabled MultiCombobox still had a Tab stop on its tag grid. **Remember:** a React Aria grid stays tabbable even when every row is disabled, because it keeps one Tab stop for its empty state. When a whole control is disabled, draw plain text instead of a disabled grid.
+- **Left as is (upstream):** inside a Toolbar, React Aria gives ToggleGroup `role="group"` together with `aria-orientation`. ARIA 1.2 doesn't allow that pairing. Screen readers ignore it, and we can't remove it without patching React Aria.
+- **Remember:** an axe finding is a lead, not a verdict. The disabled chip contrast (4.43:1) is exempt under WCAG 1.4.3 ("inactive UI components"). axe flagged it only because it couldn't tell the chips were disabled.
+- Docs: https://www.w3.org/WAI/WCAG21/Understanding/contrast-minimum.html
