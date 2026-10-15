@@ -16,6 +16,7 @@ import {
   useLocale,
 } from 'react-aria-components';
 import { cn } from '../../utils/cn';
+import { Button as DsButton } from '../button';
 import { toCalendarDate } from '../date-picker/iso-date';
 
 /** Colour of an event, same names as Badge. Always pair it with a clear title. */
@@ -56,6 +57,13 @@ export type EventCalendarProps = {
   onMonthChange?: (month: string) => void;
   /** Events shown in a day cell before "+N more". @default 3 */
   maxEventsPerDay?: number;
+  /**
+   * Turns on "create": a "+ New event" button in the day list, and the N key on a
+   * focused day. Called with that day, `'YYYY-MM-DD'`; open your own form (a Dialog)
+   * and add the event to `events`. The calendar never owns the form, because every app
+   * wants different fields.
+   */
+  onCreateEvent?: (date: string) => void;
   className?: string;
 };
 
@@ -90,6 +98,10 @@ const monthOf = (date: CalendarDate) => date.toString().slice(0, 7);
  * So cells *show* events (up to `maxEventsPerDay`, then "+N more") and the list *acts*
  * on them. Moving between days updates the list and announces "3 events" politely.
  *
+ * With `onCreateEvent`, the day list gets a "+ New event" button and N on a focused
+ * day does the same. N only works while a day has focus (WCAG 2.1.4: a one-letter
+ * shortcut must not fire while you type elsewhere).
+ *
  * Not yet: events that span several days, week/day views, dragging events.
  *
  * @example
@@ -106,6 +118,7 @@ export function EventCalendar({
   month,
   onMonthChange,
   maxEventsPerDay = 3,
+  onCreateEvent,
   className,
 }: EventCalendarProps) {
   const { locale } = useLocale();
@@ -154,7 +167,24 @@ export function EventCalendar({
   };
 
   return (
-    <div className={cn('@container', className)}>
+    <div
+      className={cn('@container', className)}
+      onKeyDown={(e) => {
+        // N on a focused day = "New event". Only from a day cell, never from a
+        // text field, and not with Ctrl/⌘/Alt (those are the browser's).
+        if (
+          onCreateEvent &&
+          e.key.toLowerCase() === 'n' &&
+          !e.ctrlKey &&
+          !e.metaKey &&
+          !e.altKey &&
+          (e.target as Element).closest('[role=gridcell]')
+        ) {
+          e.preventDefault();
+          onCreateEvent(focusedValue.toString());
+        }
+      }}
+    >
       <div className="grid gap-4 @min-[56rem]:grid-cols-[minmax(0,1fr)_16rem]">
         <Calendar
           aria-label={ariaLabel}
@@ -296,6 +326,20 @@ export function EventCalendar({
                   : `${dayEvents.length} events`}
             </span>
           </h3>
+          {onCreateEvent && (
+            <DsButton
+              intent="secondary"
+              size="sm"
+              // "New event" first, so voice users can say what they see (WCAG 2.5.3).
+              aria-label={`New event on ${dayTitle}`}
+              aria-keyshortcuts="N"
+              onClick={() => onCreateEvent(focusedValue.toString())}
+              className="mb-2"
+            >
+              <PlusIcon className="size-4" />
+              New event
+            </DsButton>
+          )}
           {dayEvents.length > 0 && (
             <ul className="flex flex-col gap-1">
               {dayEvents.map((e) => (
@@ -346,6 +390,22 @@ function ArrowIcon(props: SVGProps<SVGSVGElement>) {
       {...props}
     >
       <path d="m6 4 4 4-4 4" />
+    </svg>
+  );
+}
+
+function PlusIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.75}
+      strokeLinecap="round"
+      {...props}
+    >
+      <path d="M8 3.5v9M3.5 8h9" />
     </svg>
   );
 }

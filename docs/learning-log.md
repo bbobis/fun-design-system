@@ -532,3 +532,10 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Remember (the prediction):** ↓ from Oct 29 goes to **Nov 5**, and the calendar turns to November by itself. React Aria moves the visible month with focus. We report it through `onMonthChange`.
 - **Gotchas:** inside a Calendar, every `Button` must be ‹ or ›, so the Today button needs `slot={null}` to opt out. React Aria's `<Heading>` adds the aria-label in front of the month ("Team calendar, October 2026"), so we render our own `<h2>`. axe caught `opacity-80` dropping chip text to 4.39:1.
 - Docs: https://react-aria.adobe.com/Calendar
+
+## 2026-10-15 — EventCalendar: "New event" on a day
+- **Built:** `onCreateEvent(date)`. With it, the day list shows "+ New event", and **N** on a focused day does the same. The calendar only reports the day; the app opens its own form. The CreateEvents story builds that form from Dialog + Input + Switch + TimeField.
+- **Remember (the prediction): Dialog puts focus back where it was.** Press N on Oct 22, then Save or Escape, and focus lands on the Oct 22 cell, not the button. React Aria remembers the focused element when the dialog opens. A test pins this.
+- **Remember: one-letter shortcuts need limits (WCAG 2.1.4).** N only works while a day cell has focus, never with Ctrl/⌘/Alt, and never in a text field. The button carries `aria-keyshortcuts="N"` so screen readers can announce it.
+- **Remember: label in name (WCAG 2.5.3).** The button's name is "New event on Thursday, October 15". It starts with the visible text, so voice users can say "click New event".
+- Docs: https://www.w3.org/WAI/WCAG21/Understanding/character-key-shortcuts.html

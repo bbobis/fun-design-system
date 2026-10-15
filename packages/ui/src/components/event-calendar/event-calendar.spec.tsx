@@ -1,5 +1,7 @@
 import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { useState } from 'react';
+import { Dialog } from '../dialog';
 import { EventCalendar, type CalendarEvent } from './event-calendar';
 
 const events: CalendarEvent[] = [
@@ -167,5 +169,95 @@ describe('EventCalendar', () => {
     await user.click(screen.getAllByRole('button', { name: 'Next' })[0]!);
     expect(onMonthChange).toHaveBeenLastCalledWith('2026-11');
     expect(screen.getByRole('heading', { name: 'November 2026' })).toBeTruthy();
+  });
+
+  describe('onCreateEvent', () => {
+    it('off by default: no "New event" button', () => {
+      render(
+        <EventCalendar
+          aria-label="Team calendar"
+          events={events}
+          defaultSelectedDate="2026-10-15"
+        />,
+      );
+      expect(screen.queryByRole('button', { name: /New event/ })).toBeNull();
+    });
+
+    it('the button is named with the day and reports it', async () => {
+      const user = userEvent.setup();
+      const onCreateEvent = vi.fn();
+      render(
+        <EventCalendar
+          aria-label="Team calendar"
+          events={events}
+          defaultSelectedDate="2026-10-15"
+          onCreateEvent={onCreateEvent}
+        />,
+      );
+      const button = screen.getByRole('button', {
+        name: 'New event on Thursday, October 15',
+      });
+      expect(button.getAttribute('aria-keyshortcuts')).toBe('N');
+      await user.click(button);
+      expect(onCreateEvent).toHaveBeenCalledWith('2026-10-15');
+    });
+
+    it('N on a focused day creates on that day; Ctrl+N and N elsewhere do nothing', async () => {
+      const user = userEvent.setup();
+      const onCreateEvent = vi.fn();
+      render(
+        <>
+          <input aria-label="Search" />
+          <EventCalendar
+            aria-label="Team calendar"
+            events={events}
+            defaultSelectedDate="2026-10-29"
+            onCreateEvent={onCreateEvent}
+          />
+        </>,
+      );
+      await user.click(screen.getByRole('textbox', { name: 'Search' }));
+      await user.keyboard('n');
+      expect(onCreateEvent).not.toHaveBeenCalled();
+      act(() => day(/October 29, 2026/).focus());
+      await user.keyboard('{Control>}n{/Control}');
+      expect(onCreateEvent).not.toHaveBeenCalled();
+      await user.keyboard('n');
+      expect(onCreateEvent).toHaveBeenCalledWith('2026-10-29');
+    });
+
+    it('after the form closes, focus is back on the day N was pressed on (the prediction)', async () => {
+      const user = userEvent.setup();
+      function WithForm() {
+        const [on, setOn] = useState<string | null>(null);
+        return (
+          <>
+            <EventCalendar
+              aria-label="Team calendar"
+              events={events}
+              defaultSelectedDate="2026-10-22"
+              onCreateEvent={setOn}
+            />
+            <Dialog
+              open={on !== null}
+              onOpenChange={() => setOn(null)}
+              title="New event"
+            >
+              <input aria-label="Title" />
+            </Dialog>
+          </>
+        );
+      }
+      render(<WithForm />);
+      act(() => day(/October 22, 2026/).focus());
+      await user.keyboard('n');
+      expect(screen.getByRole('dialog', { name: 'New event' })).toBeTruthy();
+      await user.keyboard('{Escape}');
+      await act(
+        () => new Promise((r) => requestAnimationFrame(() => r(undefined))),
+      );
+      expect(screen.queryByRole('dialog')).toBeNull();
+      expect(document.activeElement).toBe(day(/October 22, 2026/));
+    });
   });
 });
