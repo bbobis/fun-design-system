@@ -240,3 +240,39 @@ export const CreateEvents: Story = {
     return <Example />;
   },
 };
+
+/**
+ * Multi-day events: `endDate` (inclusive). The chip repeats on every day it covers,
+ * with square corners where it carries on, and the day list says "Oct 26 – 30 ·
+ * Day 2 of 5". Spans come first in each day, so they stay at the top.
+ */
+export const MultiDay: Story = {
+  args: {
+    defaultSelectedDate: '2026-10-15',
+    events: [
+      ...team.filter((e) => e.date !== '2026-10-15'),
+      { id: 's', date: '2026-10-15', time: '09:00', title: 'Standup' },
+      {
+        id: 'o',
+        date: '2026-10-14',
+        endDate: '2026-10-16',
+        title: 'Offsite',
+        tone: 'success',
+      },
+      {
+        id: 'v',
+        date: '2026-10-26',
+        endDate: '2026-10-30',
+        title: 'Dana on vacation',
+        tone: 'warning',
+      },
+      {
+        id: 'c',
+        date: '2026-10-31',
+        endDate: '2026-11-02',
+        title: 'Conference',
+        tone: 'info',
+      },
+    ],
+  },
+};
