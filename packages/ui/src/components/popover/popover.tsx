@@ -17,6 +17,7 @@ import {
   DialogCloseButton,
   DialogDescription,
   DialogFooter,
+  DialogBody,
 } from '../dialog/dialog-parts';
 import { cn } from '../../utils/cn';
 import { popoverMotion } from '../../utils/motion';
@@ -214,14 +215,9 @@ export function Popover({
               )}
               {/* The body scrolls; header and footer stay. p-4 leaves room for focus
                   rings, which overflow would otherwise clip (recipe rule 26). */}
-              <div
-                className={cn(
-                  'min-h-0 flex-1 overflow-y-auto p-4 text-sm',
-                  hasHeader && 'pt-3',
-                )}
-              >
+              <DialogBody className={cn('p-4', hasHeader && 'pt-3')}>
                 {render(children, { close })}
-              </div>
+              </DialogBody>
               {footer !== undefined && (
                 <DialogFooter className="border-t border-border px-4 py-3">
                   {render(footer, { close })}

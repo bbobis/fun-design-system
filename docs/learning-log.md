@@ -504,3 +504,10 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Left as is (upstream):** inside a Toolbar, React Aria gives ToggleGroup `role="group"` together with `aria-orientation`. ARIA 1.2 doesn't allow that pairing. Screen readers ignore it, and we can't remove it without patching React Aria.
 - **Remember:** an axe finding is a lead, not a verdict. The disabled chip contrast (4.43:1) is exempt under WCAG 1.4.3 ("inactive UI components"). axe flagged it only because it couldn't tell the chips were disabled.
 - Docs: https://www.w3.org/WAI/WCAG21/Understanding/contrast-minimum.html
+
+## 2026-10-14 — Deeper quality pass: overlays opened, scroll bodies keyboard-scrollable
+- **Ran:** axe on every story **with its overlays open**: 114 menus, popovers and listboxes, plus 28 dialogs, drawers and app-shell navs, in light and dark. Overlays render outside `#storybook-root`, so axe has to scan the whole `document`.
+- **Fixed:** the scroll body of Popover, Dialog and Drawer is now one shared `DialogBody`. While its content overflows it gets `tabIndex=0` and a ring, so the arrow keys can scroll it (WCAG 2.1.1). A `ResizeObserver` decides; a body that fits adds no Tab stop. Chrome and Firefox already make scroll boxes focusable, but Safari doesn't.
+- **Remember (the prediction):** opening a popover focuses the **dialog itself**. After that, Tab follows the page order: ✕ → body (only while it scrolls) → the buttons inside it → footer.
+- **Remember:** check what your audit *didn't* reach. The first deep pass opened 0 dialogs, because dialog trigger buttons have no `aria-expanded`. "0 findings" from an audit that never opened anything means nothing.
+- Docs: https://dequeuniversity.com/rules/axe/4.10/scrollable-region-focusable
