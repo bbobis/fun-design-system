@@ -89,10 +89,18 @@ export type MenuItemProps = {
   description?: string;
   /** A keyboard shortcut to show on the right ("Ctrl+D"). Display only: it doesn't bind the key. */
   shortcut?: string;
+  /**
+   * Other words that should find this item when typed in a CommandPalette
+   * (`['bills']` for "Go to invoices"). Not shown.
+   */
+  keywords?: readonly string[];
   disabled?: boolean;
 };
 
-/** One action in a Menu. Must be a direct child of `Menu` or `MenuSection`. */
+/**
+ * One action in a Menu or CommandPalette. Must be a direct child of `Menu`,
+ * `CommandPalette` or `MenuSection`.
+ */
 export function MenuItem({
   children,
   id,
@@ -101,12 +109,17 @@ export function MenuItem({
   intent = 'default',
   description,
   shortcut,
+  keywords,
   disabled,
 }: MenuItemProps) {
   return (
     <AriaMenuItem
       id={id ?? children}
-      textValue={children}
+      // What filtering (CommandPalette) and typeahead (typing a letter) match on. The
+      // label comes first, so typeahead still matches the start of the visible text.
+      textValue={
+        keywords?.length ? `${children} ${keywords.join(' ')}` : children
+      }
       onAction={onAction}
       href={href}
       isDisabled={disabled}
