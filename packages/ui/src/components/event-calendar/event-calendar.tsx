@@ -27,6 +27,12 @@ export type CalendarEvent = {
   id: string;
   /** The day, `'YYYY-MM-DD'`. */
   date: string;
+  /**
+   * Last day for an event that spans several days, `'YYYY-MM-DD'`, inclusive
+   * (Oct 14 → Oct 16 is 3 days). It shows on every day it covers. Leave out for
+   * one-day events. An end before `date`, or a malformed one, is ignored.
+   */
+  endDate?: string;
   /** Start time, `'HH:mm'` (24-hour, like TimeField). Leave out for all-day events. */
   time?: string;
   /** Short title shown in the day cell and the day list. */
@@ -82,6 +88,57 @@ const dotTone: Record<EventTone, string> = {
   danger: 'bg-danger',
 };
 
+/** One event on one day: which day of its span this is ("day 2 of 3"). */
+type DayEntry = { event: CalendarEvent; day: number; days: number };
+
+/** Longest span drawn, so a typo in `endDate` ('2062' for '2026') can't freeze the page. */
+const MAX_SPAN_DAYS = 366;
+
+/**
+ * Events per day, `'YYYY-MM-DD'` → entries. A multi-day event gets an entry on each
+ * day it covers. Order: spans first (earliest start first), then all-day, then by time,
+ * so a span sits at the top of each day it crosses, as in Outlook.
+ */
+export function groupByDay(
+  events: readonly CalendarEvent[],
+): Map<string, DayEntry[]> {
+  const map = new Map<string, DayEntry[]>();
+  const add = (key: string, entry: DayEntry) =>
+    map.set(key, [...(map.get(key) ?? []), entry]);
+  for (const event of events) {
+    const start = toCalendarDate(event.date);
+    if (!start) continue;
+    const end = toCalendarDate(event.endDate);
+    const days =
+      end && end.compare(start) > 0
+        ? Math.min(end.compare(start) + 1, MAX_SPAN_DAYS)
+        : 1;
+    for (let i = 0; i < days; i++)
+      add(start.add({ days: i }).toString(), { event, day: i + 1, days });
+  }
+  for (const list of map.values())
+    list.sort(
+      (a, b) =>
+        Number(b.days > 1) - Number(a.days > 1) ||
+        a.event.date.localeCompare(b.event.date) ||
+        (a.event.time ?? '').localeCompare(b.event.time ?? ''),
+    );
+  return map;
+}
+
+/**
+ * Square the chip's corners on the side where the event carries on, and stretch it
+ * over the cell's padding there (-ms-1 / -me-1), so the days read as one bar.
+ */
+const spanShape = ({ day, days }: DayEntry) =>
+  days === 1
+    ? 'rounded'
+    : day === 1
+      ? 'rounded-s rounded-e-none -me-1'
+      : day === days
+        ? 'rounded-e rounded-s-none -ms-1'
+        : 'rounded-none -mx-1';
+
 /** `'2026-10-15'` → `'2026-10'`. */
 const monthOf = (date: CalendarDate) => date.toString().slice(0, 7);
 
@@ -132,14 +189,21 @@ export function EventCalendar({
   const focusedValue =
     month && monthOf(focused) !== month ? parseDate(`${month}-01`) : focused;
 
-  const byDay = useMemo(() => {
-    const map = new Map<string, CalendarEvent[]>();
-    for (const e of events) map.set(e.date, [...(map.get(e.date) ?? []), e]);
-    // All-day first, then by start time ('09:00' < '14:30' as text).
-    for (const list of map.values())
-      list.sort((a, b) => (a.time ?? '').localeCompare(b.time ?? ''));
-    return map;
-  }, [events]);
+  const byDay = useMemo(() => groupByDay(events), [events]);
+  const rangeFormat = useMemo(
+    () => new Intl.DateTimeFormat(locale, { month: 'short', day: 'numeric' }),
+    [locale],
+  );
+  /** "Oct 14 – 16 · Day 2 of 3", "9:00 AM" or "All day". */
+  const when = ({ event, day, days }: DayEntry) => {
+    if (days === 1) return event.time ? formatTime(event.time) : 'All day';
+    const start = parseDate(event.date);
+    const range = rangeFormat.formatRange(
+      start.toDate(getLocalTimeZone()),
+      start.add({ days: days - 1 }).toDate(getLocalTimeZone()),
+    );
+    return `${range} · Day ${day} of ${days}`;
+  };
 
   const timeFormat = useMemo(
     () =>
@@ -269,22 +333,26 @@ export function EventCalendar({
                           aria-hidden="true"
                           className="hidden min-w-0 flex-col gap-0.5 @min-[40rem]:flex"
                         >
-                          {shown.map((e) => (
-                            <span
-                              key={e.id}
-                              className={cn(
-                                'truncate rounded px-1.5 py-px text-xs',
-                                chipTone[e.tone ?? 'neutral'],
-                              )}
-                            >
-                              {e.time && (
-                                <span className="me-1 font-medium tabular-nums">
-                                  {formatTime(e.time)}
-                                </span>
-                              )}
-                              {e.title}
-                            </span>
-                          ))}
+                          {shown.map((entry) => {
+                            const e = entry.event;
+                            return (
+                              <span
+                                key={e.id}
+                                className={cn(
+                                  'truncate px-1.5 py-px text-xs',
+                                  spanShape(entry),
+                                  chipTone[e.tone ?? 'neutral'],
+                                )}
+                              >
+                                {e.time && entry.day === 1 && (
+                                  <span className="me-1 font-medium tabular-nums">
+                                    {formatTime(e.time)}
+                                  </span>
+                                )}
+                                {e.title}
+                              </span>
+                            );
+                          })}
                           {more > 0 && (
                             <span className="px-1.5 text-xs text-fg-muted">
                               +{more} more
@@ -295,7 +363,7 @@ export function EventCalendar({
                           aria-hidden="true"
                           className="flex flex-wrap gap-0.5 px-1 @min-[40rem]:hidden"
                         >
-                          {list.slice(0, 4).map((e) => (
+                          {list.slice(0, 4).map(({ event: e }) => (
                             <span
                               key={e.id}
                               className={cn(
@@ -342,30 +410,33 @@ export function EventCalendar({
           )}
           {dayEvents.length > 0 && (
             <ul className="flex flex-col gap-1">
-              {dayEvents.map((e) => (
-                <li key={e.id}>
-                  <Button
-                    onPress={() => onEventAction?.(e)}
-                    className="flex w-full items-start gap-2 rounded-md px-2 py-1.5 text-start text-sm outline-hidden hover:bg-surface data-focus-visible:outline-2 data-focus-visible:-outline-offset-2 data-focus-visible:outline-solid data-focus-visible:outline-focus-ring"
-                  >
-                    <span
-                      aria-hidden="true"
-                      className={cn(
-                        'mt-1.5 size-2 shrink-0 rounded-full',
-                        dotTone[e.tone ?? 'neutral'],
-                      )}
-                    />
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate font-medium">
-                        {e.title}
+              {dayEvents.map((entry) => {
+                const e = entry.event;
+                return (
+                  <li key={e.id}>
+                    <Button
+                      onPress={() => onEventAction?.(e)}
+                      className="flex w-full items-start gap-2 rounded-md px-2 py-1.5 text-start text-sm outline-hidden hover:bg-surface data-focus-visible:outline-2 data-focus-visible:-outline-offset-2 data-focus-visible:outline-solid data-focus-visible:outline-focus-ring"
+                    >
+                      <span
+                        aria-hidden="true"
+                        className={cn(
+                          'mt-1.5 size-2 shrink-0 rounded-full',
+                          dotTone[e.tone ?? 'neutral'],
+                        )}
+                      />
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate font-medium">
+                          {e.title}
+                        </span>
+                        <span className="block text-xs text-fg-muted">
+                          {when(entry)}
+                        </span>
                       </span>
-                      <span className="block text-xs text-fg-muted">
-                        {e.time ? formatTime(e.time) : 'All day'}
-                      </span>
-                    </span>
-                  </Button>
-                </li>
-              ))}
+                    </Button>
+                  </li>
+                );
+              })}
             </ul>
           )}
         </section>

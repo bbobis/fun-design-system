@@ -539,3 +539,10 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Remember: one-letter shortcuts need limits (WCAG 2.1.4).** N only works while a day cell has focus, never with Ctrl/⌘/Alt, and never in a text field. The button carries `aria-keyshortcuts="N"` so screen readers can announce it.
 - **Remember: label in name (WCAG 2.5.3).** The button's name is "New event on Thursday, October 15". It starts with the visible text, so voice users can say "click New event".
 - Docs: https://www.w3.org/WAI/WCAG21/Understanding/character-key-shortcuts.html
+
+## 2026-10-15 — EventCalendar: multi-day events
+- **Built:** an optional `endDate` (inclusive). The event shows on every day it covers. The chip has square corners and stretches over the cell padding on the side where it continues, so it reads as one bar. The day list says "Oct 14 – 16 · Day 2 of 3". The new `groupByDay()` does the expanding and sorting, and is tested on its own.
+- **Remember (the prediction): spans go first.** Within a day the order is multi-day, then all-day, then by time, like Outlook. A span then sits near the top of every day it crosses, which helps the eye follow it.
+- **Remember: one chip per day, not one bar drawn over the grid.** React Aria renders the grid cell by cell. A single bar would need absolute positioning on top of the table, which breaks when a week wraps or the table resizes. The trade-off: a span can sit in a different row on different days.
+- **Gotchas:** `Intl.DateTimeFormat.formatRange` puts thin spaces (U+2009) around the dash, so tests compare with whitespace normalised. A bad `endDate` falls back to one day, and spans are capped at 366 days so a typo can't freeze the page.
+- Docs: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/DateTimeFormat/formatRange
