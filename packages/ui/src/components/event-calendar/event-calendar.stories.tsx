@@ -276,3 +276,105 @@ export const MultiDay: Story = {
     ],
   },
 };
+
+const week: CalendarEvent[] = [
+  {
+    id: 'w1',
+    date: '2026-10-12',
+    time: '09:00',
+    endTime: '09:15',
+    title: 'Standup',
+  },
+  {
+    id: 'w2',
+    date: '2026-10-13',
+    time: '09:00',
+    endTime: '09:15',
+    title: 'Standup',
+  },
+  {
+    id: 'w3',
+    date: '2026-10-13',
+    time: '13:00',
+    endTime: '15:00',
+    title: 'Customer workshop',
+    tone: 'success',
+  },
+  {
+    id: 'w4',
+    date: '2026-10-14',
+    endDate: '2026-10-16',
+    title: 'Offsite',
+    tone: 'success',
+  },
+  {
+    id: 'w5',
+    date: '2026-10-15',
+    time: '10:00',
+    endTime: '11:00',
+    title: 'Team sync',
+    tone: 'info',
+  },
+  {
+    id: 'w6',
+    date: '2026-10-15',
+    time: '10:30',
+    endTime: '11:30',
+    title: 'Design review',
+  },
+  {
+    id: 'w7',
+    date: '2026-10-15',
+    time: '11:00',
+    endTime: '12:00',
+    title: 'Planning',
+    tone: 'warning',
+  },
+  { id: 'w8', date: '2026-10-15', title: 'Invoice run', tone: 'warning' },
+  {
+    id: 'w9',
+    date: '2026-10-16',
+    time: '16:00',
+    endTime: '17:00',
+    title: 'Release 2.4',
+    tone: 'success',
+  },
+  {
+    id: 'w10',
+    date: '2026-10-17',
+    time: '08:30',
+    title: 'Payroll check',
+    tone: 'danger',
+  },
+];
+
+/**
+ * `view="week"`: 7 days × 24 hours, opened at 8 AM. Timed events are blocks from
+ * `time` to `endTime` (30 minutes without one); overlapping ones share the width. On
+ * Oct 15, Team sync, Design review and Planning form one group of 2 lanes (Planning
+ * reuses Team sync's lane). All-day and multi-day events sit in the row on top. Every
+ * block is a button: Tab through them, Enter opens one. Month | Week switches view.
+ */
+export const Week: Story = {
+  render: () => {
+    function Example() {
+      const [opened, setOpened] = useState<string | null>(null);
+      return (
+        <>
+          <EventCalendar
+            aria-label="Team calendar"
+            events={week}
+            defaultView="week"
+            defaultSelectedDate="2026-10-15"
+            onEventAction={(e) => setOpened(e.title)}
+            onCreateEvent={() => setOpened('(new event)')}
+          />
+          <p role="status" className="mt-3 text-sm text-fg-muted">
+            {opened ? `Opened: ${opened}` : 'No event opened yet.'}
+          </p>
+        </>
+      );
+    }
+    return <Example />;
+  },
+};

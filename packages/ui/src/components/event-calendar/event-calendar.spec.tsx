@@ -346,4 +346,166 @@ describe('EventCalendar', () => {
       ]);
     });
   });
+
+  describe('week view', () => {
+    const weekEvents: CalendarEvent[] = [
+      {
+        id: 'sync',
+        date: '2026-10-15',
+        time: '10:00',
+        endTime: '11:00',
+        title: 'Team sync',
+      },
+      {
+        id: 'review',
+        date: '2026-10-15',
+        time: '10:30',
+        endTime: '11:30',
+        title: 'Design review',
+      },
+      { id: 'plan', date: '2026-10-29', time: '11:00', title: 'Planning' },
+      {
+        id: 'off',
+        date: '2026-10-14',
+        endDate: '2026-10-16',
+        title: 'Offsite',
+      },
+    ];
+    const norm = (t: string | null | undefined) => t?.replace(/\s/g, ' ');
+    // The day list beside the grid holds the same events, so look inside the week.
+    const week = () =>
+      within(screen.getByRole('region', { name: 'Team calendar' }));
+    const weekHeading = () =>
+      norm(screen.getAllByRole('heading')[0]?.textContent);
+
+    it('Month | Week switches the view and reports it', async () => {
+      const user = userEvent.setup();
+      const onViewChange = vi.fn();
+      render(
+        <EventCalendar
+          aria-label="Team calendar"
+          events={weekEvents}
+          defaultSelectedDate="2026-10-15"
+          onViewChange={onViewChange}
+        />,
+      );
+      expect(screen.getByRole('grid')).toBeTruthy();
+      await user.click(screen.getByRole('radio', { name: 'Week' }));
+      expect(onViewChange).toHaveBeenLastCalledWith('week');
+      expect(screen.queryByRole('grid')).toBeNull();
+      expect(weekHeading()).toBe('Oct 11 – 17, 2026');
+      expect(
+        screen.getByRole('region', { name: 'Team calendar' }),
+      ).toBeTruthy();
+    });
+
+    it('timed events are buttons, described by their day; overlaps share the width', () => {
+      render(
+        <EventCalendar
+          aria-label="Team calendar"
+          events={weekEvents}
+          defaultView="week"
+          defaultSelectedDate="2026-10-15"
+        />,
+      );
+      const sync = week().getByRole('button', { name: /^Team sync/ });
+      expect(norm(sync.textContent)).toBe('Team sync10:00 AM – 11:00 AM');
+      const day = document.getElementById(
+        sync.getAttribute('aria-describedby') ?? '',
+      );
+      expect(day?.getAttribute('aria-label')).toBe('Thursday, October 15');
+      expect(sync.style.getPropertyValue('--lanes')).toBe('2');
+      expect(sync.style.getPropertyValue('--top')).toBe('30rem'); // 10 h × 3rem
+      expect(
+        week()
+          .getByRole('button', { name: /^Design review/ })
+          .style.getPropertyValue('--lane'),
+      ).toBe('1');
+    });
+
+    it('multi-day and all-day events sit in the all-day row, as buttons', async () => {
+      const user = userEvent.setup();
+      const onEventAction = vi.fn();
+      render(
+        <EventCalendar
+          aria-label="Team calendar"
+          events={weekEvents}
+          defaultView="week"
+          defaultSelectedDate="2026-10-15"
+          onEventAction={onEventAction}
+        />,
+      );
+      const offsite = screen.getAllByRole('button', { name: 'Offsite' });
+      expect(offsite).toHaveLength(3); // Wed, Thu, Fri
+      await user.click(offsite[1]!);
+      expect(onEventAction).toHaveBeenCalledWith(weekEvents[3]);
+    });
+
+    it('focusing an event moves the day list to its day', async () => {
+      render(
+        <EventCalendar
+          aria-label="Team calendar"
+          events={weekEvents}
+          defaultView="week"
+          defaultSelectedDate="2026-10-12"
+        />,
+      );
+      act(() =>
+        week()
+          .getByRole('button', { name: /^Team sync/ })
+          .focus(),
+      );
+      expect(within(dayList()).getByRole('heading').textContent).toBe(
+        'Thursday, October 153 events', // Team sync, Design review, and the Offsite span
+      );
+    });
+
+    it('› moves a week; crossing into November reports the month', async () => {
+      const user = userEvent.setup();
+      const onMonthChange = vi.fn();
+      render(
+        <EventCalendar
+          aria-label="Team calendar"
+          events={weekEvents}
+          defaultView="week"
+          defaultSelectedDate="2026-10-29"
+          onMonthChange={onMonthChange}
+        />,
+      );
+      expect(week().getByRole('button', { name: /^Planning/ })).toBeTruthy();
+      await user.click(screen.getByRole('button', { name: 'Next week' }));
+      expect(weekHeading()).toBe('Nov 1 – 7, 2026');
+      expect(onMonthChange).toHaveBeenLastCalledWith('2026-11');
+    });
+
+    it('N on a day header creates on that day', async () => {
+      const user = userEvent.setup();
+      const onCreateEvent = vi.fn();
+      render(
+        <EventCalendar
+          aria-label="Team calendar"
+          events={weekEvents}
+          defaultView="week"
+          defaultSelectedDate="2026-10-15"
+          onCreateEvent={onCreateEvent}
+        />,
+      );
+      act(() =>
+        screen.getByRole('button', { name: 'Friday, October 16' }).focus(),
+      );
+      await user.keyboard('n');
+      expect(onCreateEvent).toHaveBeenCalledWith('2026-10-16');
+    });
+
+    it('the day list shows the end time too', () => {
+      render(
+        <EventCalendar
+          aria-label="Team calendar"
+          events={weekEvents}
+          defaultSelectedDate="2026-10-15"
+        />,
+      );
+      expect(listed().map(norm)).toContain('Team sync10:00 AM – 11:00 AM');
+    });
+  });
 });
