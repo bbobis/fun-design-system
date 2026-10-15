@@ -1,5 +1,11 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
+import { Button } from '../button';
+import { Dialog } from '../dialog';
+import { Field } from '../field';
+import { Input } from '../input';
+import { Switch } from '../switch';
+import { TimeField } from '../time-field';
 import { EventCalendar, type CalendarEvent } from './event-calendar';
 
 const meta = {
@@ -144,4 +150,93 @@ export const Narrow: Story = {
     ),
   ],
   args: { events: team, defaultSelectedDate: '2026-10-15' },
+};
+
+/**
+ * `onCreateEvent`: a "+ New event" button in the day list, and **N** on a focused day.
+ * The calendar only says which day; the app opens its own form (Dialog + Input +
+ * TimeField here) and adds the event. When the dialog closes, focus goes back to
+ * where it was: the button, or the day you pressed N on.
+ */
+export const CreateEvents: Story = {
+  render: () => {
+    function Example() {
+      const [events, setEvents] = useState(team);
+      const [creatingOn, setCreatingOn] = useState<string | null>(null);
+      const [title, setTitle] = useState('');
+      const [allDay, setAllDay] = useState(false);
+      const [time, setTime] = useState<string | null>('09:00');
+      const close = () => {
+        setCreatingOn(null);
+        setTitle('');
+        setAllDay(false);
+        setTime('09:00');
+      };
+      const save = () => {
+        if (!creatingOn || !title.trim()) return;
+        setEvents((list) => [
+          ...list,
+          {
+            id: crypto.randomUUID(),
+            date: creatingOn,
+            title: title.trim(),
+            time: allDay ? undefined : (time ?? undefined),
+          },
+        ]);
+        close();
+      };
+      return (
+        <>
+          <EventCalendar
+            aria-label="Team calendar"
+            events={events}
+            defaultSelectedDate="2026-10-15"
+            onCreateEvent={setCreatingOn}
+          />
+          <Dialog
+            open={creatingOn !== null}
+            onOpenChange={(open) => !open && close()}
+            title="New event"
+            description={creatingOn ?? undefined}
+            size="sm"
+            footer={
+              <>
+                <Button intent="secondary" onClick={close}>
+                  Cancel
+                </Button>
+                <Button onClick={save} disabled={!title.trim()}>
+                  Save
+                </Button>
+              </>
+            }
+          >
+            <form
+              className="flex flex-col gap-4"
+              onSubmit={(e) => {
+                e.preventDefault();
+                save();
+              }}
+            >
+              <Field label="Title" required>
+                <Input
+                  autoFocus
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                />
+              </Field>
+              <Switch checked={allDay} onChange={setAllDay}>
+                All day
+              </Switch>
+              {!allDay && (
+                <Field label="Starts at">
+                  <TimeField value={time} onChange={setTime} />
+                </Field>
+              )}
+            </form>
+          </Dialog>
+        </>
+      );
+    }
+    return <Example />;
+  },
 };
