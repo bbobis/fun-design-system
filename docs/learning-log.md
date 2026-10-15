@@ -525,3 +525,10 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Remember (the prediction): each piece spins on its own.** ↑ on the hour at 11:30 AM gives 12:30 **AM** (00:30), not PM, because AM/PM is its own piece. Chrome's built-in time input does the same. The test pins this, and the JSDoc warns about it.
 - **Form posting:** React Aria would post `'14:30:00'`, so we post our own hidden input with the same `'14:30'` text that `onChange` gives.
 - Docs: https://react-aria.adobe.com/TimeField
+
+## 2026-10-15 — EventCalendar (month view)
+- **Built:** `EventCalendar`, a month view with event chips in the day cells ("+N more") and a list of the focused day's events beside it. It's built on React Aria `Calendar`. `onMonthChange('YYYY-MM')` lets the app load one month at a time. Narrow containers show dots instead of chips (container queries).
+- **Remember: a button can't hold buttons.** Each day cell is already a button, so the chips are decoration (`aria-hidden`) and the **day list** holds the clickable events. A polite live region reads "Thursday, October 15, 5 events" as you move between days.
+- **Remember (the prediction):** ↓ from Oct 29 goes to **Nov 5**, and the calendar turns to November by itself. React Aria moves the visible month with focus. We report it through `onMonthChange`.
+- **Gotchas:** inside a Calendar, every `Button` must be ‹ or ›, so the Today button needs `slot={null}` to opt out. React Aria's `<Heading>` adds the aria-label in front of the month ("Team calendar, October 2026"), so we render our own `<h2>`. axe caught `opacity-80` dropping chip text to 4.39:1.
+- Docs: https://react-aria.adobe.com/Calendar
