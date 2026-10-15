@@ -511,3 +511,10 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Remember (the prediction):** opening a popover focuses the **dialog itself**. After that, Tab follows the page order: ✕ → body (only while it scrolls) → the buttons inside it → footer.
 - **Remember:** check what your audit *didn't* reach. The first deep pass opened 0 dialogs, because dialog trigger buttons have no `aria-expanded`. "0 findings" from an audit that never opened anything means nothing.
 - Docs: https://dequeuniversity.com/rules/axe/4.10/scrollable-region-focusable
+
+## 2026-10-15 — CommandPalette (⌘K)
+- **Built:** `CommandPalette`: ⌘K / Ctrl+K opens a search box over a list of actions. Type to filter, use ↑/↓ to pick, press Enter to run, and it closes. It's React Aria `ModalOverlay` + `Dialog` + `Autocomplete` + `Menu`, and the items are our existing `MenuItem` / `MenuSection`. `MenuItem` gained `keywords` (extra words that find it).
+- **Remember (the prediction): virtual focus.** ↑/↓ don't move real focus. It stays in the search box so you can keep typing. The input's `aria-activedescendant` points at the highlighted item, and screen readers read that item. Once you type, the first match is highlighted, so Enter alone runs the best match.
+- **Remember: primitives vs composites.** The palette is a composite: a new container. It reuses the menu-item primitive instead of adding a `CommandItem`, so there's one look, one set of props, and one place to fix bugs.
+- **axe false alarm:** `scrollable-region-focusable` on the list. axe can't see that ↑/↓ and End scroll it while focus stays in the input. I checked in Chromium: after 40×↓, the list scrolled and the active item was visible.
+- Docs: https://react-aria.adobe.com/Autocomplete

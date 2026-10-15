@@ -8,6 +8,7 @@ export * from './components/card';
 export * from './components/checkbox';
 export * from './components/checkbox-group';
 export * from './components/combobox';
+export * from './components/command-palette';
 export * from './components/data-grid';
 export * from './components/date-picker';
 export * from './components/dialog';
