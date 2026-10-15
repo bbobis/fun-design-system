@@ -2,7 +2,11 @@ import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { Dialog } from '../dialog';
-import { EventCalendar, type CalendarEvent } from './event-calendar';
+import {
+  EventCalendar,
+  groupByDay,
+  type CalendarEvent,
+} from './event-calendar';
 
 const events: CalendarEvent[] = [
   {
@@ -258,6 +262,88 @@ describe('EventCalendar', () => {
       );
       expect(screen.queryByRole('dialog')).toBeNull();
       expect(document.activeElement).toBe(day(/October 22, 2026/));
+    });
+  });
+
+  describe('multi-day events (endDate)', () => {
+    const offsite: CalendarEvent = {
+      id: 'o',
+      date: '2026-10-14',
+      endDate: '2026-10-16',
+      title: 'Offsite',
+      tone: 'success',
+    };
+    const standup: CalendarEvent = {
+      id: 's',
+      date: '2026-10-15',
+      time: '09:00',
+      title: 'Standup',
+    };
+
+    it('groupByDay: one entry per covered day, with "day N of M"', () => {
+      const map = groupByDay([offsite]);
+      expect([...map.keys()]).toEqual([
+        '2026-10-14',
+        '2026-10-15',
+        '2026-10-16',
+      ]);
+      expect(
+        map.get('2026-10-15')?.map(({ day, days }) => [day, days]),
+      ).toEqual([[2, 3]]);
+    });
+
+    it('groupByDay: spans first, then all-day, then by time (the prediction)', () => {
+      const allDay: CalendarEvent = {
+        id: 'a',
+        date: '2026-10-15',
+        title: 'Invoice run',
+      };
+      const order = groupByDay([standup, allDay, offsite])
+        .get('2026-10-15')
+        ?.map(({ event }) => event.title);
+      expect(order).toEqual(['Offsite', 'Invoice run', 'Standup']);
+    });
+
+    it('groupByDay: an end before the start, or malformed, means one day; spans are capped', () => {
+      const back = { ...offsite, endDate: '2026-10-01' };
+      const junk = { ...offsite, id: 'j', endDate: 'soon' };
+      expect([...groupByDay([back]).keys()]).toEqual(['2026-10-14']);
+      expect([...groupByDay([junk]).keys()]).toEqual(['2026-10-14']);
+      const typo = { ...offsite, endDate: '2062-10-16' };
+      expect(groupByDay([typo]).size).toBe(366);
+    });
+
+    it('shows on every day it covers; edges are square where it carries on', () => {
+      render(
+        <EventCalendar
+          aria-label="Team calendar"
+          events={[offsite, standup]}
+          defaultSelectedDate="2026-10-15"
+        />,
+      );
+      const chip = (label: RegExp) =>
+        [...day(label).querySelectorAll('span.truncate')].find(
+          (s) => s.textContent === 'Offsite',
+        );
+      expect(chip(/October 14, 2026/)?.className).toContain('rounded-e-none');
+      expect(chip(/October 15, 2026/)?.className).toContain('rounded-none');
+      expect(chip(/October 16, 2026/)?.className).toContain('rounded-s-none');
+      expect(chip(/October 17, 2026/)).toBeUndefined();
+    });
+
+    it('the day list says the span and which day this is, first in the list', () => {
+      render(
+        <EventCalendar
+          aria-label="Team calendar"
+          events={[standup, offsite]}
+          defaultSelectedDate="2026-10-15"
+        />,
+      );
+      // Intl puts thin spaces (U+2009) around the dash; compare with plain spaces.
+      expect(listed().map((t) => t?.replace(/\s/g, ' '))).toEqual([
+        'OffsiteOct 14 – 16 · Day 2 of 3',
+        'Standup9:00 AM',
+      ]);
     });
   });
 });
