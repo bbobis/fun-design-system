@@ -518,3 +518,10 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Remember: primitives vs composites.** The palette is a composite: a new container. It reuses the menu-item primitive instead of adding a `CommandItem`, so there's one look, one set of props, and one place to fix bugs.
 - **axe false alarm:** `scrollable-region-focusable` on the list. axe can't see that ↑/↓ and End scroll it while focus stays in the input. I checked in Chromium: after 40×↓, the list scrolled and the active item was visible.
 - Docs: https://react-aria.adobe.com/Autocomplete
+
+## 2026-10-15 — TimeField
+- **Built:** `TimeField`, a typed hour / minute (/ second) + AM/PM field on React Aria `TimeField`. It reuses DatePicker's `dateFieldVariants` + `DatePieces`, so "date and time" is two fields that line up. Props mirror DatePicker: `min`, `max`, `granularity`, `hourCycle`, `name`.
+- **Remember: the value is `'HH:mm'` text.** A time of day has no date and no time zone, so a JS `Date` would invent both. It's the same idea as DatePicker's `'YYYY-MM-DD'` and maps to Java's `LocalTime`. `hourCycle` only changes the display; the value is always 24-hour. For "date and time", store two values and combine them on the server, where the time zone is known.
+- **Remember (the prediction): each piece spins on its own.** ↑ on the hour at 11:30 AM gives 12:30 **AM** (00:30), not PM, because AM/PM is its own piece. Chrome's built-in time input does the same. The test pins this, and the JSDoc warns about it.
+- **Form posting:** React Aria would post `'14:30:00'`, so we post our own hidden input with the same `'14:30'` text that `onChange` gives.
+- Docs: https://react-aria.adobe.com/TimeField
