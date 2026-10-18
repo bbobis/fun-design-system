@@ -23,6 +23,7 @@ const events: CalendarEvent[] = [
 ];
 
 /** The day cell React Aria names by its full date. */
+const norm = (t: string | null | undefined) => t?.replace(/\s/g, ' ');
 const day = (label: RegExp) => screen.getByRole('button', { name: label });
 const dayList = () =>
   screen.getByRole('region', { name: 'Events on this day' });
@@ -506,6 +507,123 @@ describe('EventCalendar', () => {
         />,
       );
       expect(listed().map(norm)).toContain('Team sync10:00 AM – 11:00 AM');
+    });
+  });
+
+  describe('moving and resizing (onEventChange)', () => {
+    const start: CalendarEvent[] = [
+      {
+        id: 'sync',
+        date: '2026-10-15',
+        time: '10:00',
+        endTime: '11:00',
+        title: 'Team sync',
+      },
+    ];
+    function Draggable({ onChange }: { onChange?: (c: unknown) => void }) {
+      const [list, setList] = useState(start);
+      return (
+        <EventCalendar
+          aria-label="Team calendar"
+          events={list}
+          defaultView="week"
+          defaultSelectedDate="2026-10-15"
+          onEventChange={(event, change) => {
+            onChange?.(change);
+            setList((l) =>
+              l.map((e) => (e.id === event.id ? { ...e, ...change } : e)),
+            );
+          }}
+        />
+      );
+    }
+    const block = () =>
+      within(screen.getByRole('region', { name: 'Team calendar' })).getByRole(
+        'button',
+        {
+          name: /^Team sync/,
+        },
+      );
+
+    it('↓ moves 15 minutes, ← → move a day; focus stays on the block', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      render(<Draggable onChange={onChange} />);
+      act(() => block().focus());
+      await user.keyboard('{ArrowDown}');
+      expect(onChange).toHaveBeenLastCalledWith({
+        date: '2026-10-15',
+        time: '10:15',
+        endTime: '11:15',
+      });
+      await user.keyboard('{ArrowRight}');
+      expect(onChange).toHaveBeenLastCalledWith({
+        date: '2026-10-16',
+        time: '10:15',
+        endTime: '11:15',
+      });
+      // The block now lives in Friday's column: a new element, and focus followed it.
+      expect(document.activeElement).toBe(block());
+      expect(
+        document
+          .getElementById(
+            block().getAttribute('aria-describedby')!.split(' ')[0]!,
+          )
+          ?.getAttribute('aria-label'),
+      ).toBe('Friday, October 16');
+    });
+
+    it('Shift+↓ makes it longer; it never gets shorter than 15 minutes', async () => {
+      const user = userEvent.setup();
+      const onChange = vi.fn();
+      render(<Draggable onChange={onChange} />);
+      act(() => block().focus());
+      await user.keyboard('{Shift>}{ArrowDown}{/Shift}');
+      expect(onChange).toHaveBeenLastCalledWith({
+        date: '2026-10-15',
+        time: '10:00',
+        endTime: '11:15',
+      });
+      for (let i = 0; i < 10; i++)
+        await user.keyboard('{Shift>}{ArrowUp}{/Shift}');
+      expect(onChange).toHaveBeenLastCalledWith({
+        date: '2026-10-15',
+        time: '10:00',
+        endTime: '10:15',
+      });
+    });
+
+    it('announces each move and tells screen readers the keys', async () => {
+      const user = userEvent.setup();
+      render(<Draggable />);
+      const hintId = block().getAttribute('aria-describedby')!.split(' ')[1]!;
+      expect(document.getElementById(hintId)?.textContent).toMatch(
+        /Arrow keys move/,
+      );
+      act(() => block().focus());
+      await user.keyboard('{ArrowDown}');
+      expect(norm(screen.getByText(/moved to/).textContent)).toBe(
+        'Team sync moved to Thursday, October 15, 10:15 AM – 11:15 AM',
+      );
+    });
+
+    it('without onEventChange, arrows do nothing and blocks still open', async () => {
+      const user = userEvent.setup();
+      const onEventAction = vi.fn();
+      render(
+        <EventCalendar
+          aria-label="Team calendar"
+          events={start}
+          defaultView="week"
+          defaultSelectedDate="2026-10-15"
+          onEventAction={onEventAction}
+        />,
+      );
+      act(() => block().focus());
+      await user.keyboard('{ArrowDown}');
+      expect(norm(block().textContent)).toBe('Team sync10:00 AM – 11:00 AM');
+      await user.keyboard('{Enter}');
+      expect(onEventAction).toHaveBeenCalledWith(start[0]);
     });
   });
 });

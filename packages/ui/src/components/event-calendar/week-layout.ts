@@ -77,3 +77,47 @@ export function layoutDay<T>(timed: readonly Timed<T>[]): Placed<T>[] {
   close();
   return placed;
 }
+
+/** Moves and resizes snap to this many minutes. */
+export const SNAP_MINUTES = 15;
+
+/** 570 → `'09:30'`. */
+export function fromMinutes(minutes: number): string {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${pad(Math.floor(minutes / 60))}:${pad(minutes % 60)}`;
+}
+
+/** Round to the nearest `SNAP_MINUTES` (37 → 30, 38 → 45). */
+export const snap = (minutes: number) =>
+  Math.round(minutes / SNAP_MINUTES) * SNAP_MINUTES;
+
+export type Change = {
+  /** Days to move (−1 = a day earlier). */
+  days: number;
+  /** Minutes to move the whole block (start and end). */
+  move: number;
+  /** Minutes to add to the end only (resize). */
+  resize: number;
+};
+
+/**
+ * Where a block ends up after a move or resize, kept inside the day (00:00–24:00)
+ * and the visible week (day index 0–6), and never shorter than one snap step.
+ */
+export function applyChange(
+  block: { start: number; end: number; dayIndex: number },
+  change: Change,
+): { start: number; end: number; dayIndex: number } {
+  const length = block.end - block.start;
+  const dayIndex = Math.min(6, Math.max(0, block.dayIndex + change.days));
+  const start = Math.min(
+    24 * 60 - SNAP_MINUTES,
+    Math.max(0, block.start + change.move),
+  );
+  // A move keeps the length (shortened only at midnight); a resize changes the end.
+  const end = Math.min(
+    24 * 60,
+    Math.max(start + SNAP_MINUTES, start + length + change.resize),
+  );
+  return { start, end, dayIndex };
+}
