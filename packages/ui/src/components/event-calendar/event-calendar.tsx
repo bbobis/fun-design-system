@@ -20,7 +20,7 @@ import { cn } from '../../utils/cn';
 import { Button as DsButton } from '../button';
 import { toCalendarDate } from '../date-picker/iso-date';
 import { SegmentedControl } from '../segmented-control';
-import { WeekView } from './week-view';
+import { WeekView, type EventTimeChange } from './week-view';
 import {
   chipTone,
   dotTone,
@@ -35,6 +35,7 @@ export {
   type CalendarEvent,
   type EventTone,
 } from './calendar-model';
+export type { EventTimeChange } from './week-view';
 
 export type EventCalendarProps = {
   /** Names the calendar for screen readers ("Team calendar"). Required. */
@@ -74,6 +75,13 @@ export type EventCalendarProps = {
   /** Starting view when uncontrolled. @default 'month' */
   defaultView?: CalendarView;
   onViewChange?: (view: CalendarView) => void;
+  /**
+   * Week view: turns on moving and resizing timed events, by mouse/touch (drag the
+   * block, or its bottom edge) and keyboard (↑/↓ 15 minutes, ←/→ a day, Shift+↑/↓
+   * the end). Called with the event and its new `date`, `time` and `endTime`; update
+   * your `events` from it. The calendar never changes `events` itself.
+   */
+  onEventChange?: (event: CalendarEvent, change: EventTimeChange) => void;
   /** Week view: the hour scrolled into view when it opens. @default 8 */
   scrollToHour?: number;
   className?: string;
@@ -137,6 +145,7 @@ export function EventCalendar({
   defaultView = 'month',
   onViewChange,
   scrollToHour = 8,
+  onEventChange,
   className,
 }: EventCalendarProps) {
   const [viewState, setViewState] = useState<CalendarView>(defaultView);
@@ -287,6 +296,7 @@ export function EventCalendar({
                 onSelectedDateChange?.(d.toString());
               }}
               onEventAction={onEventAction}
+              onEventChange={onEventChange}
               formatTime={formatTime}
               locale={locale}
               scrollToHour={scrollToHour}

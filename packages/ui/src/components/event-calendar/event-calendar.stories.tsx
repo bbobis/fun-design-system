@@ -378,3 +378,40 @@ export const Week: Story = {
     return <Example />;
   },
 };
+
+/**
+ * `onEventChange`: drag a block to move it (snaps to 15 minutes; sideways for another
+ * day), drag its bottom edge to change the end, Escape mid-drag to cancel. Keyboard:
+ * Tab to a block, ↑/↓ = 15 minutes, ←/→ = a day, Shift+↑/↓ = the end. The calendar
+ * only reports the change; this story saves it into its own `events` state.
+ */
+export const DragToReschedule: Story = {
+  render: () => {
+    function Example() {
+      const [events, setEvents] = useState(week);
+      const [last, setLast] = useState<string | null>(null);
+      return (
+        <>
+          <EventCalendar
+            aria-label="Team calendar"
+            events={events}
+            defaultView="week"
+            defaultSelectedDate="2026-10-15"
+            onEventChange={(event, change) => {
+              setEvents((list) =>
+                list.map((e) => (e.id === event.id ? { ...e, ...change } : e)),
+              );
+              setLast(
+                `${event.title} → ${change.date} ${change.time}–${change.endTime}`,
+              );
+            }}
+          />
+          <p role="status" className="mt-3 text-sm text-fg-muted">
+            {last ?? 'Nothing moved yet.'}
+          </p>
+        </>
+      );
+    }
+    return <Example />;
+  },
+};
