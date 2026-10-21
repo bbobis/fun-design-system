@@ -153,92 +153,117 @@ export const Narrow: Story = {
 };
 
 /**
+ * The app side of "create": a Dialog form (Input + Switch + TimeFields) that adds the
+ * event to its own `events`. Shared by CreateEvents (month) and DragToCreate (week).
+ */
+function CreateEventsExample({
+  initial,
+  view,
+}: {
+  initial: CalendarEvent[];
+  view: 'month' | 'week';
+}) {
+  const [events, setEvents] = useState(initial);
+  const [creatingOn, setCreatingOn] = useState<string | null>(null);
+  const [title, setTitle] = useState('');
+  const [allDay, setAllDay] = useState(false);
+  const [time, setTime] = useState<string | null>('09:00');
+  const [endTime, setEndTime] = useState<string | null>('09:30');
+  const close = () => {
+    setCreatingOn(null);
+    setTitle('');
+    setAllDay(false);
+    setTime('09:00');
+    setEndTime('09:30');
+  };
+  const save = () => {
+    if (!creatingOn || !title.trim()) return;
+    setEvents((list) => [
+      ...list,
+      {
+        id: crypto.randomUUID(),
+        date: creatingOn,
+        title: title.trim(),
+        time: allDay ? undefined : (time ?? undefined),
+        endTime: allDay ? undefined : (endTime ?? undefined),
+      },
+    ]);
+    close();
+  };
+  return (
+    <>
+      <EventCalendar
+        aria-label="Team calendar"
+        events={events}
+        defaultView={view}
+        defaultSelectedDate="2026-10-15"
+        onCreateEvent={(date, range) => {
+          // From a drag in week view the form starts with the picked times.
+          if (range) {
+            setTime(range.time);
+            setEndTime(range.endTime);
+          }
+          setCreatingOn(date);
+        }}
+      />
+      <Dialog
+        open={creatingOn !== null}
+        onOpenChange={(open) => !open && close()}
+        title="New event"
+        description={creatingOn ?? undefined}
+        size="sm"
+        footer={
+          <>
+            <Button intent="secondary" onClick={close}>
+              Cancel
+            </Button>
+            <Button onClick={save} disabled={!title.trim()}>
+              Save
+            </Button>
+          </>
+        }
+      >
+        <form
+          className="flex flex-col gap-4"
+          onSubmit={(e) => {
+            e.preventDefault();
+            save();
+          }}
+        >
+          <Field label="Title" required>
+            <Input
+              autoFocus
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+            />
+          </Field>
+          <Switch checked={allDay} onChange={setAllDay}>
+            All day
+          </Switch>
+          {!allDay && (
+            <div className="flex gap-3">
+              <Field label="Starts at">
+                <TimeField value={time} onChange={setTime} />
+              </Field>
+              <Field label="Ends at">
+                <TimeField value={endTime} onChange={setEndTime} />
+              </Field>
+            </div>
+          )}
+        </form>
+      </Dialog>
+    </>
+  );
+}
+
+/**
  * `onCreateEvent`: a "+ New event" button in the day list, and **N** on a focused day.
  * The calendar only says which day; the app opens its own form (Dialog + Input +
  * TimeField here) and adds the event. When the dialog closes, focus goes back to
  * where it was: the button, or the day you pressed N on.
  */
 export const CreateEvents: Story = {
-  render: () => {
-    function Example() {
-      const [events, setEvents] = useState(team);
-      const [creatingOn, setCreatingOn] = useState<string | null>(null);
-      const [title, setTitle] = useState('');
-      const [allDay, setAllDay] = useState(false);
-      const [time, setTime] = useState<string | null>('09:00');
-      const close = () => {
-        setCreatingOn(null);
-        setTitle('');
-        setAllDay(false);
-        setTime('09:00');
-      };
-      const save = () => {
-        if (!creatingOn || !title.trim()) return;
-        setEvents((list) => [
-          ...list,
-          {
-            id: crypto.randomUUID(),
-            date: creatingOn,
-            title: title.trim(),
-            time: allDay ? undefined : (time ?? undefined),
-          },
-        ]);
-        close();
-      };
-      return (
-        <>
-          <EventCalendar
-            aria-label="Team calendar"
-            events={events}
-            defaultSelectedDate="2026-10-15"
-            onCreateEvent={setCreatingOn}
-          />
-          <Dialog
-            open={creatingOn !== null}
-            onOpenChange={(open) => !open && close()}
-            title="New event"
-            description={creatingOn ?? undefined}
-            size="sm"
-            footer={
-              <>
-                <Button intent="secondary" onClick={close}>
-                  Cancel
-                </Button>
-                <Button onClick={save} disabled={!title.trim()}>
-                  Save
-                </Button>
-              </>
-            }
-          >
-            <form
-              className="flex flex-col gap-4"
-              onSubmit={(e) => {
-                e.preventDefault();
-                save();
-              }}
-            >
-              <Field label="Title" required>
-                <Input
-                  autoFocus
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                />
-              </Field>
-              <Switch checked={allDay} onChange={setAllDay}>
-                All day
-              </Switch>
-              {!allDay && (
-                <Field label="Starts at">
-                  <TimeField value={time} onChange={setTime} />
-                </Field>
-              )}
-            </form>
-          </Dialog>
-        </>
-      );
-    }
-    return <Example />;
-  },
+  render: () => <CreateEventsExample initial={team} view="month" />,
 };
 
 /**
@@ -414,4 +439,14 @@ export const DragToReschedule: Story = {
     }
     return <Example />;
   },
+};
+
+/**
+ * `onCreateEvent` in week view: drag down (or up) on empty time to pick a range; it
+ * snaps to 15 minutes and Escape cancels. A click picks 30 minutes. The second
+ * argument, `{ time, endTime }`, pre-fills the form. A finger drag still scrolls the
+ * hours, so on touch a tap is the way in. Keyboard: "+ New event" or N, as before.
+ */
+export const DragToCreate: Story = {
+  render: () => <CreateEventsExample initial={week} view="week" />,
 };

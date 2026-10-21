@@ -5,4 +5,5 @@ export {
   type EventCalendarProps,
   type EventTimeChange,
   type EventTone,
+  type TimeRange,
 } from './event-calendar';

@@ -121,3 +121,28 @@ export function applyChange(
   );
   return { start, end, dayIndex };
 }
+
+/**
+ * The time range picked by pressing at minute `a` and dragging to minute `b` (either
+ * direction): from the start of the earlier slot to the end of the later one, at
+ * least `minLength` long, inside the day. A click is `a === b`.
+ * Pressed 10:05, dragged to 10:50 → 10:00–11:00.
+ */
+export function slotRange(
+  a: number,
+  b: number,
+  minLength: number = SNAP_MINUTES,
+): { start: number; end: number } {
+  const day = 24 * 60;
+  const lo = Math.max(0, Math.min(a, b));
+  const hi = Math.min(day, Math.max(a, b));
+  const start = Math.min(
+    day - SNAP_MINUTES,
+    Math.floor(lo / SNAP_MINUTES) * SNAP_MINUTES,
+  );
+  const end = Math.min(
+    day,
+    Math.max(Math.ceil(hi / SNAP_MINUTES) * SNAP_MINUTES, start + minLength),
+  );
+  return { start, end };
+}

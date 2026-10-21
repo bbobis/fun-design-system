@@ -20,7 +20,7 @@ import { cn } from '../../utils/cn';
 import { Button as DsButton } from '../button';
 import { toCalendarDate } from '../date-picker/iso-date';
 import { SegmentedControl } from '../segmented-control';
-import { WeekView, type EventTimeChange } from './week-view';
+import { WeekView, type EventTimeChange, type TimeRange } from './week-view';
 import {
   chipTone,
   dotTone,
@@ -35,7 +35,7 @@ export {
   type CalendarEvent,
   type EventTone,
 } from './calendar-model';
-export type { EventTimeChange } from './week-view';
+export type { EventTimeChange, TimeRange } from './week-view';
 
 export type EventCalendarProps = {
   /** Names the calendar for screen readers ("Team calendar"). Required. */
@@ -64,8 +64,12 @@ export type EventCalendarProps = {
    * focused day. Called with that day, `'YYYY-MM-DD'`; open your own form (a Dialog)
    * and add the event to `events`. The calendar never owns the form, because every app
    * wants different fields.
+   *
+   * Week view also lets you drag on empty time (snapped to 15 minutes; Escape
+   * cancels) or click it (a 30-minute slot). Then `range` has the picked `time` and
+   * `endTime`, so your form can start with them. From the button or N it's undefined.
    */
-  onCreateEvent?: (date: string) => void;
+  onCreateEvent?: (date: string, range?: TimeRange) => void;
   /**
    * `'month'` (a grid of days) or `'week'` (7 days × 24 hours, events as blocks
    * placed by `time`–`endTime`). Controlled; pair with `onViewChange`. The header's
@@ -124,7 +128,10 @@ const spanShape = ({ day, days }: DayEntry) =>
  * sit in a row on top, and each block is a button. The header's Month | Week switch
  * changes the view; the day list, `onCreateEvent` and N work in both.
  *
- * Not yet: a day view, dragging events.
+ * In week view, `onEventChange` turns on moving/resizing events, and `onCreateEvent`
+ * also lets you drag out a new event's time range.
+ *
+ * Not yet: a day view, recurring events.
  *
  * @example
  * <EventCalendar aria-label="Team calendar" events={events}
@@ -297,6 +304,7 @@ export function EventCalendar({
               }}
               onEventAction={onEventAction}
               onEventChange={onEventChange}
+              onCreateEvent={onCreateEvent}
               formatTime={formatTime}
               locale={locale}
               scrollToHour={scrollToHour}
