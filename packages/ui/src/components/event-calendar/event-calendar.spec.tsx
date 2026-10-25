@@ -626,4 +626,112 @@ describe('EventCalendar', () => {
       expect(onEventAction).toHaveBeenCalledWith(start[0]);
     });
   });
+
+  describe('drag to create (week view)', () => {
+    /** 1 px = 1 minute: the column is 1440 px tall from y = 0. */
+    const column = (date: string) => {
+      const el = document.querySelector<HTMLElement>(
+        `[data-day-column="${date}"]`,
+      );
+      if (!el) throw new Error(date);
+      el.getBoundingClientRect = () =>
+        ({ top: 0, height: 1440, width: 100 }) as DOMRect;
+      return el;
+    };
+    /** jsdom has no PointerEvent; React reads the same fields off a MouseEvent. */
+    const pointer = (
+      el: Element,
+      type: string,
+      clientY: number,
+      init: Record<string, unknown> = {},
+    ) =>
+      act(() => {
+        const e = new MouseEvent(type, { bubbles: true, clientY, button: 0 });
+        Object.assign(e, init);
+        el.dispatchEvent(e);
+      });
+    const setup = () => {
+      const onCreateEvent = vi.fn();
+      render(
+        <EventCalendar
+          aria-label="Team calendar"
+          events={[
+            {
+              id: 'x',
+              date: '2026-10-15',
+              time: '10:00',
+              endTime: '11:00',
+              title: 'Team sync',
+            },
+          ]}
+          defaultView="week"
+          defaultSelectedDate="2026-10-15"
+          onCreateEvent={onCreateEvent}
+        />,
+      );
+      return onCreateEvent;
+    };
+
+    it('dragging up from 11:00 to 9:40 gives 09:30–11:00 (the prediction)', () => {
+      const onCreateEvent = setup();
+      const col = column('2026-10-16');
+      pointer(col, 'pointerdown', 660);
+      pointer(col, 'pointermove', 620);
+      pointer(col, 'pointermove', 580);
+      // The dashed preview shows the range while dragging.
+      expect(
+        norm(
+          col.querySelector('[aria-hidden="true"].border-dashed')?.textContent,
+        ),
+      ).toBe('9:30 AM – 11:00 AM');
+      pointer(col, 'pointerup', 580);
+      expect(onCreateEvent).toHaveBeenCalledWith('2026-10-16', {
+        time: '09:30',
+        endTime: '11:00',
+      });
+    });
+
+    it('a click picks a 30-minute slot', () => {
+      const onCreateEvent = setup();
+      const col = column('2026-10-16');
+      pointer(col, 'pointerdown', 610);
+      pointer(col, 'pointerup', 610);
+      expect(onCreateEvent).toHaveBeenCalledWith('2026-10-16', {
+        time: '10:00',
+        endTime: '10:30',
+      });
+    });
+
+    it('Escape cancels; pressing on an event does not create', async () => {
+      const user = userEvent.setup();
+      const onCreateEvent = setup();
+      const col = column('2026-10-16');
+      pointer(col, 'pointerdown', 600);
+      pointer(col, 'pointermove', 700);
+      await user.keyboard('{Escape}');
+      pointer(col, 'pointerup', 700);
+      expect(onCreateEvent).not.toHaveBeenCalled();
+
+      const block = document.querySelector('[data-event-id="x"]');
+      if (!block) throw new Error('block');
+      pointer(block, 'pointerdown', 620);
+      pointer(column('2026-10-15'), 'pointerup', 620);
+      expect(onCreateEvent).not.toHaveBeenCalled();
+    });
+
+    it('a finger drag scrolls instead (pointercancel); a tap still creates', () => {
+      const onCreateEvent = setup();
+      const col = column('2026-10-16');
+      pointer(col, 'pointerdown', 600, { pointerType: 'touch' });
+      pointer(col, 'pointercancel', 600);
+      pointer(col, 'pointerup', 600);
+      expect(onCreateEvent).not.toHaveBeenCalled();
+      pointer(col, 'pointerdown', 600, { pointerType: 'touch' });
+      pointer(col, 'pointerup', 600);
+      expect(onCreateEvent).toHaveBeenCalledWith('2026-10-16', {
+        time: '10:00',
+        endTime: '10:30',
+      });
+    });
+  });
 });

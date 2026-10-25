@@ -2,6 +2,7 @@ import {
   applyChange,
   fromMinutes,
   layoutDay,
+  slotRange,
   snap,
   toMinutes,
   toTimed,
@@ -110,5 +111,25 @@ describe('moving and resizing', () => {
   it('fromMinutes writes HH:mm', () => {
     expect(fromMinutes(570)).toBe('09:30');
     expect(fromMinutes(1440 - 15)).toBe('23:45');
+  });
+});
+
+describe('slotRange (drag to create)', () => {
+  it('from the pressed slot to the end of the reached one', () => {
+    expect(slotRange(605, 650)).toEqual({ start: 600, end: 660 }); // 10:05→10:50
+  });
+
+  it('dragging up works the same (the prediction: 11:00 → 9:40 gives 9:30–11:00)', () => {
+    expect(slotRange(660, 580)).toEqual({ start: 570, end: 660 });
+  });
+
+  it('a click is one slot, or minLength', () => {
+    expect(slotRange(610, 610)).toEqual({ start: 600, end: 615 });
+    expect(slotRange(610, 610, 30)).toEqual({ start: 600, end: 630 });
+  });
+
+  it('stays inside the day', () => {
+    expect(slotRange(-50, 2000)).toEqual({ start: 0, end: 1440 });
+    expect(slotRange(1439, 1439, 30)).toEqual({ start: 1425, end: 1440 });
   });
 });

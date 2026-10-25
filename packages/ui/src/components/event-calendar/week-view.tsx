@@ -20,6 +20,7 @@ import {
   applyChange,
   fromMinutes,
   layoutDay,
+  slotRange,
   snap,
   SNAP_MINUTES,
   toTimed,
@@ -29,6 +30,14 @@ import {
 
 /** What `onEventChange` gets: the new day and times, ready to save. */
 export type EventTimeChange = { date: string; time: string; endTime: string };
+
+/** The time range picked by dragging (or clicking) on empty week time. */
+export type TimeRange = { time: string; endTime: string };
+
+/** A click or tap on empty time picks this long a slot. */
+const CLICK_MINUTES = 30;
+/** Pointer travel (px) before a press counts as a drag, not a click. */
+const DRAG_PX = 4;
 
 /** One hour's height. Blocks are placed in these units: 10:30 → 10.5 × 3rem. */
 const HOUR_REM = 3;
@@ -49,6 +58,8 @@ export type WeekViewProps = {
   onEventAction?: (event: CalendarEvent) => void;
   /** Turns on drag/keyboard move and resize; see EventCalendar's `onEventChange`. */
   onEventChange?: (event: CalendarEvent, change: EventTimeChange) => void;
+  /** Turns on drag (or click) on empty time to pick a range for a new event. */
+  onCreateEvent?: (date: string, range: TimeRange) => void;
   formatTime: (hhmm: string) => string;
   locale: string;
   /** Scrolled into view when the week view opens. */
@@ -70,6 +81,7 @@ export function WeekView({
   onPickDay,
   onEventAction,
   onEventChange,
+  onCreateEvent,
   formatTime,
   locale,
   scrollToHour,
@@ -114,6 +126,89 @@ export function WeekView({
     );
   };
   const headerId = (d: CalendarDate) => `${ids}-${d.toString()}`;
+
+  // Drag to create. `a` = minute pressed, `b` = minute reached. The ref holds the
+  // live values for the handlers; the state only drives the preview.
+  type Draft = {
+    dayIndex: number;
+    a: number;
+    b: number;
+    y: number;
+    moved: boolean;
+    touch: boolean;
+  };
+  const draftRef = useRef<Draft | null>(null);
+  const [draft, setDraft] = useState<Draft | null>(null);
+  const minuteAt = (el: HTMLElement, clientY: number) => {
+    const r = el.getBoundingClientRect();
+    return r.height ? ((clientY - r.top) / r.height) * 24 * 60 : 0;
+  };
+  const endDraft = () => {
+    draftRef.current = null;
+    setDraft(null);
+  };
+  const createHandlers = (dayIndex: number) =>
+    onCreateEvent
+      ? {
+          onPointerDown: (e: React.PointerEvent<HTMLDivElement>) => {
+            // Only the left button, and only on empty time (not on an event).
+            if (e.button !== 0) return;
+            if ((e.target as Element).closest('[data-event-id]')) return;
+            const m = minuteAt(e.currentTarget, e.clientY);
+            const touch = e.pointerType === 'touch';
+            draftRef.current = {
+              dayIndex,
+              a: m,
+              b: m,
+              y: e.clientY,
+              moved: false,
+              touch,
+            };
+            if (!touch) {
+              // Keep getting moves even outside the column; no text selection.
+              e.currentTarget.setPointerCapture?.(e.pointerId);
+              e.preventDefault();
+            }
+          },
+          onPointerMove: (e: React.PointerEvent<HTMLDivElement>) => {
+            const d = draftRef.current;
+            if (!d || d.touch) return; // a finger drag scrolls instead
+            const moved = d.moved || Math.abs(e.clientY - d.y) > DRAG_PX;
+            draftRef.current = {
+              ...d,
+              b: minuteAt(e.currentTarget, e.clientY),
+              moved,
+            };
+            if (moved) setDraft(draftRef.current);
+          },
+          onPointerUp: () => {
+            const d = draftRef.current;
+            if (!d) return;
+            endDraft();
+            const date = days[d.dayIndex];
+            if (!date) return;
+            const r = d.moved
+              ? slotRange(d.a, d.b)
+              : slotRange(d.a, d.a, CLICK_MINUTES);
+            onCreateEvent(date.toString(), {
+              time: fromMinutes(r.start),
+              endTime: r.end >= 24 * 60 ? '23:59' : fromMinutes(r.end),
+            });
+          },
+          // The browser took over (a touch scroll started): not a tap.
+          onPointerCancel: endDraft,
+        }
+      : {};
+  // Escape cancels a create drag (same reason as EventBlock: listen on the window).
+  const drafting = draft !== null;
+  useEffect(() => {
+    if (!drafting) return;
+    const onKey = (k: KeyboardEvent) => {
+      if (k.key === 'Escape') endDraft();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [drafting]);
   const scroller = useRef<HTMLDivElement>(null);
 
   // Open on working hours instead of midnight.
@@ -261,10 +356,15 @@ export function WeekView({
                 </div>
               ))}
             </div>
-            {columns.map(({ date, timed }) => (
+            {columns.map(({ date, timed }, dayIndex) => (
               <div
                 key={date.toString()}
-                className="relative border-s border-border"
+                data-day-column={date.toString()}
+                {...createHandlers(dayIndex)}
+                className={cn(
+                  'relative border-s border-border',
+                  onCreateEvent && 'select-none',
+                )}
               >
                 {HOURS.map((h) => (
                   <div
@@ -293,6 +393,12 @@ export function WeekView({
                     formatTime={formatTime}
                   />
                 ))}
+                {draft?.dayIndex === dayIndex && (
+                  <DraftBlock
+                    range={slotRange(draft.a, draft.b)}
+                    formatTime={formatTime}
+                  />
+                )}
                 {isSameDay(date, today) && (
                   <div
                     aria-hidden="true"
@@ -307,6 +413,29 @@ export function WeekView({
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+/** The dashed preview while dragging out a new event. Decoration only. */
+function DraftBlock({
+  range,
+  formatTime,
+}: {
+  range: { start: number; end: number };
+  formatTime: (hhmm: string) => string;
+}) {
+  return (
+    <div
+      aria-hidden="true"
+      style={cssVars({
+        '--top': `${(range.start / 60) * HOUR_REM}rem`,
+        '--h': `${((range.end - range.start) / 60) * HOUR_REM}rem`,
+      })}
+      className="pointer-events-none absolute inset-x-0.5 top-(--top) z-30 h-(--h) rounded border-2 border-dashed border-primary bg-primary/10 px-1.5 py-0.5 text-xs font-medium text-fg tabular-nums"
+    >
+      {formatTime(fromMinutes(range.start))} –{' '}
+      {formatTime(fromMinutes(Math.min(range.end, 24 * 60 - 1)))}
     </div>
   );
 }
