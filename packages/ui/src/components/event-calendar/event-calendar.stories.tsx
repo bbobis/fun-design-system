@@ -450,3 +450,45 @@ export const DragToReschedule: Story = {
 export const DragToCreate: Story = {
   render: () => <CreateEventsExample initial={week} view="week" />,
 };
+
+/**
+ * `view="day"`: the week view, one day wide. ‹ › step a day and the title is the full
+ * date. Moving, resizing and drag to create all work; ←/→ don't move an event,
+ * because there's no other day on screen to move it to.
+ */
+export const DayView: Story = {
+  render: () => {
+    function Example() {
+      const [events, setEvents] = useState(week);
+      const [last, setLast] = useState<string | null>(null);
+      return (
+        <>
+          <EventCalendar
+            aria-label="Team calendar"
+            events={events}
+            defaultView="day"
+            defaultSelectedDate="2026-10-15"
+            onEventAction={(e) => setLast(`Opened: ${e.title}`)}
+            onEventChange={(event, change) => {
+              setEvents((list) =>
+                list.map((e) => (e.id === event.id ? { ...e, ...change } : e)),
+              );
+              setLast(
+                `${event.title} → ${change.date} ${change.time}–${change.endTime}`,
+              );
+            }}
+            onCreateEvent={(date, range) =>
+              setLast(
+                `New event on ${date}${range ? ` ${range.time}–${range.endTime}` : ''}`,
+              )
+            }
+          />
+          <p role="status" className="mt-3 text-sm text-fg-muted">
+            {last ?? 'Nothing yet.'}
+          </p>
+        </>
+      );
+    }
+    return <Example />;
+  },
+};
