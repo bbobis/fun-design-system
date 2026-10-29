@@ -108,6 +108,16 @@ describe('moving and resizing', () => {
     );
   });
 
+  it("day view (lastDay 0): ← / → can't leave the only column (the prediction)", () => {
+    const day = { start: 600, end: 660, dayIndex: 0 };
+    expect(applyChange(day, { days: 1, move: 0, resize: 0 }, 0)).toEqual(day);
+    expect(applyChange(day, { days: -1, move: 15, resize: 0 }, 0)).toEqual({
+      start: 615,
+      end: 675,
+      dayIndex: 0,
+    });
+  });
+
   it('fromMinutes writes HH:mm', () => {
     expect(fromMinutes(570)).toBe('09:30');
     expect(fromMinutes(1440 - 15)).toBe('23:45');

@@ -102,14 +102,16 @@ export type Change = {
 
 /**
  * Where a block ends up after a move or resize, kept inside the day (00:00–24:00)
- * and the visible week (day index 0–6), and never shorter than one snap step.
+ * and the visible days (index 0–`lastDay`: 6 in week view, 0 in day view), and
+ * never shorter than one snap step.
  */
 export function applyChange(
   block: { start: number; end: number; dayIndex: number },
   change: Change,
+  lastDay = 6,
 ): { start: number; end: number; dayIndex: number } {
   const length = block.end - block.start;
-  const dayIndex = Math.min(6, Math.max(0, block.dayIndex + change.days));
+  const dayIndex = Math.min(lastDay, Math.max(0, block.dayIndex + change.days));
   const start = Math.min(
     24 * 60 - SNAP_MINUTES,
     Math.max(0, block.start + change.move),

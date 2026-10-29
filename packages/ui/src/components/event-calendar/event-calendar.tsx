@@ -65,33 +65,33 @@ export type EventCalendarProps = {
    * and add the event to `events`. The calendar never owns the form, because every app
    * wants different fields.
    *
-   * Week view also lets you drag on empty time (snapped to 15 minutes; Escape
+   * Week and day view also let you drag on empty time (snapped to 15 minutes; Escape
    * cancels) or click it (a 30-minute slot). Then `range` has the picked `time` and
    * `endTime`, so your form can start with them. From the button or N it's undefined.
    */
   onCreateEvent?: (date: string, range?: TimeRange) => void;
   /**
-   * `'month'` (a grid of days) or `'week'` (7 days × 24 hours, events as blocks
-   * placed by `time`–`endTime`). Controlled; pair with `onViewChange`. The header's
-   * Month | Week switch calls it.
+   * `'month'` (a grid of days), `'week'` (7 days × 24 hours, events as blocks
+   * placed by `time`–`endTime`) or `'day'` (the same, one day wide). Controlled;
+   * pair with `onViewChange`. The header's Day | Week | Month switch calls it.
    */
   view?: CalendarView;
   /** Starting view when uncontrolled. @default 'month' */
   defaultView?: CalendarView;
   onViewChange?: (view: CalendarView) => void;
   /**
-   * Week view: turns on moving and resizing timed events, by mouse/touch (drag the
-   * block, or its bottom edge) and keyboard (↑/↓ 15 minutes, ←/→ a day, Shift+↑/↓
-   * the end). Called with the event and its new `date`, `time` and `endTime`; update
+   * Week and day view: turns on moving and resizing timed events, by mouse/touch
+   * (drag the block, or its bottom edge) and keyboard (↑/↓ 15 minutes, ←/→ a day in
+   * week view, Shift+↑/↓ the end). In day view an event stays on that day. Called with the event and its new `date`, `time` and `endTime`; update
    * your `events` from it. The calendar never changes `events` itself.
    */
   onEventChange?: (event: CalendarEvent, change: EventTimeChange) => void;
-  /** Week view: the hour scrolled into view when it opens. @default 8 */
+  /** Week and day view: the hour scrolled into view when it opens. @default 8 */
   scrollToHour?: number;
   className?: string;
 };
 
-export type CalendarView = 'month' | 'week';
+export type CalendarView = 'month' | 'week' | 'day';
 
 /**
  * Square the chip's corners on the side where the event carries on, and stretch it
@@ -125,13 +125,14 @@ const spanShape = ({ day, days }: DayEntry) =>
  *
  * `view="week"` shows 7 days × 24 hours instead: timed events become blocks from
  * `time` to `endTime` (side by side when they overlap), all-day and multi-day events
- * sit in a row on top, and each block is a button. The header's Month | Week switch
- * changes the view; the day list, `onCreateEvent` and N work in both.
+ * sit in a row on top, and each block is a button. `view="day"` is the same with one
+ * wide column, and ‹ › step a day. The header's Day | Week | Month switch changes the
+ * view; the day list, `onCreateEvent` and N work in all three.
  *
- * In week view, `onEventChange` turns on moving/resizing events, and `onCreateEvent`
- * also lets you drag out a new event's time range.
+ * In week and day view, `onEventChange` turns on moving/resizing events, and
+ * `onCreateEvent` also lets you drag out a new event's time range.
  *
- * Not yet: a day view, recurring events.
+ * Not yet: recurring events.
  *
  * @example
  * <EventCalendar aria-label="Team calendar" events={events}
@@ -225,13 +226,30 @@ export function EventCalendar({
     weekStart.toDate(getLocalTimeZone()),
     weekStart.add({ days: 6 }).toDate(getLocalTimeZone()),
   );
+  const dayHeading = new Intl.DateTimeFormat(locale, {
+    weekday: 'long',
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  }).format(focusedValue.toDate(getLocalTimeZone()));
+  // Day view is the week view with one column; ‹ › step a day instead of a week.
+  const timeGrid =
+    view === 'day'
+      ? {
+          days: [focusedValue],
+          title: dayHeading,
+          step: { days: 1 },
+          unit: 'day',
+        }
+      : { days: weekDays, title: weekTitle, step: { weeks: 1 }, unit: 'week' };
   const viewSwitch = (
     <SegmentedControl
       aria-label="View"
       size="sm"
       options={[
-        { id: 'month', label: 'Month' },
+        { id: 'day', label: 'Day' },
         { id: 'week', label: 'Week' },
+        { id: 'month', label: 'Month' },
       ]}
       value={view}
       onChange={(id) => changeView(id as CalendarView)}
@@ -263,10 +281,12 @@ export function EventCalendar({
       }}
     >
       <div className="grid gap-4 @min-[56rem]:grid-cols-[minmax(0,1fr)_16rem]">
-        {view === 'week' ? (
+        {view !== 'month' ? (
           <section aria-label={ariaLabel} className="min-w-0">
             <header className="mb-3 flex flex-wrap items-center gap-2">
-              <h2 className="me-auto text-lg font-semibold">{weekTitle}</h2>
+              <h2 className="me-auto text-lg font-semibold">
+                {timeGrid.title}
+              </h2>
               {viewSwitch}
               <Button
                 onPress={() => moveTo(now)}
@@ -278,22 +298,22 @@ export function EventCalendar({
                 Today
               </Button>
               <Button
-                aria-label="Previous week"
-                onPress={() => moveTo(focusedValue.subtract({ weeks: 1 }))}
+                aria-label={`Previous ${timeGrid.unit}`}
+                onPress={() => moveTo(focusedValue.subtract(timeGrid.step))}
                 className={navButton}
               >
                 <ArrowIcon className="size-4 rotate-180 rtl:rotate-0" />
               </Button>
               <Button
-                aria-label="Next week"
-                onPress={() => moveTo(focusedValue.add({ weeks: 1 }))}
+                aria-label={`Next ${timeGrid.unit}`}
+                onPress={() => moveTo(focusedValue.add(timeGrid.step))}
                 className={navButton}
               >
                 <ArrowIcon className="size-4 rtl:rotate-180" />
               </Button>
             </header>
             <WeekView
-              days={weekDays}
+              days={timeGrid.days}
               byDay={byDay}
               focusedDate={focusedValue}
               today={now}

@@ -510,6 +510,102 @@ describe('EventCalendar', () => {
     });
   });
 
+  describe('day view', () => {
+    const dayEvents: CalendarEvent[] = [
+      {
+        id: 'sync',
+        date: '2026-10-15',
+        time: '10:00',
+        endTime: '11:00',
+        title: 'Team sync',
+      },
+      { id: 'fri', date: '2026-10-16', time: '09:00', title: 'Friday thing' },
+      { id: 'all', date: '2026-10-15', title: 'Invoice run' },
+    ];
+    const grid = () =>
+      within(screen.getByRole('region', { name: 'Team calendar' }));
+    const heading = () => norm(screen.getAllByRole('heading')[0]?.textContent);
+
+    it('Day | Week | Month: Day shows one day, titled with the full date', async () => {
+      const user = userEvent.setup();
+      const onViewChange = vi.fn();
+      render(
+        <EventCalendar
+          aria-label="Team calendar"
+          events={dayEvents}
+          defaultSelectedDate="2026-10-15"
+          onViewChange={onViewChange}
+        />,
+      );
+      // Small to large: the radios come in the order Day, Week, Month.
+      const radios = screen.getAllByRole('radio');
+      expect(
+        ['Day', 'Week', 'Month'].map((name) =>
+          radios.indexOf(screen.getByRole('radio', { name })),
+        ),
+      ).toEqual([0, 1, 2]);
+      await user.click(screen.getByRole('radio', { name: 'Day' }));
+      expect(onViewChange).toHaveBeenLastCalledWith('day');
+      expect(heading()).toBe('Thursday, October 15, 2026');
+      expect(grid().getByRole('button', { name: /^Team sync/ })).toBeTruthy();
+      expect(grid().getByRole('button', { name: 'Invoice run' })).toBeTruthy();
+      expect(grid().queryByRole('button', { name: /Friday thing/ })).toBeNull();
+    });
+
+    it('‹ › step one day, and cross into the next month', async () => {
+      const user = userEvent.setup();
+      const onMonthChange = vi.fn();
+      render(
+        <EventCalendar
+          aria-label="Team calendar"
+          events={dayEvents}
+          defaultView="day"
+          defaultSelectedDate="2026-10-31"
+          onMonthChange={onMonthChange}
+        />,
+      );
+      await user.click(screen.getByRole('button', { name: 'Previous day' }));
+      expect(heading()).toBe('Friday, October 30, 2026');
+      await user.click(screen.getByRole('button', { name: 'Next day' }));
+      await user.click(screen.getByRole('button', { name: 'Next day' }));
+      expect(heading()).toBe('Sunday, November 1, 2026');
+      expect(onMonthChange).toHaveBeenLastCalledWith('2026-11');
+    });
+
+    it('→ on an event does nothing; ↓ still moves it (the prediction)', async () => {
+      const user = userEvent.setup();
+      const onEventChange = vi.fn();
+      render(
+        <EventCalendar
+          aria-label="Team calendar"
+          events={dayEvents}
+          defaultView="day"
+          defaultSelectedDate="2026-10-15"
+          onEventChange={onEventChange}
+        />,
+      );
+      const sync = grid().getByRole('button', { name: /^Team sync/ });
+      act(() => sync.focus());
+      await user.keyboard('{ArrowRight}');
+      expect(onEventChange).not.toHaveBeenCalled();
+      await user.keyboard('{ArrowDown}');
+      expect(onEventChange).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'sync' }),
+        { date: '2026-10-15', time: '10:15', endTime: '11:15' },
+      );
+      // The hint doesn't promise moves to another day.
+      const hint = sync
+        .getAttribute('aria-describedby')
+        ?.split(' ')
+        .map((id) => document.getElementById(id)?.textContent)
+        .join(' ');
+      expect(hint).toContain(
+        'Up and down arrows move the event by 15 minutes.',
+      );
+      expect(hint).not.toContain('or a day');
+    });
+  });
+
   describe('moving and resizing (onEventChange)', () => {
     const start: CalendarEvent[] = [
       {

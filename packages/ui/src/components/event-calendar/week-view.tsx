@@ -47,7 +47,7 @@ const focusRing =
   'outline-hidden data-focus-visible:outline-2 data-focus-visible:outline-offset-1 data-focus-visible:outline-solid data-focus-visible:outline-focus-ring';
 
 export type WeekViewProps = {
-  /** The 7 days on screen, in the locale's week order. */
+  /** The days on screen: 7 in the locale's week order (week view), or 1 (day view). */
   days: readonly CalendarDate[];
   byDay: Map<string, DayEntry[]>;
   focusedDate: CalendarDate;
@@ -107,7 +107,11 @@ export function WeekView({
     dayIndex: number,
     change: Change,
   ) => {
-    const next = applyChange({ start: p.start, end: p.end, dayIndex }, change);
+    const next = applyChange(
+      { start: p.start, end: p.end, dayIndex },
+      change,
+      days.length - 1,
+    );
     const date = days[next.dayIndex];
     if (!date || !onEventChange) return;
     const time = fromMinutes(next.start);
@@ -252,22 +256,30 @@ export function WeekView({
     const n = new Date();
     return n.getHours() * 60 + n.getMinutes();
   })();
-  const grid = 'grid grid-cols-[3.5rem_repeat(7,minmax(0,1fr))]';
+  // The column count is only known at runtime (7 or 1), so it's a CSS variable.
+  const grid = 'grid grid-cols-[3.5rem_repeat(var(--days),minmax(0,1fr))]';
+  const single = days.length === 1;
 
   return (
-    <div ref={root} className="min-w-0 overflow-x-auto">
+    <div
+      ref={root}
+      style={cssVars({ '--days': days.length })}
+      className="min-w-0 overflow-x-auto"
+    >
       {onEventChange && (
         <>
           <span id={`${ids}-hint`} hidden>
-            Arrow keys move the event by 15 minutes or a day. Shift plus up or
-            down arrow changes its length.
+            {single
+              ? 'Up and down arrows move the event by 15 minutes.'
+              : 'Arrow keys move the event by 15 minutes or a day.'}{' '}
+            Shift plus up or down arrow changes its length.
           </span>
           <p aria-live="polite" className="sr-only">
             {announcement}
           </p>
         </>
       )}
-      <div className="min-w-[40rem]">
+      <div className={cn(!single && 'min-w-[40rem]')}>
         {/* Day headers: buttons that pick the day for the day list. Visible "Thu 15";
             the name is the full date, like a month cell's. */}
         <div className={cn(grid, 'border-b border-border pb-1')}>
@@ -377,6 +389,8 @@ export function WeekView({
                   <EventBlock
                     key={p.item.id}
                     placed={p}
+                    dayIndex={dayIndex}
+                    lastDay={days.length - 1}
                     describedBy={
                       onEventChange
                         ? `${headerId(date)} ${ids}-hint`
@@ -387,7 +401,7 @@ export function WeekView({
                     onAction={() => onEventAction?.(p.item)}
                     onCommit={
                       onEventChange
-                        ? (change) => commit(p, days.indexOf(date), change)
+                        ? (change) => commit(p, dayIndex, change)
                         : undefined
                     }
                     formatTime={formatTime}
@@ -454,6 +468,8 @@ const NO_CHANGE: Change = { days: 0, move: 0, resize: 0 };
  */
 function EventBlock({
   placed: p,
+  dayIndex,
+  lastDay,
   describedBy,
   rtl,
   onFocus,
@@ -462,6 +478,9 @@ function EventBlock({
   formatTime,
 }: {
   placed: Placed<CalendarEvent>;
+  /** This block's column, and the last one: a preview can't leave the view. */
+  dayIndex: number;
+  lastDay: number;
   describedBy: string;
   rtl: boolean;
   onFocus: () => void;
@@ -542,8 +561,9 @@ function EventBlock({
   const { moveProps: resizeProps } = useMove(handlers('resize'));
 
   const shown = preview
-    ? applyChange({ start: p.start, end: p.end, dayIndex: 0 }, preview)
-    : p;
+    ? applyChange({ start: p.start, end: p.end, dayIndex }, preview, lastDay)
+    : { ...p, dayIndex };
+  const dayShift = shown.dayIndex - dayIndex;
   const short = shown.end - shown.start < 45;
   const column = ref.current?.parentElement?.getBoundingClientRect();
   return (
@@ -567,7 +587,7 @@ function EventBlock({
         '--h': `${((shown.end - shown.start) / 60) * HOUR_REM}rem`,
         '--lane': preview ? 0 : p.lane,
         '--lanes': preview ? 1 : p.lanes,
-        '--dx': `${(preview?.days ?? 0) * (column?.width ?? 0) * (rtl ? -1 : 1)}px`,
+        '--dx': `${dayShift * (column?.width ?? 0) * (rtl ? -1 : 1)}px`,
       })}
       className={cn(
         'absolute top-(--top) h-(--h) start-[calc(100%*var(--lane)/var(--lanes))] w-[calc(100%/var(--lanes))] translate-x-(--dx)',
