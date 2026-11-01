@@ -607,3 +607,10 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Remember: variants, not new components.** A different *look* for the same pattern and the same ARIA is a variant (recipe rule 2). Separate `StepBreadcrumbs` / `PillBreadcrumbs` components would copy the collapse logic, the `aria-current` handling and the router support, and then drift apart. cva `compoundVariants` handle combinations like "steps + sm = h-7".
 - **Gotcha:** two old tests used `getByText('INV-2041')` and expected the *link*. The label now sits in its own span (needed for `iconOnly`), so they found the span. The behaviour didn't change; the tests now look up the link element. Query by role where possible: it doesn't break when the markup inside the element changes.
 - Docs: https://developer.mozilla.org/en-US/docs/Web/CSS/clip-path
+
+## 2026-11-01 — Tabs: styles (underline, pills, enclosed, sizes, full width, icons, counts)
+- **Built:** new optional props on `<Tabs>`: `variant` (`underline` default / `pills` / `enclosed`), `size` (sm / md), and `fullWidth`. On `<Tab>`: `icon` (decoration) and `count` (a pill on screen, read as "Lines, 12"). The default look is unchanged.
+- **Remember (the prediction): React context carries the look.** `<Tabs>` puts `{ variant, size, fullWidth }` in a `TabsLookContext`, and `TabList`, `Tab` and `TabPanel` read it with `useContext`. So the app sets the style once, and a row can't mix pills with underlines. This is the *compound component* pattern, the same idea as Field → Input (recipe rule 8). The context's default value is the underline look, so a Tab used on its own still works.
+- **Remember: a variant can change more than one part.** `enclosed` changes the tabs *and* the panel (it becomes the bordered box the selected tab opens into). That's why the look lives on the root and not on each Tab.
+- **Gotcha (seen in the screenshot):** the count pill turned white inside *every* selected tab, so it vanished in underline/enclosed. Now only the filled `pills` tab swaps it (`in-data-selected:bg-bg`, Tailwind v4's `in-*` = "inside an ancestor with …").
+- Docs: https://react.dev/reference/react/useContext
