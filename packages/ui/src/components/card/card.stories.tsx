@@ -20,7 +20,8 @@ const meta = {
   tags: ['autodocs'],
   args: { variant: 'outline', padding: 'md' },
   argTypes: {
-    variant: { control: 'radio', options: ['outline', 'filled'] },
+    variant: { control: 'radio', options: ['outline', 'filled', 'elevated'] },
+    orientation: { control: 'radio', options: ['vertical', 'horizontal'] },
     padding: { control: 'radio', options: ['none', 'sm', 'md', 'lg'] },
   },
   render: (args) => (
@@ -37,10 +38,14 @@ type Story = StoryObj<typeof meta>;
 
 export const Playground: Story = {};
 
+/**
+ * `outline` (default), `filled`, `elevated`. Shown on a grey surface too, where
+ * `elevated` is meant to float.
+ */
 export const Variants: Story = {
   render: () => (
-    <div className="flex gap-4">
-      {(['outline', 'filled'] as const).map((variant) => (
+    <div className="flex flex-wrap gap-4 rounded-lg bg-surface p-6">
+      {(['outline', 'filled', 'elevated'] as const).map((variant) => (
         <Card key={variant} variant={variant} className="w-56">
           <Heading level={3} size="sm">
             {variant}
@@ -263,5 +268,103 @@ export const PartsClickable: Story = {
         </Button>
       </CardFooter>
     </Card>
+  ),
+};
+
+const Photo = ({ hue }: { hue: 'primary' | 'info' | 'success' }) => (
+  <svg
+    aria-hidden="true"
+    viewBox="0 0 120 160"
+    // Crop to fill, like object-cover on a photo.
+    preserveAspectRatio="xMidYMid slice"
+    className="bg-surface"
+  >
+    <circle
+      cx="60"
+      cy="70"
+      r="38"
+      className={
+        hue === 'primary'
+          ? 'fill-primary'
+          : hue === 'info'
+            ? 'fill-info'
+            : 'fill-success'
+      }
+    />
+    <rect
+      x="20"
+      y="120"
+      width="80"
+      height="10"
+      rx="5"
+      className="fill-border-strong"
+    />
+  </svg>
+);
+
+/**
+ * `orientation="horizontal"`: `CardMedia` down the start side, the other parts beside
+ * it. The picture fills the card's height but doesn't set it: the text does.
+ */
+export const Horizontal: Story = {
+  render: () => (
+    <div className="flex max-w-xl flex-col gap-4">
+      <Card orientation="horizontal" as="article">
+        <CardMedia>
+          <Photo hue="primary" />
+        </CardMedia>
+        <CardHeader
+          title="Northwind Traders"
+          description="Customer since 2019"
+          actions={<Badge tone="success">Active</Badge>}
+        />
+        <CardBody>
+          12 invoices this year, $18,400 paid. Usually pays within 21 days.
+        </CardBody>
+        <CardFooter>
+          <Button size="sm" intent="ghost">
+            View invoices
+          </Button>
+          <Button size="sm">New invoice</Button>
+        </CardFooter>
+      </Card>
+      <Card orientation="horizontal" variant="elevated" padding="sm">
+        <CardMedia>
+          <Photo hue="info" />
+        </CardMedia>
+        <CardHeader title="Acme Corp" description="Net 45 · 3 open invoices" />
+      </Card>
+    </div>
+  ),
+};
+
+/**
+ * Horizontal + `CardLink`: click anywhere (or Tab + Enter). The ring wraps the whole
+ * card; elevated cards lift on hover.
+ */
+export const HorizontalClickable: Story = {
+  render: () => (
+    <div className="flex max-w-xl flex-col gap-4">
+      {invoices.map((inv, i) => (
+        <Card
+          key={inv.id}
+          as="article"
+          orientation="horizontal"
+          variant="elevated"
+          padding="sm"
+        >
+          <CardMedia>
+            <Photo
+              hue={(['primary', 'info', 'success'] as const)[i] ?? 'primary'}
+            />
+          </CardMedia>
+          <CardHeader
+            title={<CardLink href={`#inv-${inv.id}`}>INV-{inv.id}</CardLink>}
+            description={`${inv.customer} · ${inv.amount}`}
+            actions={<Badge tone={inv.tone}>{inv.status}</Badge>}
+          />
+        </Card>
+      ))}
+    </div>
   ),
 };

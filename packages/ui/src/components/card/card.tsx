@@ -31,6 +31,16 @@ export const cardVariants = cva(
       variant: {
         outline: 'border border-border bg-bg',
         filled: 'bg-surface',
+        // Lifted off the page. The faint border keeps its edge visible in dark mode,
+        // where shadows barely show.
+        elevated: 'border border-border/60 bg-bg shadow-md',
+      },
+      orientation: {
+        vertical: '',
+        // Media on the start side (its own column), every other part stacked in the
+        // second column. The media spans all rows (see CardMedia).
+        horizontal:
+          'grid grid-cols-[minmax(6rem,33%)_minmax(0,1fr)] content-start gap-x-5 [&>[data-card-media]+*]:mt-0!',
       },
       padding: {
         none: 'p-0',
@@ -39,7 +49,19 @@ export const cardVariants = cva(
         lg: 'p-8',
       },
     },
-    defaultVariants: { variant: 'outline', padding: 'md' },
+    compoundVariants: [
+      // A clickable elevated card lifts a bit more on hover, instead of the default
+      // small shadow (which would *lower* it).
+      {
+        variant: 'elevated',
+        className: 'has-[[data-card-link]:hover]:shadow-lg',
+      },
+    ],
+    defaultVariants: {
+      variant: 'outline',
+      padding: 'md',
+      orientation: 'vertical',
+    },
   },
 );
 
@@ -53,13 +75,34 @@ export type CardProps<T extends CardElement = 'div'> = {
    */
   as?: T;
 } & Omit<ComponentProps<T>, 'as'> &
-  VariantProps<typeof cardVariants>;
+  Omit<VariantProps<typeof cardVariants>, 'variant' | 'orientation'> &
+  CardStyle;
+
+/** The style props, written out so they carry JSDoc (Storybook autodocs reads it). */
+type CardStyle = {
+  /**
+   * - `outline`: a thin border.
+   * - `filled`: a grey surface, no border.
+   * - `elevated`: page background with a shadow, for cards that float over a grey
+   *   page or need to stand out.
+   * @default 'outline'
+   */
+  variant?: 'outline' | 'filled' | 'elevated';
+  /**
+   * `horizontal`: `CardMedia` sits on the start side (about a third of the width, full
+   * height) and the other parts stack beside it. Pick it yourself for wide spaces; the
+   * Card doesn't switch on its own.
+   * @default 'vertical'
+   */
+  orientation?: 'vertical' | 'horizontal';
+};
 
 /** A container that groups related content. Layout inside is up to the app. */
 export function Card<T extends CardElement = 'div'>({
   as,
   variant,
   padding,
+  orientation,
   className,
   ...rest
 }: CardProps<T>) {
@@ -67,46 +110,71 @@ export function Card<T extends CardElement = 'div'>({
   // local variable is typed loosely. Callers still get the strict CardProps<T>.
   const Component = (as ?? 'div') as ElementType;
   return (
-    <CardPadding.Provider value={padding ?? 'md'}>
+    <CardLayout.Provider
+      value={{
+        padding: padding ?? 'md',
+        orientation: orientation ?? 'vertical',
+      }}
+    >
       <Component
-        className={cn(cardVariants({ variant, padding }), className)}
+        className={cn(
+          cardVariants({ variant, padding, orientation }),
+          className,
+        )}
         {...rest}
       />
-    </CardPadding.Provider>
+    </CardLayout.Provider>
   );
 }
 
 type Padding = NonNullable<VariantProps<typeof cardVariants>['padding']>;
 
-/** The Card's padding, so CardMedia can stretch past it to the edges. */
-const CardPadding = createContext<Padding>('md');
+/** The Card's padding and orientation, so CardMedia can stretch to the right edges. */
+const CardLayout = createContext<{
+  padding: Padding;
+  orientation: 'vertical' | 'horizontal';
+}>({ padding: 'md', orientation: 'vertical' });
 
 /** Space between parts: only after something, so the first part sits flush. */
 const partSpacing = 'not-first:mt-4';
 
 export type CardMediaProps = {
-  /** An `<img>`, `<video>` or illustration. It fills the width. */
+  /** An `<img>`, `<video>` or illustration (an `<svg>`). Vertical card: it fills the width. Horizontal card: it fills the side, cropped to fit (`object-cover`; for an `<svg>`, use `preserveAspectRatio="xMidYMid slice"`). */
   children: ReactNode;
   className?: string;
 };
 
 /**
- * An edge-to-edge image at the **top** of a Card (put it first). It cancels the Card's
- * padding, whatever size that is, and takes the Card's top corners.
+ * An edge-to-edge image. Put it **first** in the Card. It cancels the Card's padding,
+ * whatever size that is, and takes the Card's corners:
+ * - vertical Card: across the top.
+ * - horizontal Card: down the start side, as tall as the content beside it.
  */
 export function CardMedia({ children, className }: CardMediaProps) {
-  const bleed = {
-    none: '',
-    sm: '-mx-3 -mt-3',
-    md: '-mx-5 -mt-5',
-    lg: '-mx-8 -mt-8',
-  }[useContext(CardPadding)];
+  const { padding, orientation } = useContext(CardLayout);
+  const horizontal = orientation === 'horizontal';
+  const bleed = horizontal
+    ? { none: '', sm: '-ms-3 -my-3', md: '-ms-5 -my-5', lg: '-ms-8 -my-8' }[
+        padding
+      ]
+    : { none: '', sm: '-mx-3 -mt-3', md: '-mx-5 -mt-5', lg: '-mx-8 -mt-8' }[
+        padding
+      ];
   return (
     <div
+      data-card-media=""
       className={cn(
-        'overflow-hidden rounded-t-[inherit] [&>img]:block [&>img]:w-full [&>img]:object-cover',
+        'overflow-hidden',
+        horizontal
+          ? // Spans every row of the grid. The image is taken out of the flow
+            // (absolute), so it *fills* the height the text needs instead of
+            // *setting* it: a tall portrait photo can't stretch the card.
+            'relative row-[1/span_20] min-h-24 rounded-s-[inherit] [&>*]:absolute [&>*]:inset-0 [&>*]:size-full [&>*]:object-cover'
+          : cn(
+              'rounded-t-[inherit] [&>img]:block [&>img]:w-full [&>img]:object-cover',
+              partSpacing,
+            ),
         bleed,
-        partSpacing,
         className,
       )}
     >
