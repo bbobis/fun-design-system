@@ -75,6 +75,7 @@ export function TimeField({
   onBlur,
   name,
   size,
+  variant,
   invalid,
   required,
   disabled,
@@ -122,7 +123,7 @@ export function TimeField({
       aria-describedby={describedBy}
       className={cn('group flex w-full flex-col', className)}
     >
-      <Group className={cn(dateFieldVariants({ size }), 'pe-2.5')}>
+      <Group className={cn(dateFieldVariants({ size, variant }), 'pe-2.5')}>
         <DatePieces className="flex-1" />
         <ClockIcon className="size-4 shrink-0 text-fg-muted" />
       </Group>

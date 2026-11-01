@@ -2,6 +2,7 @@ import { useId, useState, type ComponentProps } from 'react';
 import { cn } from '../../utils/cn';
 import { cssVars } from '../../utils/css-vars';
 import { useFieldContext } from '../field/field-context';
+import { fieldSurface, type FieldVariant } from '../field/field-surface';
 
 export type TextAreaProps = ComponentProps<'textarea'> & {
   /** Marks it invalid (`aria-invalid`). Inside a Field, set for you. @default false */
@@ -12,6 +13,11 @@ export type TextAreaProps = ComponentProps<'textarea'> & {
    * @default false
    */
   showCount?: boolean;
+  /**
+   * `outline` or `filled` (grey fill with a strong bottom line), the same as Input.
+   * @default 'outline'
+   */
+  variant?: FieldVariant;
 };
 
 /**
@@ -21,6 +27,7 @@ export type TextAreaProps = ComponentProps<'textarea'> & {
 export function TextArea({
   invalid,
   showCount = false,
+  variant = 'outline',
   id,
   required,
   disabled,
@@ -64,7 +71,9 @@ export function TextArea({
         }}
         style={cssVars({ '--rows': rows })}
         className={cn(
-          'w-full min-w-0 resize-y rounded-md border border-border-strong bg-bg px-3 py-2 text-sm text-fg',
+          'w-full min-w-0 resize-y rounded-md px-3 py-2 text-sm text-fg',
+          // Same surface as Input / Select / Combobox (field-surface.ts).
+          fieldSurface[variant],
           // Grows with the text (field-sizing: Chromium today; elsewhere it keeps `rows`).
           // field-sizing ignores `rows`, so the minimum height comes from --rows.
           '[field-sizing:content] max-h-[calc(12lh+1rem)] min-h-[calc(var(--rows)*1lh+1rem)]',

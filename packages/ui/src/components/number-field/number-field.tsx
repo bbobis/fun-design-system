@@ -8,11 +8,12 @@ import {
 } from 'react-aria-components';
 import { cn } from '../../utils/cn';
 import { useFieldContext } from '../field/field-context';
+import { fieldSurface } from '../field/field-surface';
 
 // Same box and heights as Input; the − / + buttons sit inside the border.
 const fieldVariants = cva(
   [
-    'flex w-full min-w-0 items-center rounded-md border border-border-strong bg-bg text-fg',
+    'flex w-full min-w-0 items-center rounded-md text-fg',
     'transition-colors',
     'has-[input:focus-visible]:outline-2 has-[input:focus-visible]:outline-offset-2 has-[input:focus-visible]:outline-focus-ring',
     'group-data-invalid:border-danger',
@@ -20,13 +21,15 @@ const fieldVariants = cva(
   ],
   {
     variants: {
+      // Same surface as Input / Select / Combobox (field-surface.ts).
+      variant: fieldSurface,
       size: {
         sm: 'h-8 text-sm',
         md: 'h-10 text-sm',
         lg: 'h-12 text-base',
       },
     },
-    defaultVariants: { size: 'md' },
+    defaultVariants: { variant: 'outline', size: 'md' },
   },
 );
 
@@ -93,6 +96,7 @@ export function NumberField({
   onBlur,
   name,
   size,
+  variant,
   invalid,
   required,
   disabled,
@@ -135,7 +139,7 @@ export function NumberField({
       aria-describedby={describedBy}
       className={cn('group flex w-full flex-col', className)}
     >
-      <Group className={fieldVariants({ size })}>
+      <Group className={fieldVariants({ size, variant })}>
         <Input
           id={id ?? field?.controlId}
           className={cn(

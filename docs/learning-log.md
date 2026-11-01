@@ -657,3 +657,10 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Remember: share the surface, not the states.** The shared object only has border and fill. Focus/invalid/disabled stay in each control, because the element that *has* the state differs: the input itself (plain Input), `has-[input:…]` on a wrapper (Input with adornments, Combobox), or `group-data-invalid` from React Aria's root (Select).
 - **Audit note:** axe flagged a disabled MultiCombobox tag's text (4.43:1). It's the same on `main` (I checked a main build), so it isn't from this PR. WCAG 1.4.3 also exempts inactive controls from text contrast. MultiCombobox isn't on the shared surface yet; it's on the follow-up list with NumberField, SearchField, Textarea and the date/time fields.
 - Docs: https://cva.style/docs/getting-started/variants
+
+## 2026-11-01 — The whole field family on `fieldSurface`
+- **Built:** NumberField, SearchField, MultiCombobox, TextArea and the shared date box (DatePicker, DateRangePicker, TimeField) now take `variant` from `fieldSurface`, like Input, Select and Combobox. Every text-like field supports `filled`, and `outline` is still the default. A grep for the old copied classes in field code now returns nothing. The remaining hits are checkboxes, radios and the stepper, which aren't fields.
+- **Remember: a *contract test* guards a shared rule across components.** `field/field-surface.spec.tsx` renders all 10 fields in a `Field`, both variants, and checks that exactly one element carries the shared surface. I proved it works by removing `variant` from NumberField: the test went red. A future field that copies classes instead of using the recipe will fail it too.
+- **Remember: refactors that only move classes are proven by unchanged tests.** All the old tests passed untouched. The new tests only cover the new prop.
+- **Known, unchanged:** the disabled MultiCombobox tag contrast finding (4.43:1) from the last PR is still there. It's on `main`, and WCAG 1.4.3 exempts inactive controls.
+- Docs: https://martinfowler.com/bliki/ContractTest.html

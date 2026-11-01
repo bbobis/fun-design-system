@@ -2,8 +2,14 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
 import { Button } from '../button';
 import { Combobox } from '../combobox';
+import { DatePicker, DateRangePicker } from '../date-picker';
 import { Field } from '../field';
+import { MultiCombobox } from '../multi-combobox';
+import { NumberField } from '../number-field';
+import { SearchField } from '../search-field';
 import { Select } from '../select';
+import { TextArea } from '../textarea';
+import { TimeField } from '../time-field';
 import { Input } from './input';
 
 const meta = {
@@ -262,6 +268,80 @@ export const FilledForm: Story = {
               startAdornment="$"
               endAdornment="CAD"
               defaultValue="1,200.00"
+            />
+          </Field>
+        </form>
+      ))}
+    </div>
+  ),
+};
+
+const people = [
+  { value: 'dana', label: 'Dana Smith' },
+  { value: 'bo', label: 'Bo Chen' },
+  { value: 'cy', label: 'Cy Diaz' },
+];
+
+/**
+ * Every text-like field, in `outline` and `filled`. They all draw their box from the
+ * shared `fieldSurface`, so the two columns are consistent field by field.
+ */
+export const AllFields: Story = {
+  render: () => (
+    <div className="grid w-full max-w-3xl gap-8 sm:grid-cols-2">
+      {(['outline', 'filled'] as const).map((variant) => (
+        <form
+          key={variant}
+          aria-label={variant}
+          className="flex flex-col gap-4"
+        >
+          <SearchField
+            variant={variant}
+            aria-label={`Search (${variant})`}
+            placeholder="Search invoices"
+          />
+          <Field label="Customer">
+            <Input variant={variant} defaultValue="Acme Ltd" />
+          </Field>
+          <Field label="Status">
+            <Select
+              variant={variant}
+              defaultValue="a"
+              options={[
+                { value: 'a', label: 'Draft' },
+                { value: 'b', label: 'Sent' },
+              ]}
+            />
+          </Field>
+          <Field label="Owner">
+            <Combobox variant={variant} options={people} defaultValue="dana" />
+          </Field>
+          <Field label="Watchers">
+            <MultiCombobox
+              variant={variant}
+              options={people}
+              defaultValue={['bo', 'cy']}
+            />
+          </Field>
+          <Field label="Quantity">
+            <NumberField variant={variant} defaultValue={12} />
+          </Field>
+          <Field label="Due date">
+            <DatePicker variant={variant} defaultValue="2026-11-30" />
+          </Field>
+          <Field label="Billing period">
+            <DateRangePicker
+              variant={variant}
+              defaultValue={{ start: '2026-11-01', end: '2026-11-30' }}
+            />
+          </Field>
+          <Field label="Reminder at">
+            <TimeField variant={variant} defaultValue="09:30" />
+          </Field>
+          <Field label="Notes">
+            <TextArea
+              variant={variant}
+              defaultValue="Net 30. Send to accounts@acme.example."
             />
           </Field>
         </form>

@@ -85,6 +85,7 @@ export function DateRangePicker({
   startName,
   endName,
   size,
+  variant,
   invalid,
   required,
   disabled,
@@ -132,7 +133,7 @@ export function DateRangePicker({
       aria-describedby={describedBy}
       className={cn('group flex w-full flex-col', className)}
     >
-      <Group className={dateFieldVariants({ size })}>
+      <Group className={dateFieldVariants({ size, variant })}>
         {/* React Aria names the two pieces "Start date" and "End date". */}
         <DatePieces slot="start" />
         <span aria-hidden="true" className="px-1.5 text-fg-muted">

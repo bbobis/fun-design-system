@@ -41,8 +41,7 @@ export const Playground: Story = {
       return (
         <>
           <Button intent="secondary" onClick={() => setOpen(true)}>
-            Search…{' '}
-            <kbd className="ms-2 font-mono text-xs">⌘K</kbd>
+            Search… <kbd className="ms-2 font-mono text-xs">⌘K</kbd>
           </Button>
           {status}
           <CommandPalette open={open} onOpenChange={setOpen}>
