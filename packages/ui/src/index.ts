@@ -1,5 +1,6 @@
 export * from './components/alert';
 export * from './components/app-shell';
+export * from './components/avatar';
 export * from './components/badge';
 export * from './components/bento';
 export * from './components/breadcrumbs';
