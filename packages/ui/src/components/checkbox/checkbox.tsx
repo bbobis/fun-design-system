@@ -6,14 +6,17 @@ import {
   type Ref,
 } from 'react';
 import { cn } from '../../utils/cn';
+import { choiceSize, type ChoiceSize } from './choice-control';
 
-export type CheckboxProps = Omit<ComponentProps<'input'>, 'type'> & {
+export type CheckboxProps = Omit<ComponentProps<'input'>, 'type' | 'size'> & {
   /**
    * Shows a dash instead of a tick: "some, but not all" (e.g. a select-all box when
    * some rows are selected). Screen readers announce it as "mixed".
    * @default false
    */
   indeterminate?: boolean;
+  /** @default 'md' */
+  size?: ChoiceSize;
   /** Classes for the wrapper `<span>` (use it for margins and layout). */
   className?: string;
 };
@@ -28,6 +31,7 @@ export type CheckboxProps = Omit<ComponentProps<'input'>, 'type'> & {
  */
 export function Checkbox({
   indeterminate = false,
+  size = 'md',
   className,
   ref,
   ...rest
@@ -52,7 +56,8 @@ export function Checkbox({
   return (
     <span
       className={cn(
-        'relative inline-grid size-4 shrink-0 place-items-center',
+        'relative inline-grid shrink-0 place-items-center',
+        choiceSize.box[size],
         // Fade box *and* tick together. Fading only the input left a dark tick on a
         // dark, half-transparent box in dark mode (invisible).
         'has-[:disabled]:opacity-50',
@@ -64,7 +69,8 @@ export function Checkbox({
         type="checkbox"
         className={cn(
           // `peer` lets the sibling icon react to this input's state (peer-checked:).
-          'peer col-start-1 row-start-1 size-4 cursor-pointer appearance-none rounded-[4px]',
+          'peer col-start-1 row-start-1 cursor-pointer appearance-none rounded-[4px]',
+          choiceSize.box[size],
           'border-[1.5px] border-border-strong bg-bg transition-colors',
           'hover:border-fg',
           'checked:border-primary checked:bg-primary checked:hover:border-primary-hover checked:hover:bg-primary-hover',
@@ -83,7 +89,8 @@ export function Checkbox({
         strokeLinecap="round"
         strokeLinejoin="round"
         className={cn(
-          'pointer-events-none col-start-1 row-start-1 size-3 text-on-primary',
+          'pointer-events-none col-start-1 row-start-1 text-on-primary',
+          choiceSize.tick[size],
           indeterminate ? 'opacity-100' : 'opacity-0 peer-checked:opacity-100',
         )}
       >

@@ -13,6 +13,14 @@ import {
   useSelectableCardIds,
   type SelectableCardBaseProps,
 } from '../card/selectable-card';
+import {
+  ChoiceStyleContext,
+  choiceLayout,
+  choiceSize,
+  useChoiceStyle,
+  type ChoiceSize,
+  type LabelPosition,
+} from '../checkbox/choice-control';
 
 export type CheckboxGroupProps = {
   /** The question over the choices ("Send copies to"). It names the group. */
@@ -32,6 +40,14 @@ export type CheckboxGroupProps = {
   orientation?: 'vertical' | 'horizontal';
   /** At least one must be checked. */
   required?: boolean;
+  /** Size of every choice in the group. @default 'md' */
+  size?: ChoiceSize;
+  /**
+   * `end` (default): control, then label. `start`: label first, control at the far
+   * end (a settings list).
+   * @default 'end'
+   */
+  labelPosition?: LabelPosition;
   disabled?: boolean;
   /** `CheckboxGroupItem` or `CheckboxCard` elements. */
   children: ReactNode;
@@ -55,6 +71,8 @@ export function CheckboxGroup({
   onChange,
   name,
   orientation = 'vertical',
+  size = 'md',
+  labelPosition = 'end',
   required = false,
   disabled = false,
   children,
@@ -96,7 +114,10 @@ export function CheckboxGroup({
           orientation === 'vertical' ? 'flex-col' : 'flex-row flex-wrap',
         )}
       >
-        {children}
+        {/* The look, set once here, read by every item (and CheckboxCard's box). */}
+        <ChoiceStyleContext.Provider value={{ size, labelPosition }}>
+          {children}
+        </ChoiceStyleContext.Provider>
       </div>
       <FieldError className="text-sm text-fg-danger">{error}</FieldError>
     </AriaCheckboxGroup>
@@ -122,6 +143,7 @@ export function CheckboxGroupItem({
 }: CheckboxGroupItemProps) {
   const labelId = useId();
   const descriptionId = useId();
+  const { size, labelPosition } = useChoiceStyle();
   return (
     <AriaCheckbox
       value={value}
@@ -130,7 +152,11 @@ export function CheckboxGroupItem({
       // read the description after it.
       aria-labelledby={labelId}
       aria-describedby={description ? descriptionId : undefined}
-      className="group flex cursor-pointer items-start gap-2 text-sm text-fg data-disabled:cursor-not-allowed data-disabled:opacity-50"
+      className={cn(
+        'group cursor-pointer text-fg data-disabled:cursor-not-allowed data-disabled:opacity-50',
+        choiceLayout(labelPosition),
+        choiceSize.text[size],
+      )}
     >
       <CheckboxBox focusRing />
       <span className="flex flex-col">
@@ -150,11 +176,14 @@ export function CheckboxGroupItem({
  * reads `data-selected` etc. from it). `focusRing`: draw the focus ring on the box.
  */
 export function CheckboxBox({ focusRing = false }: { focusRing?: boolean }) {
+  const { size } = useChoiceStyle();
   return (
     <span
       aria-hidden="true"
       className={cn(
-        'mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-[4px] border-[1.5px] border-border-strong bg-bg transition-colors',
+        'flex shrink-0 items-center justify-center rounded-[4px] border-[1.5px] border-border-strong bg-bg transition-colors',
+        choiceSize.box[size],
+        choiceSize.align[size],
         'group-hover:border-fg',
         'group-data-selected:border-primary group-data-selected:bg-primary',
         'group-data-invalid:border-danger',
@@ -170,7 +199,10 @@ export function CheckboxBox({ focusRing = false }: { focusRing?: boolean }) {
         strokeWidth={2}
         strokeLinecap="round"
         strokeLinejoin="round"
-        className="size-3 text-on-primary opacity-0 group-data-selected:opacity-100"
+        className={cn(
+          'text-on-primary opacity-0 group-data-selected:opacity-100',
+          choiceSize.tick[size],
+        )}
       >
         <path d="m2.5 6.5 2.25 2L9.5 3.5" />
       </svg>

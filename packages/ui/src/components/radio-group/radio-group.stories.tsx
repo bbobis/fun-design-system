@@ -136,3 +136,40 @@ export const CardsWithError: Story = {
     </div>
   ),
 };
+
+/** `size` on the group: every Radio follows. `labelPosition="start"` puts labels first. */
+export const SizesAndLabelPosition: Story = {
+  render: () => (
+    <div className="flex flex-col gap-8">
+      {(['sm', 'md', 'lg'] as const).map((size) => (
+        <RadioGroup
+          key={size}
+          label={`Plan (${size})`}
+          size={size}
+          defaultValue="pro"
+        >
+          <Radio value="free" description="1 user">
+            Free
+          </Radio>
+          <Radio value="pro" description="Up to 10 users">
+            Pro
+          </Radio>
+        </RadioGroup>
+      ))}
+      <div className="w-80">
+        <RadioGroup
+          label="Billing (label first)"
+          labelPosition="start"
+          defaultValue="month"
+        >
+          <Radio value="month" description="Cancel anytime">
+            Monthly
+          </Radio>
+          <Radio value="year" description="2 months free">
+            Yearly
+          </Radio>
+        </RadioGroup>
+      </div>
+    </div>
+  ),
+};
