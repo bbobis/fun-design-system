@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { useState } from 'react';
 import { Field } from '../field';
+import { fieldSurface } from '../field/field-surface';
 import { Combobox, type ComboboxOption } from './combobox';
 
 // React Aria's virtualizer sizes the list from the scroll view's client size; jsdom has
@@ -310,5 +311,29 @@ describe('Combobox autoHighlight', () => {
     press('Escape');
     expect(screen.queryByRole('listbox')).toBeNull();
     expect(onChange).not.toHaveBeenCalled();
+  });
+});
+
+describe('Combobox styles', () => {
+  it('filled uses the same surface as Input and Select', () => {
+    render(
+      <Combobox aria-label="Country" options={countries} variant="filled" />,
+    );
+    const box = input().parentElement as HTMLElement;
+    for (const cls of fieldSurface.filled.split(' '))
+      expect(box.className).toContain(cls);
+  });
+
+  it('startIcon is decoration and sits before the text', () => {
+    render(
+      <Combobox
+        aria-label="Country"
+        options={countries}
+        startIcon={<svg data-testid="search" />}
+      />,
+    );
+    const icon = screen.getByTestId('search').parentElement as HTMLElement;
+    expect(icon.getAttribute('aria-hidden')).toBe('true');
+    expect(icon.nextElementSibling).toBe(input());
   });
 });

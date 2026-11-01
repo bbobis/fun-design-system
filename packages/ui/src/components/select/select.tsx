@@ -1,5 +1,5 @@
 import { cva, type VariantProps } from 'class-variance-authority';
-import type { SVGProps } from 'react';
+import type { ReactNode, SVGProps } from 'react';
 import {
   Button,
   ListBox,
@@ -10,6 +10,7 @@ import {
 } from 'react-aria-components';
 import { cn } from '../../utils/cn';
 import { useFieldContext } from '../field/field-context';
+import { fieldSurface } from '../field/field-surface';
 import { popoverMotion } from '../../utils/motion';
 
 /** One choice in a Select. */
@@ -25,7 +26,7 @@ export type SelectOption = {
 // Same heights and padding as Input and Button, so they line up in a row.
 const triggerVariants = cva(
   [
-    'flex w-full min-w-0 items-center justify-between gap-2 rounded-md border border-border-strong bg-bg text-start text-fg',
+    'flex w-full min-w-0 items-center justify-between gap-2 rounded-md text-start text-fg',
     'transition-colors',
     // Keyboard focus ring, same as Input. No outline-none (see component-recipe.md).
     'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring',
@@ -35,17 +36,21 @@ const triggerVariants = cva(
   ],
   {
     variants: {
+      // Same look as Input's `variant` (field-surface.ts).
+      variant: fieldSurface,
       size: {
         sm: 'h-8 px-2.5 text-sm',
         md: 'h-10 px-3 text-sm',
         lg: 'h-12 px-4 text-base',
       },
     },
-    defaultVariants: { size: 'md' },
+    defaultVariants: { variant: 'outline', size: 'md' },
   },
 );
 
 export type SelectProps = VariantProps<typeof triggerVariants> & {
+  /** A small icon before the value (a globe for "Country"). Decoration: hidden from screen readers. */
+  startIcon?: ReactNode;
   /** The choices, in display order. */
   options: readonly SelectOption[];
   /** The chosen option's `value` (controlled). `null` = nothing chosen. */
@@ -92,6 +97,8 @@ export function Select({
   placeholder = 'Select…',
   name,
   size,
+  variant,
+  startIcon,
   invalid,
   required,
   disabled,
@@ -132,8 +139,19 @@ export function Select({
       aria-describedby={describedBy}
       className={cn('group flex w-full flex-col', className)}
     >
-      <Button id={id ?? field?.controlId} className={triggerVariants({ size })}>
-        <SelectValue className="truncate data-placeholder:text-fg-muted" />
+      <Button
+        id={id ?? field?.controlId}
+        className={triggerVariants({ size, variant })}
+      >
+        {startIcon && (
+          <span
+            aria-hidden="true"
+            className="flex size-4 shrink-0 text-fg-muted [&_svg]:size-full"
+          >
+            {startIcon}
+          </span>
+        )}
+        <SelectValue className="me-auto truncate data-placeholder:text-fg-muted" />
         <ChevronIcon className="size-4 shrink-0 text-fg-muted" />
       </Button>
       {/*

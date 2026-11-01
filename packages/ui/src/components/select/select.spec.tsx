@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import { useState } from 'react';
 import { Field } from '../field';
+import { fieldSurface } from '../field/field-surface';
 import { Select, type SelectOption } from './select';
 
 const statuses: SelectOption[] = [
@@ -134,5 +135,38 @@ describe('Select', () => {
   it('respects disabled', () => {
     render(<Select aria-label="Status" options={statuses} disabled />);
     expect((trigger() as HTMLButtonElement).disabled).toBe(true);
+  });
+});
+
+describe('Select styles', () => {
+  const opts: SelectOption[] = [
+    { value: 'ca', label: 'Canada' },
+    { value: 'us', label: 'United States' },
+  ];
+  const trigger = () =>
+    document.querySelector<HTMLButtonElement>('button[aria-haspopup]');
+
+  it('outline is the default; filled uses the same surface as Input', () => {
+    const { rerender } = render(<Select aria-label="Country" options={opts} />);
+    expect(trigger()?.className).toContain(fieldSurface.outline);
+    rerender(<Select aria-label="Country" options={opts} variant="filled" />);
+    expect(trigger()?.className).toContain('border-b-border-strong');
+    expect(trigger()?.className).toContain('bg-surface');
+  });
+
+  it('startIcon is decoration; the name and value are unchanged', () => {
+    render(
+      <Field label="Country">
+        <Select
+          options={opts}
+          defaultValue="ca"
+          startIcon={<svg data-testid="globe" />}
+        />
+      </Field>,
+    );
+    expect(
+      screen.getByTestId('globe').parentElement?.getAttribute('aria-hidden'),
+    ).toBe('true');
+    expect(trigger()?.textContent).toContain('Canada');
   });
 });

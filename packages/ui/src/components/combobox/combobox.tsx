@@ -1,5 +1,5 @@
 import { cva, type VariantProps } from 'class-variance-authority';
-import { useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState, type ReactNode } from 'react';
 import {
   Button,
   ComboBox as AriaComboBox,
@@ -9,6 +9,7 @@ import {
 } from 'react-aria-components';
 import { cn } from '../../utils/cn';
 import { useFieldContext } from '../field/field-context';
+import { fieldSurface } from '../field/field-surface';
 import type { SelectOption } from '../select';
 import {
   AutoHighlightFirst,
@@ -24,7 +25,7 @@ export type ComboboxOption = SelectOption;
 // is borderless, so the toggle button sits inside the same border.
 const fieldVariants = cva(
   [
-    'flex w-full min-w-0 items-center rounded-md border border-border-strong bg-bg text-fg',
+    'flex w-full min-w-0 items-center rounded-md text-fg',
     'transition-colors',
     // Ring when the input inside has keyboard focus (same look as Input's focus-visible).
     'has-[input:focus-visible]:outline-2 has-[input:focus-visible]:outline-offset-2 has-[input:focus-visible]:outline-focus-ring',
@@ -33,17 +34,21 @@ const fieldVariants = cva(
   ],
   {
     variants: {
+      // Same look as Input's `variant` (field-surface.ts).
+      variant: fieldSurface,
       size: {
         sm: 'h-8 ps-2.5 text-sm',
         md: 'h-10 ps-3 text-sm',
         lg: 'h-12 ps-4 text-base',
       },
     },
-    defaultVariants: { size: 'md' },
+    defaultVariants: { variant: 'outline', size: 'md' },
   },
 );
 
 export type ComboboxProps = VariantProps<typeof fieldVariants> & {
+  /** A small icon before the text (a search icon). Decoration: hidden from screen readers. */
+  startIcon?: ReactNode;
   /** The choices. With `filter="none"`, the current server results. */
   options: readonly ComboboxOption[];
   /**
@@ -127,6 +132,8 @@ export function Combobox({
   placeholder,
   name,
   size,
+  variant,
+  startIcon,
   invalid,
   required,
   disabled,
@@ -207,7 +214,17 @@ export function Combobox({
       className={cn('group flex w-full flex-col', className)}
     >
       {/* Group = the field box. React Aria anchors and sizes the dropdown to it. */}
-      <Group className={fieldVariants({ size })}>
+      <Group
+        className={cn(fieldVariants({ size, variant }), startIcon && 'gap-2')}
+      >
+        {startIcon && (
+          <span
+            aria-hidden="true"
+            className="flex size-4 shrink-0 text-fg-muted [&_svg]:size-full"
+          >
+            {startIcon}
+          </span>
+        )}
         <Input
           id={id ?? field?.controlId}
           placeholder={placeholder}

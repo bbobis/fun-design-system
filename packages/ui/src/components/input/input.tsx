@@ -2,20 +2,16 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { useId, type ComponentProps, type ReactNode } from 'react';
 import { cn } from '../../utils/cn';
 import { useFieldContext } from '../field/field-context';
+import { fieldSurface } from '../field/field-surface';
 
 /** The box: border, fill, focus ring, error and disabled looks. */
 const boxVariants = cva(
   ['w-full min-w-0 rounded-md text-fg', 'transition-colors'],
   {
     variants: {
-      variant: {
-        outline: 'border border-border-strong bg-bg',
-        // A grey fill alone is too close to the page (≈1.1:1), and an input's edge
-        // must reach 3:1 (WCAG 1.4.11). So it keeps a strong *bottom* line, like
-        // Material's filled field: quiet, but still clearly a field.
-        filled:
-          'rounded-b-none border border-transparent border-b-border-strong bg-surface hover:bg-border/40',
-      },
+      // Shared with Select and Combobox (field-surface.ts), so a form with all three
+      // matches.
+      variant: fieldSurface,
       // Heights match Button sizes, so an Input and a Button line up in a row.
       size: {
         sm: 'h-8 text-sm',
