@@ -1,7 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
 import { Button } from '../button';
+import { Combobox } from '../combobox';
 import { Field } from '../field';
+import { Select } from '../select';
 import { Input } from './input';
 
 const meta = {
@@ -202,6 +204,68 @@ export const AdornmentStates: Story = {
       <Field label="Tax rate" disabled>
         <Input endAdornment="%" defaultValue="5" />
       </Field>
+    </div>
+  ),
+};
+
+const GlobeIcon = () => (
+  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth={1.5}>
+    <circle cx="8" cy="8" r="6" />
+    <path d="M2 8h12M8 2c2 2 2 10 0 12M8 2c-2 2-2 10 0 12" />
+  </svg>
+);
+
+/**
+ * Input, Select and Combobox share one surface recipe (`field-surface.ts`), so a form
+ * that mixes them looks the same in `outline` and in `filled`. `startIcon` on Select
+ * and Combobox is decoration.
+ */
+export const FilledForm: Story = {
+  render: () => (
+    <div className="grid w-full max-w-2xl gap-8 sm:grid-cols-2">
+      {(['outline', 'filled'] as const).map((variant) => (
+        <form
+          key={variant}
+          className="flex flex-col gap-4"
+          aria-label={variant}
+        >
+          <Field label="Customer">
+            <Input variant={variant} placeholder="Acme Ltd" />
+          </Field>
+          <Field label="Country">
+            <Select
+              variant={variant}
+              startIcon={<GlobeIcon />}
+              defaultValue="ca"
+              options={[
+                { value: 'ca', label: 'Canada' },
+                { value: 'us', label: 'United States' },
+                { value: 'mx', label: 'Mexico' },
+              ]}
+            />
+          </Field>
+          <Field label="Sales rep">
+            <Combobox
+              variant={variant}
+              startIcon={<SearchIcon />}
+              placeholder="Type a name"
+              options={[
+                { value: 'dana', label: 'Dana Smith' },
+                { value: 'bo', label: 'Bo Chen' },
+                { value: 'cy', label: 'Cy Diaz' },
+              ]}
+            />
+          </Field>
+          <Field label="Amount">
+            <Input
+              variant={variant}
+              startAdornment="$"
+              endAdornment="CAD"
+              defaultValue="1,200.00"
+            />
+          </Field>
+        </form>
+      ))}
     </div>
   ),
 };
