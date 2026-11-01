@@ -22,6 +22,7 @@ export * from './components/file-upload';
 export * from './components/heading';
 export * from './components/input';
 export * from './components/label';
+export * from './components/link';
 export * from './components/menu';
 export * from './components/multi-combobox';
 export * from './components/number-field';

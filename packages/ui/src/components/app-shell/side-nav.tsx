@@ -86,7 +86,7 @@ export type SideNavItemProps = {
 };
 
 /**
- * One link in the side nav. A React Aria `Link`, so with a `RouterProvider` it
+ * One link in the side nav. A React Aria `Link`, so with our `RouterProvider` it
  * navigates without a page reload. Inside the narrow-screen drawer, choosing it also
  * closes the drawer.
  */

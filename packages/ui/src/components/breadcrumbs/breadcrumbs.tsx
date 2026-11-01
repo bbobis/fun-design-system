@@ -55,7 +55,7 @@ export function collapseItems(items: BreadcrumbItem[], maxItems?: number) {
  * itself says how many levels there are.
  *
  * Links are plain `href`s. With a client-side router (React Router, Next.js), wrap the
- * app in React Aria's `RouterProvider` once and these links navigate without a reload.
+ * app in our `RouterProvider` once and these links navigate without a reload.
  *
  * Long trails: `maxItems` puts the middle levels behind a "…" menu, so the trail stays
  * on one line and every level is still one click (or Enter) away.
