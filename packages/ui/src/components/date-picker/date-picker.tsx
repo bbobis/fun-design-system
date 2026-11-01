@@ -61,6 +61,7 @@ export function DatePicker({
   onBlur,
   name,
   size,
+  variant,
   invalid,
   required,
   disabled,
@@ -101,7 +102,7 @@ export function DatePicker({
       aria-describedby={describedBy}
       className={cn('group flex w-full flex-col', className)}
     >
-      <Group className={dateFieldVariants({ size })}>
+      <Group className={dateFieldVariants({ size, variant })}>
         <DatePieces className="flex-1" />
         <CalendarButton />
       </Group>

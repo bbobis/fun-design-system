@@ -9,11 +9,12 @@ import {
 import { cn } from '../../utils/cn';
 import { SpinnerIcon, XIcon } from '../combobox/combobox-parts';
 import { useFieldContext } from '../field/field-context';
+import { fieldSurface } from '../field/field-surface';
 
 // Same heights and look as Input, so a search box lines up with other fields.
 const boxVariants = cva(
   [
-    'flex w-full min-w-0 items-center rounded-md border border-border-strong bg-bg text-fg transition-colors',
+    'flex w-full min-w-0 items-center rounded-md text-fg transition-colors',
     // Ring while the input has focus (it's a text field, so by mouse too, like Input).
     'focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-solid focus-within:outline-focus-ring',
     'group-data-invalid:border-danger',
@@ -21,13 +22,15 @@ const boxVariants = cva(
   ],
   {
     variants: {
+      // Same surface as Input / Select / Combobox (field-surface.ts).
+      variant: fieldSurface,
       size: {
         sm: 'h-8 gap-1.5 ps-2.5 text-sm',
         md: 'h-10 gap-2 ps-3 text-sm',
         lg: 'h-12 gap-2 ps-4 text-base',
       },
     },
-    defaultVariants: { size: 'md' },
+    defaultVariants: { variant: 'outline', size: 'md' },
   },
 );
 
@@ -80,6 +83,7 @@ export function SearchField({
   loading = false,
   name,
   size,
+  variant,
   invalid,
   disabled,
   id,
@@ -114,7 +118,7 @@ export function SearchField({
       aria-describedby={describedBy}
       className={cn('group flex w-full flex-col', className)}
     >
-      <Group className={boxVariants({ size })}>
+      <Group className={boxVariants({ size, variant })}>
         {loading ? (
           <span className="flex shrink-0 text-fg-muted">
             {/* Decorative: tell screen readers about loading in your results area. */}

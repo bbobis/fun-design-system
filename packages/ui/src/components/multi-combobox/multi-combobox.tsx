@@ -19,6 +19,7 @@ import {
   SpinnerIcon,
 } from '../combobox/combobox-parts';
 import { useFieldContext } from '../field/field-context';
+import { fieldSurface } from '../field/field-surface';
 import { TagRemoveButton, tagVariants } from '../tag-group/tag-parts';
 import type { SelectOption } from '../select';
 
@@ -29,7 +30,7 @@ export type MultiComboboxOption = SelectOption;
 // chosen so one row (tags + input) is exactly as tall as Input / Select / Combobox.
 const fieldVariants = cva(
   [
-    'flex w-full min-w-0 cursor-text items-start rounded-md border border-border-strong bg-bg text-fg',
+    'flex w-full min-w-0 cursor-text items-start rounded-md text-fg',
     'transition-colors',
     'has-[input:focus-visible]:outline-2 has-[input:focus-visible]:outline-offset-2 has-[input:focus-visible]:outline-focus-ring',
     'group-data-invalid:border-danger',
@@ -37,13 +38,15 @@ const fieldVariants = cva(
   ],
   {
     variants: {
+      // Same surface as Input / Select / Combobox (field-surface.ts).
+      variant: fieldSurface,
       size: {
         sm: 'min-h-8 py-0.5 ps-1 text-sm',
         md: 'min-h-10 py-1 ps-1.5 text-sm',
         lg: 'min-h-12 py-1.5 ps-2 text-base',
       },
     },
-    defaultVariants: { size: 'md' },
+    defaultVariants: { variant: 'outline', size: 'md' },
   },
 );
 
@@ -120,6 +123,7 @@ export function MultiCombobox({
   placeholder,
   name,
   size,
+  variant,
   invalid,
   required,
   disabled,
@@ -206,7 +210,7 @@ export function MultiCombobox({
       className={cn('group flex w-full flex-col', className)}
     >
       <Group
-        className={fieldVariants({ size })}
+        className={fieldVariants({ size, variant })}
         // Clicking the box's empty space focuses the input, like a normal text field.
         onClick={(e) => {
           if (!(e.target as Element).closest('button, input, [role=row]'))

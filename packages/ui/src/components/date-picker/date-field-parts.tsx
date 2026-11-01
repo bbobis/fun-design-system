@@ -1,6 +1,7 @@
 import { cva } from 'class-variance-authority';
 import { Button, DateInput, DateSegment } from 'react-aria-components';
 import { cn } from '../../utils/cn';
+import { fieldSurface } from '../field/field-surface';
 import { CalendarIcon } from './calendar-popover';
 
 /**
@@ -9,7 +10,7 @@ import { CalendarIcon } from './calendar-popover';
  */
 export const dateFieldVariants = cva(
   [
-    'flex w-full min-w-0 items-center rounded-md border border-border-strong bg-bg text-fg',
+    'flex w-full min-w-0 items-center rounded-md text-fg',
     'transition-colors',
     // Ring while any segment is focused, by mouse too: it's a text-like field (same as Input).
     // outline-solid is explicit on purpose; see component-recipe.md (outline trap).
@@ -19,13 +20,15 @@ export const dateFieldVariants = cva(
   ],
   {
     variants: {
+      // Same surface as Input / Select / Combobox (field-surface.ts).
+      variant: fieldSurface,
       size: {
         sm: 'h-8 ps-2 text-sm',
         md: 'h-10 ps-2.5 text-sm',
         lg: 'h-12 ps-3.5 text-base',
       },
     },
-    defaultVariants: { size: 'md' },
+    defaultVariants: { variant: 'outline', size: 'md' },
   },
 );
 
