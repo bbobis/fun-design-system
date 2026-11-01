@@ -2,23 +2,48 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import type { ReactNode, SVGProps } from 'react';
 import { cn } from '../../utils/cn';
 
-const alertVariants = cva(
-  'flex items-start gap-3 rounded-md border px-4 py-3 text-sm',
-  {
-    variants: {
-      tone: {
-        // The same soft tokens as Badge: light fill + dark text, reversed in dark mode.
-        info: 'border-info/30 bg-info-soft text-on-info-soft',
-        success: 'border-success/30 bg-success-soft text-on-success-soft',
-        warning: 'border-warning/40 bg-warning-soft text-on-warning-soft',
-        danger: 'border-danger/30 bg-danger-soft text-on-danger-soft',
-      },
+const alertVariants = cva('flex border', {
+  variants: {
+    /**
+     * Like Badge: a tone only *names* its colors as CSS variables; the variant picks
+     * which of them paint the fill, border, text and icon.
+     */
+    tone: {
+      info: '[--alert-soft:var(--color-info-soft)] [--alert-on-soft:var(--color-on-info-soft)] [--alert-solid:var(--color-info)] [--alert-on-solid:var(--color-on-info)] [--alert-line:color-mix(in_oklab,var(--color-info)_30%,transparent)] [--alert-strong-line:var(--color-info)]',
+      success:
+        '[--alert-soft:var(--color-success-soft)] [--alert-on-soft:var(--color-on-success-soft)] [--alert-solid:var(--color-success)] [--alert-on-solid:var(--color-on-success)] [--alert-line:color-mix(in_oklab,var(--color-success)_30%,transparent)] [--alert-strong-line:var(--color-success)]',
+      warning:
+        '[--alert-soft:var(--color-warning-soft)] [--alert-on-soft:var(--color-on-warning-soft)] [--alert-solid:var(--color-warning)] [--alert-on-solid:var(--color-on-warning)] [--alert-line:color-mix(in_oklab,var(--color-warning)_40%,transparent)] [--alert-strong-line:var(--color-warning)]',
+      danger:
+        '[--alert-soft:var(--color-danger-soft)] [--alert-on-soft:var(--color-on-danger-soft)] [--alert-solid:var(--color-danger)] [--alert-on-solid:var(--color-on-danger)] [--alert-line:color-mix(in_oklab,var(--color-danger)_30%,transparent)] [--alert-strong-line:var(--color-danger)]',
     },
-    defaultVariants: { tone: 'info' },
+    variant: {
+      // Light fill + dark text, reversed in dark mode (the same soft tokens as Badge).
+      soft: 'border-(--alert-line) bg-(--alert-soft) text-(--alert-on-soft)',
+      // The page's own background and text; the tone is the border and the icon. The
+      // icon uses the soft-text token, which contrasts with the page in both themes.
+      outline:
+        'border-(--alert-strong-line) bg-bg text-fg [--alert-icon:var(--alert-on-soft)]',
+      // Strongest: for the one message that must not be missed.
+      solid: 'border-transparent bg-(--alert-solid) text-(--alert-on-solid)',
+    },
+    size: {
+      md: 'items-start gap-3 px-4 py-3 text-sm',
+      sm: 'items-center gap-2 px-3 py-2 text-sm',
+    },
+    banner: {
+      // Full-bleed across the top of a page or card: square, only a bottom edge.
+      true: 'rounded-none border-x-0 border-t-0',
+      false: 'rounded-md',
+    },
   },
-);
+  defaultVariants: { tone: 'info', variant: 'soft', size: 'md', banner: false },
+});
 
 type Tone = NonNullable<VariantProps<typeof alertVariants>['tone']>;
+export type AlertVariant = NonNullable<
+  VariantProps<typeof alertVariants>['variant']
+>;
 
 /** Read before the title, so the tone isn't carried by color and icon alone. */
 const toneWord: Record<Tone, string> = {
@@ -28,7 +53,27 @@ const toneWord: Record<Tone, string> = {
   danger: 'Error',
 };
 
-export type AlertProps = VariantProps<typeof alertVariants> & {
+export type AlertProps = {
+  /** @default 'info' */
+  tone?: Tone;
+  /**
+   * - `soft`: tinted box (most messages).
+   * - `outline`: the page's background with a coloured border and icon; quieter, for
+   *   pages with several alerts.
+   * - `solid`: strong fill, for the one message that must not be missed.
+   * @default 'soft'
+   */
+  variant?: AlertVariant;
+  /**
+   * `sm`: one compact line (title and text inline, actions on the right), for tables,
+   * cards and side panels. @default 'md'
+   */
+  size?: 'sm' | 'md';
+  /**
+   * Full width across the top of a page or card: square corners, only a bottom edge.
+   * It is still an alert, not the page's `banner` landmark. @default false
+   */
+  banner?: boolean;
   /** One short line in bold: what happened ("Payment failed"). */
   title?: string;
   /** Details, and what the user can do about it. */
@@ -64,6 +109,9 @@ export type AlertProps = VariantProps<typeof alertVariants> & {
  */
 export function Alert({
   tone = 'info',
+  variant = 'soft',
+  size = 'md',
+  banner = false,
   title,
   children,
   actions,
@@ -73,6 +121,7 @@ export function Alert({
 }: AlertProps) {
   const t: Tone = tone ?? 'info';
   const Icon = icons[t];
+  const compact = size === 'sm';
   return (
     <div
       role={
@@ -82,10 +131,25 @@ export function Alert({
             : 'status'
           : undefined
       }
-      className={cn(alertVariants({ tone: t }), className)}
+      className={cn(
+        alertVariants({ tone: t, variant, size, banner }),
+        className,
+      )}
     >
-      <Icon className="mt-0.5 size-4 shrink-0" />
-      <div className="min-w-0 flex-1">
+      <Icon
+        className={cn(
+          'size-4 shrink-0',
+          compact ? '' : 'mt-0.5',
+          variant === 'outline' && 'text-(--alert-icon)',
+        )}
+      />
+      <div
+        className={cn(
+          'min-w-0 flex-1',
+          // Compact: title, text and actions share one line (wrapping if they must).
+          compact && 'flex flex-wrap items-center gap-x-2 gap-y-1',
+        )}
+      >
         {title ? (
           <p className="font-semibold">
             <span className="sr-only">{toneWord[t]}: </span>
@@ -94,15 +158,26 @@ export function Alert({
         ) : (
           <span className="sr-only">{toneWord[t]}: </span>
         )}
-        {children && <div className={cn(title && 'mt-0.5')}>{children}</div>}
-        {actions && <div className="mt-2 flex flex-wrap gap-2">{actions}</div>}
+        {children && (
+          <div className={cn(title && !compact && 'mt-0.5')}>{children}</div>
+        )}
+        {actions && (
+          <div
+            className={cn('flex flex-wrap gap-2', compact ? 'ms-auto' : 'mt-2')}
+          >
+            {actions}
+          </div>
+        )}
       </div>
       {onDismiss && (
         <button
           type="button"
           aria-label="Dismiss"
           onClick={onDismiss}
-          className="-me-1 -mt-0.5 flex size-6 shrink-0 items-center justify-center rounded opacity-70 hover:opacity-100 focus-visible:outline-2 focus-visible:outline-focus-ring"
+          className={cn(
+            '-me-1 flex size-6 shrink-0 items-center justify-center rounded opacity-70 hover:opacity-100 focus-visible:outline-2 focus-visible:outline-focus-ring',
+            !compact && '-mt-0.5',
+          )}
         >
           <XIcon className="size-3.5" />
         </button>
