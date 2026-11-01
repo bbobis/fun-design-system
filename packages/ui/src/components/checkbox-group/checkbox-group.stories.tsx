@@ -168,3 +168,36 @@ export const CardsWithError: Story = {
     </div>
   ),
 };
+
+/** `size` on the group: every item follows. `labelPosition="start"` puts labels first. */
+export const SizesAndLabelPosition: Story = {
+  render: () => (
+    <div className="flex flex-col gap-8">
+      {(['sm', 'md', 'lg'] as const).map((size) => (
+        <CheckboxGroup
+          key={size}
+          label={`Send copies to (${size})`}
+          size={size}
+          defaultValue={['acc']}
+        >
+          <CheckboxGroupItem value="acc" description="accounts@acme.example">
+            Accounting
+          </CheckboxGroupItem>
+          <CheckboxGroupItem value="mgr">Account manager</CheckboxGroupItem>
+        </CheckboxGroup>
+      ))}
+      <div className="w-80">
+        <CheckboxGroup
+          label="Notify (label first)"
+          labelPosition="start"
+          defaultValue={['paid']}
+        >
+          <CheckboxGroupItem value="paid" description="When the customer pays">
+            Paid
+          </CheckboxGroupItem>
+          <CheckboxGroupItem value="overdue">Overdue</CheckboxGroupItem>
+        </CheckboxGroup>
+      </div>
+    </div>
+  ),
+};

@@ -13,6 +13,14 @@ import {
   useSelectableCardIds,
   type SelectableCardBaseProps,
 } from '../card/selectable-card';
+import {
+  ChoiceStyleContext,
+  choiceLayout,
+  choiceSize,
+  useChoiceStyle,
+  type ChoiceSize,
+  type LabelPosition,
+} from '../checkbox/choice-control';
 
 export type RadioGroupProps = {
   /** The question, shown above the choices. It names the group. Required. */
@@ -31,6 +39,14 @@ export type RadioGroupProps = {
   /** @default 'vertical' */
   orientation?: 'vertical' | 'horizontal';
   required?: boolean;
+  /** Size of every choice in the group. @default 'md' */
+  size?: ChoiceSize;
+  /**
+   * `end` (default): control, then label. `start`: label first, control at the far
+   * end (a settings list).
+   * @default 'end'
+   */
+  labelPosition?: LabelPosition;
   disabled?: boolean;
   /** `Radio` or `RadioCard` elements. */
   children: ReactNode;
@@ -57,6 +73,8 @@ export function RadioGroup({
   onChange,
   name,
   orientation = 'vertical',
+  size = 'md',
+  labelPosition = 'end',
   required = false,
   disabled = false,
   children,
@@ -96,7 +114,10 @@ export function RadioGroup({
           orientation === 'vertical' ? 'flex-col' : 'flex-row flex-wrap',
         )}
       >
-        {children}
+        {/* The look, set once here, read by every Radio (and RadioCard's dot). */}
+        <ChoiceStyleContext.Provider value={{ size, labelPosition }}>
+          {children}
+        </ChoiceStyleContext.Provider>
       </div>
       {/* FieldError renders only while invalid, and React Aria links it to the group. */}
       <FieldError className="text-sm text-fg-danger">{error}</FieldError>
@@ -116,6 +137,7 @@ export type RadioProps = {
 
 /** One choice in a RadioGroup. */
 export function Radio({ value, children, description, disabled }: RadioProps) {
+  const { size, labelPosition } = useChoiceStyle();
   const labelId = useId();
   const descriptionId = useId();
   return (
@@ -125,7 +147,11 @@ export function Radio({ value, children, description, disabled }: RadioProps) {
       // Named by the label text only; the description is read after it (see RadioCard).
       aria-labelledby={labelId}
       aria-describedby={description ? descriptionId : undefined}
-      className="group flex cursor-pointer items-start gap-2 text-sm text-fg data-disabled:cursor-not-allowed data-disabled:opacity-50"
+      className={cn(
+        'group cursor-pointer text-fg data-disabled:cursor-not-allowed data-disabled:opacity-50',
+        choiceLayout(labelPosition),
+        choiceSize.text[size],
+      )}
     >
       <RadioDot focusRing />
       <span className="flex flex-col">
@@ -145,11 +171,14 @@ export function Radio({ value, children, description, disabled }: RadioProps) {
  * `data-selected` etc. from it). `focusRing`: draw the focus ring on the dot itself.
  */
 function RadioDot({ focusRing = false }: { focusRing?: boolean }) {
+  const { size } = useChoiceStyle();
   return (
     <span
       aria-hidden="true"
       className={cn(
-        'mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full border-[1.5px] border-border-strong bg-bg transition-colors',
+        'flex shrink-0 items-center justify-center rounded-full border-[1.5px] border-border-strong bg-bg transition-colors',
+        choiceSize.box[size],
+        choiceSize.align[size],
         'group-hover:border-fg',
         'group-data-selected:border-primary group-data-selected:bg-primary',
         'group-data-invalid:border-danger',
@@ -157,7 +186,12 @@ function RadioDot({ focusRing = false }: { focusRing?: boolean }) {
           'group-data-focus-visible:outline-2 group-data-focus-visible:outline-offset-2 group-data-focus-visible:outline-solid group-data-focus-visible:outline-focus-ring',
       )}
     >
-      <span className="size-1.5 scale-0 rounded-full bg-on-primary transition-transform group-data-selected:scale-100" />
+      <span
+        className={cn(
+          'scale-0 rounded-full bg-on-primary transition-transform group-data-selected:scale-100',
+          choiceSize.dot[size],
+        )}
+      />
     </span>
   );
 }
