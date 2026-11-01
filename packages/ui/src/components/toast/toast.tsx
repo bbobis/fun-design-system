@@ -89,17 +89,47 @@ export const toast = {
   dismiss: (key: string) => queue.close(key),
 };
 
-const toneBar = cva('w-1 shrink-0 self-stretch rounded-full', {
+/**
+ * Like Alert and Badge: a tone only *names* its colors (CSS variables); the region's
+ * `variant` picks which of them paint the toast.
+ */
+const toneColors = cva('', {
   variants: {
     tone: {
-      neutral: 'bg-border-strong',
-      success: 'bg-success',
-      info: 'bg-info',
-      warning: 'bg-warning',
-      danger: 'bg-danger',
+      neutral:
+        '[--toast-soft:var(--color-surface)] [--toast-on-soft:var(--color-fg)] [--toast-solid:var(--color-fg)] [--toast-on-solid:var(--color-bg)] [--toast-strong:var(--color-border-strong)]',
+      success:
+        '[--toast-soft:var(--color-success-soft)] [--toast-on-soft:var(--color-on-success-soft)] [--toast-solid:var(--color-success)] [--toast-on-solid:var(--color-on-success)] [--toast-strong:var(--color-success)]',
+      info: '[--toast-soft:var(--color-info-soft)] [--toast-on-soft:var(--color-on-info-soft)] [--toast-solid:var(--color-info)] [--toast-on-solid:var(--color-on-info)] [--toast-strong:var(--color-info)]',
+      warning:
+        '[--toast-soft:var(--color-warning-soft)] [--toast-on-soft:var(--color-on-warning-soft)] [--toast-solid:var(--color-warning)] [--toast-on-solid:var(--color-on-warning)] [--toast-strong:var(--color-warning)]',
+      danger:
+        '[--toast-soft:var(--color-danger-soft)] [--toast-on-soft:var(--color-on-danger-soft)] [--toast-solid:var(--color-danger)] [--toast-on-solid:var(--color-on-danger)] [--toast-strong:var(--color-danger)]',
     },
   },
 });
+
+export type ToastVariant = 'bar' | 'soft' | 'outline' | 'solid';
+
+const toastVariants = cva(
+  'flex items-start rounded-md border text-fg shadow-lg outline-hidden data-focus-visible:outline-2 data-focus-visible:outline-solid data-focus-visible:outline-focus-ring',
+  {
+    variants: {
+      variant: {
+        // Today's look: a white card with a coloured bar on the start side.
+        bar: 'border-border bg-bg',
+        soft: 'border-transparent bg-(--toast-soft) text-(--toast-on-soft)',
+        // Page background; the tone is the border (and the bar-less text stays fg).
+        outline: 'border-(--toast-strong) bg-bg',
+        solid: 'border-transparent bg-(--toast-solid) text-(--toast-on-solid)',
+      },
+      size: {
+        sm: 'gap-2 p-2 text-xs',
+        md: 'gap-3 p-3 text-sm',
+      },
+    },
+  },
+);
 
 /** Said before the title, so the tone isn't carried by color alone (same as Alert). */
 const toneWord: Record<ToastTone, string | null> = {
@@ -111,6 +141,17 @@ const toneWord: Record<ToastTone, string | null> = {
 };
 
 export type ToastRegionProps = {
+  /**
+   * How every toast looks. Set once here, not per toast: the code that *sends* a toast
+   * (an API call, a save handler) says what happened (`tone`), and the app shell
+   * decides how it looks.
+   * - `bar` (default): white card with a coloured bar.
+   * - `soft`: tinted card. `outline`: coloured border. `solid`: strong fill.
+   * @default 'bar'
+   */
+  variant?: ToastVariant;
+  /** `sm`: tighter padding and smaller text, for dense apps. @default 'md' */
+  size?: 'sm' | 'md';
   /** Classes for the region (e.g. a different corner). Default: bottom-right. */
   className?: string;
 };
@@ -125,12 +166,21 @@ export type ToastRegionProps = {
  *   readers announce it as soon as it appears (React Aria reveals it one render
  *   after mounting, which NVDA needs to notice it).
  */
-export function ToastRegion({ className }: ToastRegionProps) {
+export function ToastRegion({
+  variant = 'bar',
+  size = 'md',
+  className,
+}: ToastRegionProps) {
+  // On a coloured fill, grey text and the yellow link underline lose contrast, so the
+  // parts follow the toast's own text colour instead.
+  const onColour = variant === 'soft' || variant === 'solid';
   return (
     <AriaToastRegion
       queue={queue}
       className={cn(
-        'fixed end-4 bottom-4 z-50 flex w-[min(24rem,calc(100vw-2rem))] flex-col-reverse gap-2 outline-hidden',
+        'fixed end-4 bottom-4 z-50 flex w-[min(24rem,calc(100vw-2rem))] flex-col-reverse gap-2',
+        // F6 focuses the region itself: show where focus went (WCAG 2.4.7).
+        'rounded-lg outline-hidden data-focus-visible:outline-2 data-focus-visible:outline-offset-4 data-focus-visible:outline-solid data-focus-visible:outline-focus-ring',
         className,
       )}
     >
@@ -140,22 +190,40 @@ export function ToastRegion({ className }: ToastRegionProps) {
         return (
           <AriaToast
             toast={item}
-            className="flex items-start gap-3 rounded-md border border-border bg-bg p-3 text-sm text-fg shadow-lg outline-hidden data-focus-visible:outline-2 data-focus-visible:outline-solid data-focus-visible:outline-focus-ring"
+            className={cn(
+              toneColors({ tone }),
+              toastVariants({ variant, size }),
+            )}
           >
-            <span aria-hidden="true" className={toneBar({ tone })} />
+            {variant === 'bar' && (
+              <span
+                aria-hidden="true"
+                className={cn(
+                  'w-1 shrink-0 self-stretch rounded-full',
+                  // Neutral has no strong colour of its own: use the strong border.
+                  tone === 'neutral'
+                    ? 'bg-border-strong'
+                    : 'bg-(--toast-strong)',
+                )}
+              />
+            )}
             <AriaToastContent className="flex min-w-0 flex-1 flex-col gap-0.5">
               <Text slot="title" className="font-semibold">
                 {word && <span className="sr-only">{word}: </span>}
                 {item.content.title}
               </Text>
               {item.content.description && (
-                <Text slot="description" className="text-fg-muted">
+                <Text
+                  slot="description"
+                  className={onColour ? 'text-current' : 'text-fg-muted'}
+                >
                   {item.content.description}
                 </Text>
               )}
             </AriaToastContent>
             {item.content.action && (
               <ToastAction
+                onColour={onColour}
                 onPress={() => {
                   item.content.action?.onAction();
                   queue.close(item.key);
@@ -168,7 +236,12 @@ export function ToastRegion({ className }: ToastRegionProps) {
             <AriaButton
               slot="close"
               aria-label="Close"
-              className="flex size-6 shrink-0 items-center justify-center rounded text-fg-muted outline-hidden hover:text-fg data-focus-visible:outline-2 data-focus-visible:outline-solid data-focus-visible:outline-focus-ring"
+              className={cn(
+                'flex size-6 shrink-0 items-center justify-center rounded outline-hidden data-focus-visible:outline-2 data-focus-visible:outline-solid data-focus-visible:outline-focus-ring',
+                onColour
+                  ? 'text-current hover:bg-current/10'
+                  : 'text-fg-muted hover:text-fg',
+              )}
             >
               <XIcon className="size-3.5" />
             </AriaButton>
@@ -181,15 +254,22 @@ export function ToastRegion({ className }: ToastRegionProps) {
 
 function ToastAction({
   onPress,
+  onColour,
   children,
 }: {
   onPress: () => void;
+  onColour: boolean;
   children: ReactNode;
 }) {
   return (
     <AriaButton
       onPress={onPress}
-      className="shrink-0 rounded px-2 py-0.5 font-medium underline decoration-link-underline decoration-2 underline-offset-4 outline-hidden hover:bg-surface data-focus-visible:outline-2 data-focus-visible:outline-solid data-focus-visible:outline-focus-ring"
+      className={cn(
+        'shrink-0 rounded px-2 py-0.5 font-medium underline decoration-2 underline-offset-4 outline-hidden data-focus-visible:outline-2 data-focus-visible:outline-solid data-focus-visible:outline-focus-ring',
+        onColour
+          ? 'decoration-current hover:bg-current/10'
+          : 'decoration-link-underline hover:bg-surface',
+      )}
     >
       {children}
     </AriaButton>

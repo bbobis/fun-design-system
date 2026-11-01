@@ -5,4 +5,5 @@ export {
   type ToastOptions,
   type ToastRegionProps,
   type ToastTone,
+  type ToastVariant,
 } from './toast';
