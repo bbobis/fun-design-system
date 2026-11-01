@@ -119,3 +119,81 @@ describe('Input inside Field', () => {
     expect(first.id).not.toBe(last.id);
   });
 });
+
+describe('Input styles', () => {
+  it('outline is the default (unchanged): the border is on the input', () => {
+    render(<Input aria-label="Name" />);
+    expect(screen.getByRole('textbox').className).toContain(
+      'border-border-strong',
+    );
+  });
+
+  it('filled keeps a strong bottom line, so the field edge still shows (the prediction)', () => {
+    render(<Input aria-label="Name" variant="filled" />);
+    const c = screen.getByRole('textbox').className;
+    expect(c).toContain('bg-surface');
+    expect(c).toContain('border-b-border-strong');
+  });
+
+  it('text adornments are read with the field ("70, kg")', () => {
+    render(
+      <Field label="Weight">
+        <Input endAdornment="kg" />
+      </Field>,
+    );
+    const input = screen.getByRole('textbox', { name: 'Weight' });
+    const ids = input.getAttribute('aria-describedby')?.split(' ') ?? [];
+    expect(ids.map((i) => document.getElementById(i)?.textContent)).toContain(
+      'kg',
+    );
+  });
+
+  it('element adornments are shown as given; a button stays a button', () => {
+    const onClick = vi.fn();
+    render(
+      <Input
+        aria-label="Password"
+        startAdornment={<svg aria-hidden="true" data-testid="lock" />}
+        endAdornment={
+          <button type="button" onClick={onClick}>
+            Show
+          </button>
+        }
+      />,
+    );
+    expect(screen.getByTestId('lock')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Show' }));
+    expect(onClick).toHaveBeenCalled();
+    // Elements are not linked as descriptions (only text is).
+    expect(
+      screen.getByRole('textbox').getAttribute('aria-describedby'),
+    ).toBeNull();
+  });
+
+  it('a press on the box (not a control) focuses the input', () => {
+    render(<Input aria-label="Price" startAdornment="$" />);
+    const dollar = screen.getByText('$');
+    fireEvent.mouseDown(dollar);
+    expect(document.activeElement).toBe(screen.getByRole('textbox'));
+  });
+
+  it('with adornments, the wrapper draws the box and shows invalid / disabled', () => {
+    render(
+      <Input
+        aria-label="Price"
+        startAdornment="$"
+        invalid
+        disabled
+        className="w-40"
+        data-testid="input"
+      />,
+    );
+    const input = screen.getByTestId('input');
+    const box = input.parentElement as HTMLElement;
+    expect(input.getAttribute('aria-invalid')).toBe('true');
+    expect((input as HTMLInputElement).disabled).toBe(true);
+    expect(box.className).toContain('has-[input[aria-invalid]]:border-danger');
+    expect(box.className).toContain('w-40');
+    expect(input.className).not.toContain('w-40');
+  });
+});
