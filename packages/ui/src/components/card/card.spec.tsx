@@ -155,3 +155,76 @@ describe('Card parts', () => {
     );
   });
 });
+
+describe('Card styles', () => {
+  it('elevated: page background, faint border and a shadow', () => {
+    render(
+      <Card variant="elevated" data-testid="card">
+        Body
+      </Card>,
+    );
+    const c = screen.getByTestId('card').className;
+    expect(c).toContain('shadow-md');
+    expect(c).toContain('bg-bg');
+    expect(c).toContain('border-border/60');
+  });
+
+  it('elevated + CardLink lifts on hover instead of using the small default shadow', () => {
+    render(
+      <Card variant="elevated" data-testid="card">
+        <CardLink href="#a">A</CardLink>
+      </Card>,
+    );
+    const c = screen.getByTestId('card').className;
+    expect(c).toContain('has-[[data-card-link]:hover]:shadow-lg');
+    expect(c).not.toContain('has-[[data-card-link]:hover]:shadow-sm');
+  });
+
+  it('horizontal: a two-column grid; media down the start side, bled to the edges', () => {
+    render(
+      <Card orientation="horizontal" data-testid="card">
+        <CardMedia>
+          <img alt="" data-testid="img" />
+        </CardMedia>
+        <CardHeader title="Northwind" />
+        <CardBody>Body</CardBody>
+      </Card>,
+    );
+    expect(screen.getByTestId('card').className).toContain('grid-cols-');
+    const media = screen.getByTestId('img').parentElement?.className ?? '';
+    expect(media).toContain('-ms-5');
+    expect(media).toContain('-my-5');
+    expect(media).toContain('rounded-s-[inherit]');
+    expect(media).not.toContain('-mx-5');
+  });
+
+  it('horizontal media fills the height but does not set it (the prediction)', () => {
+    render(
+      <Card orientation="horizontal">
+        <CardMedia>
+          <img alt="" data-testid="img" />
+        </CardMedia>
+        <CardBody>Short text</CardBody>
+      </Card>,
+    );
+    // The image is out of the flow (absolute, inset-0), so a tall photo can't make
+    // the card taller than its text.
+    const media = screen.getByTestId('img').parentElement?.className ?? '';
+    expect(media).toContain('[&>*]:absolute');
+    expect(media).toContain('[&>*]:inset-0');
+    expect(media).toContain('relative');
+  });
+
+  it('horizontal + CardLink: still a link named by the title only', () => {
+    render(
+      <Card orientation="horizontal" as="article">
+        <CardMedia>
+          <img alt="" />
+        </CardMedia>
+        <CardHeader title={<CardLink href="#n">Northwind</CardLink>} />
+        <CardBody>$1,200 · Due Nov 30</CardBody>
+      </Card>,
+    );
+    expect(screen.getByRole('link', { name: 'Northwind' })).toBeTruthy();
+  });
+});
