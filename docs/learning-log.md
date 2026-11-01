@@ -636,3 +636,10 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Remember: one context, several facts.** The context that already told `CardMedia` the padding (to bleed past it) now also carries the orientation, so it knows which edges to bleed to (`-mx -mt` vs `-ms -my`). It's the same pattern as Tabs: the parent decides and the parts read it.
 - **Why no automatic switch:** the Card can't use a container query on *itself*: a container query styles the container's children, not the container. And breakpoints differ per app, so the app picks `orientation`.
 - Docs: https://developer.mozilla.org/en-US/docs/Web/CSS/grid-row
+
+## 2026-11-01 — Button: styles (outline, shapes, full width, icons)
+- **Built:** new optional props on `Button`: `intent="outline"`, `shape` (`default` / `pill` / `square` icon-only), `fullWidth`, `startIcon` / `endIcon`. While `loading`, the spinner takes `startIcon`'s place: the label stays at the same x (40px in Chromium either way). The default look is unchanged.
+- **Remember (the prediction): you find out at *compile time*, from TypeScript.** `ButtonProps` is a **discriminated union**: `{ shape?: 'default' | 'pill' } | { shape: 'square'; 'aria-label': string }`. The value of `shape` picks which branch applies, and the square branch makes `aria-label` required. Without it you get `TS2322 … not assignable to ButtonProps`. I checked by deleting the `@ts-expect-error`: the typecheck failed. It's like a sealed interface in Java, where each implementation carries the fields it needs.
+- **Remember: required props are the cheapest accessibility test.** A missing name on an icon-only button would otherwise be found by axe in Storybook (if someone writes a story for it), or by a screen-reader user in production. The type finds it in the editor.
+- **Remember: icons are decoration; the label is the name.** Icon slots are `aria-hidden`, sized per button size (`size-4` / `size-5`). An arrow `endIcon` should flip in RTL (`rtl:-scale-x-100`), like the story's.
+- Docs: https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions
