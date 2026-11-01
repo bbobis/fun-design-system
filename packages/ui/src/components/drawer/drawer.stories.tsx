@@ -121,11 +121,12 @@ export const Filters: Story = {
 export const Sizes: Story = {
   render: () => (
     <div className="flex gap-2">
-      {(['sm', 'md', 'lg'] as const).map((size) => (
+      {(['sm', 'md', 'lg', 'full'] as const).map((size) => (
         <WithTrigger key={size} label={`Open ${size}`}>
           {(state) => (
             <Drawer {...state} size={size} title={`size="${size}"`}>
-              The panel is full height; only its width changes.
+              The panel is full height; only its width changes. `full` covers
+              the whole screen.
             </Drawer>
           )}
         </WithTrigger>
@@ -201,5 +202,62 @@ export const RightToLeft: Story = {
         </Drawer>
       )}
     </WithTrigger>
+  ),
+};
+
+/**
+ * A bottom sheet: `placement="bottom"`. Full width, as tall as its content (up to
+ * `size`), rounded on the edge facing the page. Good for a short list of actions on
+ * a phone. Escape, the × or a tap on the page above closes it.
+ */
+export const BottomSheet: Story = {
+  render: () => (
+    <WithTrigger label="Invoice actions">
+      {({ close, ...state }) => (
+        <Drawer
+          {...state}
+          placement="bottom"
+          title="INV-2041"
+          description="Northwind Traders · $1,280.00"
+        >
+          {/* -mx-4 lines the button text up with the title (Button has px-4). */}
+          <div className="-mx-4 flex flex-col gap-1">
+            {['Send reminder', 'Download PDF', 'Duplicate', 'Mark as paid'].map(
+              (action) => (
+                <Button
+                  key={action}
+                  intent="ghost"
+                  className="justify-start"
+                  onClick={close}
+                >
+                  {action}
+                </Button>
+              ),
+            )}
+          </div>
+        </Drawer>
+      )}
+    </WithTrigger>
+  ),
+};
+
+/** All four edges. `top` and `bottom` slide along the vertical axis. */
+export const Placements: Story = {
+  render: () => (
+    <div className="flex flex-wrap gap-2">
+      {(['start', 'end', 'top', 'bottom'] as const).map((placement) => (
+        <WithTrigger key={placement} label={placement}>
+          {(state) => (
+            <Drawer
+              {...state}
+              placement={placement}
+              title={`placement="${placement}"`}
+            >
+              Slides in from the {placement} edge.
+            </Drawer>
+          )}
+        </WithTrigger>
+      ))}
+    </div>
   ),
 };

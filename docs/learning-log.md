@@ -678,3 +678,10 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Remember: name by the label, describe with the second line.** A `<label>` names its control with *all* its text, so the Switch's description would have become part of the name. Like Radio, the Switch now uses `aria-labelledby` (label span) + `aria-describedby` (description span). Chromium: "Email me when an invoice is paid" | "Sent to billing@acme.example".
 - **Gotcha:** `ComponentProps<'input'>` already has a native `size` (a number), so adding our `size` gave the type `never`. The fix is `Omit<…, 'type' | 'size'>`, as Input already did.
 - Docs: https://www.w3.org/WAI/WCAG22/Understanding/meaningful-sequence.html
+
+## 2026-11-01 — Dialog / AlertDialog / Drawer: sizes, placement, divided, tones, sheets
+- **Built:** Dialog gets `size` `xl` / `full`, `divided` (lines around a scrolling body) and `placement="top"`. AlertDialog gets `tone` (an icon in a soft circle) and `layout="center"`. Drawer gets `placement` `top` / `bottom` (a bottom sheet) and `size="full"`. One `drawer-slide` keyframe now slides on either axis through `--drawer-x` / `--drawer-y`. Defaults are unchanged.
+- **Remember (the prediction):** a centered box re-centers whenever its height changes, so its top edge (and the input you're typing in) jumps on every keystroke. `placement="top"` pins the top edge and lets the box grow downward. That's why command palettes and search dialogs sit near the top.
+- **Remember: cva `compoundVariants`** apply a class only when *several* variants match. Drawer's `size` means width on the sides and max height on top/bottom: `{ placement: ['top','bottom'], size: 'sm', className: 'max-h-[40dvh]' }`. One prop, two meanings, no `if`s in the JSX.
+- **Gotcha:** `flex-1` on items in a *column* sets their height basis to 0, which squashed the stacked buttons. Use `sm:*:flex-1` (row only); in a column the items stretch to full width anyway. `flex-col-reverse` puts Confirm on top visually, but Tab still goes Cancel → Confirm.
+- Docs: https://cva.style/docs/getting-started/variants#compound-variants
