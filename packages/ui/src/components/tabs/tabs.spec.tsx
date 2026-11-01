@@ -55,7 +55,9 @@ describe('Tabs', () => {
     render(<Invoice onChange={onChange} />);
     expect(onChange).not.toHaveBeenCalled();
     expect(
-      screen.getByRole('tab', { name: 'Details' }).getAttribute('aria-selected'),
+      screen
+        .getByRole('tab', { name: 'Details' })
+        .getAttribute('aria-selected'),
     ).toBe('true');
   });
 
@@ -82,5 +84,72 @@ describe('Tabs', () => {
     const { rerender } = render(<Invoice value="details" />);
     rerender(<Invoice value="history" />);
     expect(screen.getByRole('tabpanel').textContent).toBe('3 changes');
+  });
+});
+
+describe('Tabs styles', () => {
+  const tab = (name: string | RegExp) => screen.getByRole('tab', { name });
+
+  it('underline is the default (today’s look)', () => {
+    render(<Invoice />);
+    expect(screen.getByRole('tablist').className).toContain('border-b');
+    expect(tab('Details').className).toContain('border-b-2');
+  });
+
+  it('variant on <Tabs> reaches every Tab through context (the prediction)', () => {
+    render(<Invoice variant="pills" />);
+    for (const t of screen.getAllByRole('tab')) {
+      expect(t.className).toContain('rounded-full');
+      expect(t.className).toContain('data-selected:bg-primary');
+    }
+    expect(screen.getByRole('tablist').className).not.toContain('border-b');
+  });
+
+  it('enclosed: folder tabs, and the panel becomes the bordered box', () => {
+    render(<Invoice variant="enclosed" />);
+    expect(tab('Details').className).toContain('rounded-t-md');
+    const panel = screen.getByRole('tabpanel');
+    expect(panel.className).toContain('border-t-0');
+    expect(panel.className).toContain('p-4');
+  });
+
+  it('size sm and fullWidth', () => {
+    render(<Invoice size="sm" fullWidth />);
+    for (const t of screen.getAllByRole('tab')) {
+      expect(t.className).toContain('text-xs');
+      expect(t.className).toContain('flex-1');
+    }
+  });
+
+  it('icon is decoration; count is read as "Lines, 12"', () => {
+    render(
+      <Tabs>
+        <TabList aria-label="Invoice sections">
+          <Tab id="details" icon={<svg data-testid="icon" />}>
+            Details
+          </Tab>
+          <Tab id="lines" count={12}>
+            Lines
+          </Tab>
+        </TabList>
+        <TabPanel id="details">a</TabPanel>
+        <TabPanel id="lines">b</TabPanel>
+      </Tabs>,
+    );
+    expect(
+      screen.getByTestId('icon').parentElement?.getAttribute('aria-hidden'),
+    ).toBe('true');
+    expect(tab('Details')).toBeTruthy();
+    expect(tab('Lines, 12')).toBeTruthy();
+  });
+
+  it('keyboard is the same in every variant', () => {
+    for (const variant of ['underline', 'pills', 'enclosed'] as const) {
+      const { unmount } = render(<Invoice variant={variant} />);
+      act(() => tab('Details').focus());
+      press('ArrowRight');
+      expect(tab('Lines').getAttribute('aria-selected')).toBe('true');
+      unmount();
+    }
   });
 });
