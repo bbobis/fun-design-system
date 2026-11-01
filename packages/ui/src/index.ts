@@ -34,6 +34,7 @@ export * from './components/search-field';
 export * from './components/segmented-control';
 export * from './components/select';
 export * from './components/skeleton';
+export * from './components/slider';
 export * from './components/stepper';
 export * from './components/switch';
 export * from './components/tabs';
