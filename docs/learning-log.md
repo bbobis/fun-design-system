@@ -614,3 +614,10 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Remember: a variant can change more than one part.** `enclosed` changes the tabs *and* the panel (it becomes the bordered box the selected tab opens into). That's why the look lives on the root and not on each Tab.
 - **Gotcha (seen in the screenshot):** the count pill turned white inside *every* selected tab, so it vanished in underline/enclosed. Now only the filled `pills` tab swaps it (`in-data-selected:bg-bg`, Tailwind v4's `in-*` = "inside an ancestor with …").
 - Docs: https://react.dev/reference/react/useContext
+
+## 2026-11-01 — Badge: styles (soft, solid, outline, dot, sizes, icons)
+- **Built:** new optional props on `Badge`: `variant` (`soft` default / `solid` / `outline`), `dot`, `size` (sm / md) and `icon`. The default look is unchanged; Chromium shows the same computed colors as before.
+- **Remember (the prediction): outline text uses the *soft-text* token (`on-*-soft`), not the strong tone color.** The `on-*-soft` tokens are already tuned to contrast with the page in both themes: dark red on white, light pink on near-black. The strong `danger` red would be fine in light mode but too dark on the dark background. axe checked all 15 combinations × 2 themes: 0 findings.
+- **Remember: CSS variables turn a matrix into a sum.** Each `tone` only *names* its colors (`[--badge-soft:var(--color-danger-soft)]` …), and each `variant` says which variable paints what (`bg-(--badge-solid) text-(--badge-on-solid)`). 5 tones + 3 variants = 8 entries, instead of 15 `compoundVariants`. Adding a tone later costs one line. The CSS variables are set by Tailwind classes, not `style`, so it fits the no-inline-styles rule.
+- **Gotcha:** on a `solid` badge a tone-colored dot would vanish into the fill, so there it uses `bg-current` (the text color).
+- Docs: https://tailwindcss.com/docs/adding-custom-styles#using-arbitrary-properties
