@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
+import { useEffect } from 'react';
 import { Button } from '../button';
 import { toast, ToastRegion } from './toast';
 
@@ -7,12 +8,17 @@ const meta = {
   component: ToastRegion,
   tags: ['autodocs'],
   parameters: { layout: 'padded' },
-  // The region is rendered once per app; here, once per story.
+  args: { variant: 'bar', size: 'md' },
+  argTypes: {
+    variant: { control: 'radio', options: ['bar', 'soft', 'outline', 'solid'] },
+    size: { control: 'radio', options: ['sm', 'md'] },
+  },
+  // The region is rendered once per app; here, once per story, with the story's args.
   decorators: [
-    (Story) => (
+    (Story, { args }) => (
       <>
         <Story />
-        <ToastRegion />
+        <ToastRegion {...args} />
       </>
     ),
   ],
@@ -77,4 +83,54 @@ export const Tones: Story = {
       </Button>
     </div>
   ),
+};
+
+/**
+ * Shows four toasts right away (the region shows at most 4) and closes them when you
+ * leave the story. Info looks like success here; the Tones story has every tone.
+ */
+function AllTones() {
+  useEffect(() => {
+    const keys = [
+      toast.show({ title: 'Draft saved', tone: 'neutral' }, { timeout: null }),
+      toast.success('Invoice sent', {}, { timeout: null }),
+      toast.show(
+        {
+          title: 'Deleted 3 invoices',
+          tone: 'warning',
+          action: { label: 'Undo', onAction: () => undefined },
+        },
+        { timeout: null },
+      ),
+      toast.danger('Couldn’t save', {
+        description: 'The server didn’t respond.',
+      }),
+    ];
+    return () => keys.forEach((k) => toast.dismiss(k));
+  }, []);
+  return (
+    <p className="text-sm text-fg-muted">
+      The toasts are in the bottom-right corner. Press F6 to jump to them.
+    </p>
+  );
+}
+
+/** `variant` on `<ToastRegion>`: every toast follows it; each keeps its own tone. */
+export const VariantBar: Story = { render: () => <AllTones /> };
+export const VariantSoft: Story = {
+  args: { variant: 'soft' },
+  render: () => <AllTones />,
+};
+export const VariantOutline: Story = {
+  args: { variant: 'outline' },
+  render: () => <AllTones />,
+};
+export const VariantSolid: Story = {
+  args: { variant: 'solid' },
+  render: () => <AllTones />,
+};
+/** `size="sm"`: tighter padding and smaller text. */
+export const SizeSmall: Story = {
+  args: { variant: 'soft', size: 'sm' },
+  render: () => <AllTones />,
 };

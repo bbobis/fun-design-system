@@ -664,3 +664,10 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Remember: refactors that only move classes are proven by unchanged tests.** All the old tests passed untouched. The new tests only cover the new prop.
 - **Known, unchanged:** the disabled MultiCombobox tag contrast finding (4.43:1) from the last PR is still there. It's on `main`, and WCAG 1.4.3 exempts inactive controls.
 - Docs: https://martinfowler.com/bliki/ContractTest.html
+
+## 2026-11-01 — Toast: styles (bar, soft, outline, solid, small) + region focus ring
+- **Built:** `<ToastRegion variant size>`: `bar` (default, today's white card + coloured bar), `soft`, `outline` and `solid` (matching Alert, using the same CSS-variable recipe), and `size="sm"`. On a coloured fill, the description, the action's underline and the × use `text-current`. Muted grey and the yellow link underline would lose contrast on those fills. The `toast.*` API and all behaviour are unchanged.
+- **Remember (the prediction): `variant` belongs on the region, not on each `toast.*()` call.** The code that *sends* a toast (an API error handler, a save button) should only say *what happened* (`tone`, `title`). The app shell decides how notifications *look*, once. It's content vs presentation, like a logger call (`log.warn(...)`) not choosing the log file format. It also means two toasts on screen can never clash in style.
+- **Fixed along the way:** F6 moves focus to the toast *region*, which had `outline-hidden`, so keyboard users saw nothing (WCAG 2.4.7). It's on `main` too; I found it while taking the keyboard screenshot. The region now shows the standard ring, and a test covers it.
+- **Gotcha:** the region shows at most 4 toasts (`maxVisibleToasts`), so a story firing 5 hid the oldest. And a loose regex in my edit script matched the wrong `toast.info(...)` and broke the Tones story: restore with `git checkout -- <file>` and re-apply with exact text instead.
+- Docs: https://react-spectrum.adobe.com/react-aria/Toast.html

@@ -96,3 +96,78 @@ describe('Toast', () => {
     await waitFor(() => expect(screen.queryByText('Uploading…')).toBeNull());
   });
 });
+
+describe('Toast styles', () => {
+  const toastEl = async (title: string) =>
+    (await screen.findByText(title)).closest<HTMLElement>(
+      '[role="alertdialog"]',
+    );
+
+  it('bar is the default: a white card with a coloured bar (unchanged)', async () => {
+    render(<ToastRegion />);
+    act(() => void track(toast.success('Saved')));
+    const el = await toastEl('Saved');
+    expect(el?.className).toContain('bg-bg');
+    expect(el?.querySelector('span[aria-hidden].w-1')).toBeTruthy();
+  });
+
+  it('variant is set once on the region and applies to every toast (the prediction)', async () => {
+    render(<ToastRegion variant="solid" />);
+    act(() => {
+      track(toast.success('One'));
+      track(toast.danger('Two'));
+    });
+    for (const t of ['One', 'Two']) {
+      const el = await toastEl(t);
+      expect(el?.className).toContain('bg-(--toast-solid)');
+      expect(el?.querySelector('span.w-1')).toBeNull(); // no bar
+    }
+    // Each keeps its own tone's colors.
+    expect((await toastEl('Two'))?.className).toContain(
+      '--toast-solid:var(--color-danger)',
+    );
+  });
+
+  it('on a coloured fill, description, action and × follow the toast text colour', async () => {
+    render(<ToastRegion variant="soft" />);
+    act(
+      () =>
+        void track(
+          toast.show({
+            title: 'Deleted 3 rows',
+            description: 'From the March batch.',
+            tone: 'warning',
+            action: { label: 'Undo', onAction: () => undefined },
+          }),
+        ),
+    );
+    await screen.findByText('Deleted 3 rows');
+    expect(screen.getByText('From the March batch.').className).toContain(
+      'text-current',
+    );
+    expect(screen.getByRole('button', { name: 'Undo' }).className).toContain(
+      'decoration-current',
+    );
+    expect(screen.getByRole('button', { name: 'Close' }).className).toContain(
+      'text-current',
+    );
+  });
+
+  it('size sm is tighter; the tone is still said in words', async () => {
+    render(<ToastRegion size="sm" variant="outline" />);
+    act(() => void track(toast.warning('Stale rates')));
+    const el = await toastEl('Stale rates');
+    expect(el?.className).toContain('p-2');
+    expect(el?.className).toContain('border-(--toast-strong)');
+    expect(el?.textContent).toContain('Warning: Stale rates');
+  });
+});
+
+it('the region shows a focus ring when F6 lands on it (WCAG 2.4.7)', () => {
+  const { container } = render(<ToastRegion />);
+  act(() => void track(toast.success('Saved')));
+  const region = document.querySelector('[role="region"]') ?? container;
+  expect((region as HTMLElement).className).toContain(
+    'data-focus-visible:outline-focus-ring',
+  );
+});
