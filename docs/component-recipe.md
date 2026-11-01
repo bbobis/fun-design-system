@@ -98,6 +98,9 @@ src/index.ts          export * from './components/<name>'
       React Aria's `CalendarDate`. A `Date` is a moment, so it can be a different day in
       another time zone; a string is a calendar day and survives JSON and forms as is.
       Convert to `CalendarDate` only inside the component (`parseDate`).
+    - App-wide React Aria providers get a thin wrapper of ours too: apps wrap their app
+      in our `RouterProvider` (Link, Breadcrumbs, SideNavItem and Menu links then use
+      their router), never React Aria's.
 18. **Popups inside a composite (grid cell editors).** When a React Aria popup lives
     inside a component that has its own keyboard model (the DataGrid):
     - Read the value from a **handle** (`getValue()`), never from an input's DOM text.

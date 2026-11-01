@@ -80,7 +80,7 @@ export type MenuItemProps = {
   onAction?: () => void;
   /**
    * Makes the item a link (`<a>`): choosing it navigates. Works with a client-side
-   * router through React Aria's `RouterProvider`, like our other links.
+   * router through our `RouterProvider`, like our other links.
    */
   href?: string;
   /** `danger` for destructive actions (Delete). Red text, not a red background. */
