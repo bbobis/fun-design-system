@@ -596,3 +596,14 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Gotcha:** accessible-name computation trims a leading space inside an element, so `<span> (opens…)</span>` came out as "WAI guidelines(opens…". The hidden text now starts with a comma.
 - **Remember: a required prop stops a mix-up at compile time.** `href` is required, so `<Link>Save</Link>` doesn't compile; an action is a Button. No `disabled` either: a link that goes nowhere should be plain text.
 - **Remember: Provider pattern for the router.** `RouterProvider` puts `navigate` in React context once. Every React Aria link below it calls your router for app paths, but leaves other sites, `target="_blank"` and Ctrl/⌘-clicks to the browser. It's the same idea as Spring injecting one bean everywhere instead of passing it down.
+
+## 2026-11-01 — Breadcrumbs: styles (separators, contained, steps, icons, sizes)
+- **Built:** new optional props on the existing `Breadcrumbs`, with the default look unchanged:
+  - `separator` (chevron / slash / arrow)
+  - `variant` (`plain` / `contained` rounded bar / `steps` arrow-shaped segments)
+  - `size` (sm / md)
+  - per item: `icon`, and `iconOnly` (the label is hidden on screen but stays the link's name)
+- **Remember (the prediction): `clip-path` cuts off the focus ring too.** It clips *everything* the element paints outside its shape, outlines included. So the arrow shape is a separate `aria-hidden` `<span>` *behind* the link (`absolute inset-0 -z-10`, with `isolate` on the `<nav>` so `-z-10` stays inside it). The link itself is never clipped, and its ring is whole (the ring audit is clean). The RTL polygons are mirrored with `rtl:[clip-path:…]`.
+- **Remember: variants, not new components.** A different *look* for the same pattern and the same ARIA is a variant (recipe rule 2). Separate `StepBreadcrumbs` / `PillBreadcrumbs` components would copy the collapse logic, the `aria-current` handling and the router support, and then drift apart. cva `compoundVariants` handle combinations like "steps + sm = h-7".
+- **Gotcha:** two old tests used `getByText('INV-2041')` and expected the *link*. The label now sits in its own span (needed for `iconOnly`), so they found the span. The behaviour didn't change; the tests now look up the link element. Query by role where possible: it doesn't break when the markup inside the element changes.
+- Docs: https://developer.mozilla.org/en-US/docs/Web/CSS/clip-path
