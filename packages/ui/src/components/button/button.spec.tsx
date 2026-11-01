@@ -94,3 +94,71 @@ describe('Button', () => {
     expect(ref.current).toBeInstanceOf(HTMLButtonElement);
   });
 });
+
+describe('Button styles', () => {
+  const Icon = () => <svg data-testid="icon" />;
+
+  it('intent outline: a border, no fill', () => {
+    render(<Button intent="outline">Export</Button>);
+    const c = screen.getByRole('button').className;
+    expect(c).toContain('border-border-strong');
+    expect(c).toContain('bg-transparent');
+  });
+
+  it('shape pill is fully round; square is as wide as it is tall', () => {
+    const { rerender } = render(<Button shape="pill">Filter</Button>);
+    expect(screen.getByRole('button').className).toContain('rounded-full');
+    rerender(
+      <Button
+        shape="square"
+        size="sm"
+        aria-label="Delete invoice"
+        startIcon={<Icon />}
+      />,
+    );
+    const square = screen.getByRole('button', { name: 'Delete invoice' });
+    expect(square.className).toContain('w-8');
+    expect(square.className).toContain('h-8');
+  });
+
+  it('square requires aria-label at compile time (the prediction)', () => {
+    // @ts-expect-error an icon-only button must have an aria-label
+    void (<Button shape="square" startIcon={<Icon />} />);
+    // A normal button doesn't need one: its text is the name.
+    void (<Button shape="pill">Save</Button>);
+    expect(true).toBe(true);
+  });
+
+  it('fullWidth stretches to the container', () => {
+    render(<Button fullWidth>Continue</Button>);
+    expect(screen.getByRole('button').className).toContain('w-full');
+  });
+
+  it('icons are decoration: the name is just the label', () => {
+    render(
+      <Button startIcon={<Icon />} endIcon={<Icon />}>
+        Next
+      </Button>,
+    );
+    const button = screen.getByRole('button', { name: 'Next' });
+    const wrappers = button.querySelectorAll('[aria-hidden="true"]');
+    expect(wrappers).toHaveLength(2);
+  });
+
+  it('loading: the spinner takes the start icon’s place, the end icon stays', () => {
+    render(
+      <Button
+        loading
+        startIcon={<svg data-testid="start" />}
+        endIcon={<svg data-testid="end" />}
+      >
+        Save
+      </Button>,
+    );
+    expect(screen.queryByTestId('start')).toBeNull();
+    expect(screen.getByTestId('end')).toBeTruthy();
+    expect(
+      screen.getByRole('button').querySelector('.animate-spin'),
+    ).toBeTruthy();
+  });
+});
