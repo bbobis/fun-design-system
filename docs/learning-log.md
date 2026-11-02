@@ -758,3 +758,9 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Remember: the row's name *is* `textValue`.** React Aria names a GridList row from `textValue` alone, so we put in it what a screen reader should say: "Ana Ruiz, INV-1042 paid, 9:41 AM, unread". "unread" goes **last**, because typing a letter jumps by the start of that name and people type the sender's initial. Chromium's tree confirms the name.
 - **Remember: the open row is shown, not announced.** The open message gets a bar and a fill. The Mail page (part 2) decides how to announce it, since it owns the reading pane.
 - Docs: https://react-spectrum.adobe.com/react-aria/GridList.html#selection-behavior
+## 2026-11-02 — Pipeline Map step 1: data types + pure geometry
+- **Built:** `pipeline-model.ts` (the `PipelineNetwork` types: facilities, segments, batches, tanks) and `pipeline-geometry.ts` with `segmentPath`, `strokeWidthFor` and `batchOffsets`, plus 13 unit tests. No React yet; only the types are exported.
+- **Remember (the prediction): data order and drawing order can disagree.** Batches arrive downstream-first (oldest first), but a path's offset 0 is its `from` end. So `batches[0]` sits at the **far** end: the walk starts at 1 and moves upstream. 500/300/200 m³ → A at 0.5–1, B at 0.2–0.5, C at 0–0.2.
+- **Remember: pure functions first, components second.** Geometry with no React is tested in milliseconds with plain inputs. The components in steps 2–5 just call these and draw.
+- **Remember: return `null`, don't guess.** A segment pointing at a missing facility gives `null` instead of a line to (0, 0), so the map can skip it visibly instead of drawing nonsense.
+- Docs: https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Attribute/d
