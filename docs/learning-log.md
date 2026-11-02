@@ -741,3 +741,13 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Remember: shape as well as color.** The current dot in `dots` has a ring around it, so it doesn't look like the done dots in any color scheme (WCAG 1.4.1). The words ", completed" and "current step" are still there for screen readers.
 - **Gotcha (lint):** `act(() => fireEvent.click(x))` returns the click's result, so act's return type looks like a promise and `no-floating-promises` fails. Use a block body instead: `act(() => { fireEvent.click(x); })`.
 - Docs: https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Guides/Live_regions
+
+## 2026-11-02 — EmptyState / Skeleton: tones, boxes, sizes, alignment, wave, presets
+- **Built:**
+  - EmptyState: `tone` (colors the icon circle), `variant` (`plain`, `bordered`, `card`), `size="large"` and `align="start"`. Boxed versions fill their space; the description stays readable at `max-w-md`.
+  - Skeleton: `animation` (`pulse`, `wave`, `none`) plus two presets, `SkeletonText` (n lines, the last one shorter) and `SkeletonMedia` (avatar or thumbnail plus two lines).
+  - Defaults are unchanged.
+- **Remember (the prediction): with "reduce motion" on, the shapes stay and only the movement stops.** A still gray block still says "something is loading here", so it doesn't vanish and isn't frozen mid-sweep. All movement is `motion-safe:`. Checked in Chromium with reduced motion emulated: the animation name is `none` for every block.
+- **Remember: `motion-safe:` over `motion-reduce:animate-none`.** I moved Skeleton's pulse to `motion-safe:animate-pulse`; the result is the same and it now follows the recipe's motion rule. The old test asserted the old class, so I updated it to check the behavior: animated only when motion is OK, never unconditionally.
+- **Remember: a `wave` is just a moving background.** A gradient twice the element's width (`bg-size-[200%_100%]`), with `background-position` animated from 100% to −100%. It's one keyframe in `@theme`, reversed in right-to-left.
+- Docs: https://developer.mozilla.org/en-US/docs/Web/CSS/@media/prefers-reduced-motion

@@ -14,7 +14,11 @@ describe('Skeleton', () => {
       <Skeleton shape="circle" className="size-8" />,
     );
     const el = container.firstElementChild as HTMLElement;
-    expect(el.className).toContain('motion-reduce:animate-none');
+    // Animated only when motion is OK (motion-safe:), never unconditionally. Same
+    // result as the old animate-pulse + motion-reduce:animate-none, in the form the
+    // recipe's motion rule asks for.
+    expect(el.className).toContain('motion-safe:animate-pulse');
+    expect(el.className.split(' ')).not.toContain('animate-pulse');
     expect(el.className).toContain('rounded-full');
     expect(el.className).toContain('size-8');
   });

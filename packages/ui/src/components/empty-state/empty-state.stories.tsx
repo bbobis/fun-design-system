@@ -81,6 +81,21 @@ function InboxIcon() {
     </Svg>
   );
 }
+function CloudOffIcon() {
+  return (
+    <Svg>
+      <path d="M7 18h10a4 4 0 0 0 .5-7.97A6 6 0 0 0 6.2 9.1 4.5 4.5 0 0 0 7 18zM4 4l16 16" />
+    </Svg>
+  );
+}
+function CheckIcon() {
+  return (
+    <Svg>
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="m8.5 12.5 2.5 2.5 4.5-5" />
+    </Svg>
+  );
+}
 function SearchIcon() {
   return (
     <Svg>
@@ -89,3 +104,86 @@ function SearchIcon() {
     </Svg>
   );
 }
+
+/**
+ * `tone`: the icon circle's color. The title still says what happened; the color is
+ * extra.
+ */
+export const Tones: Story = {
+  render: () => (
+    <div className="grid gap-4 sm:grid-cols-2">
+      <EmptyState
+        size="compact"
+        variant="card"
+        tone="danger"
+        headingLevel={3}
+        icon={<CloudOffIcon />}
+        title="Couldn't load invoices"
+        description="The server didn't answer. Your data is safe."
+        action={
+          <Button size="sm" intent="secondary">
+            Try again
+          </Button>
+        }
+      />
+      <EmptyState
+        size="compact"
+        variant="card"
+        tone="success"
+        headingLevel={3}
+        icon={<CheckIcon />}
+        title="All caught up"
+        description="No overdue invoices."
+      />
+    </div>
+  ),
+};
+
+/** `variant`: `plain` (default), `bordered` (dashed box) and `card` (soft panel). */
+export const Variants: Story = {
+  render: () => (
+    <div className="grid gap-4 sm:grid-cols-3">
+      {(['plain', 'bordered', 'card'] as const).map((variant) => (
+        <EmptyState
+          key={variant}
+          size="compact"
+          variant={variant}
+          headingLevel={3}
+          icon={<InboxIcon />}
+          title={`variant="${variant}"`}
+          description="Invoices you create show up here."
+          action={<Button size="sm">Create invoice</Button>}
+        />
+      ))}
+    </div>
+  ),
+};
+
+/** `size="large"` for a whole empty page; `align="start"` for a side panel. */
+export const LargeAndStart: Story = {
+  render: () => (
+    <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
+      <EmptyState
+        size="large"
+        variant="bordered"
+        headingLevel={2}
+        icon={<InboxIcon />}
+        title="Welcome! Create your first invoice"
+        description="Add a customer, list what you charge for, and send it in a minute."
+        action={<Button>Create invoice</Button>}
+      />
+      <EmptyState
+        size="compact"
+        align="start"
+        headingLevel={3}
+        title="No notes"
+        description="Notes you add to this customer show up here."
+        action={
+          <Button size="sm" intent="secondary">
+            Add note
+          </Button>
+        }
+      />
+    </div>
+  ),
+};
