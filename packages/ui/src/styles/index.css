@@ -52,8 +52,9 @@
   }
   @keyframes drawer-slide {
     from {
-      /* --drawer-from is -100% (left-to-right) or 100% (right-to-left). */
-      transform: translateX(var(--drawer-from, -100%));
+      /* The panel sets one of these to ±100% for its edge (flipped in right-to-left);
+       * the other stays 0, so the same keyframes slide along either axis. */
+      transform: translate(var(--drawer-x, 0), var(--drawer-y, 0));
     }
   }
 }
