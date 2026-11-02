@@ -692,3 +692,10 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Remember: context reaches React Aria collection items.** `Menu` puts `MenuSizeContext.Provider` around `AriaMenu`, and the items still read it, even though React Aria renders them twice (once to build the collection, once for real). Items outside a Menu (CommandPalette) get the context default, `md`.
 - **Remember: `padding="none"` moves the job of the focus ring.** The body scrolls, so it clips anything outside it. Rows inside must draw their ring inward (`focus-visible:-outline-offset-2`).
 - Docs: https://react-spectrum.adobe.com/react-aria/Menu.html#content
+
+## 2026-11-02 — TagGroup / SegmentedControl / ToggleGroup: tones, pills, sizes, primary, full width
+- **Built:** a `TagItem` can now have a `tone` (info, success, warning, danger) and an `icon`. `TagGroup` has `shape="pill"`. `SegmentedControl` and `ToggleGroup` have `size="lg"`, `shape="pill"`, `variant="primary"` and `fullWidth`, all from the shared `segment-parts.tsx`. Defaults are unchanged.
+- **Remember (the prediction): fill color alone isn't enough.** WCAG 1.4.11 asks for 3:1 contrast between a control's state and what's around it. The yellow fill on the light gray track is well under 3:1, so the `ring-border-strong` stays. It's what makes the choice visible to someone who can't see the yellow well. A test checks the ring is still there with `variant="primary"`.
+- **Remember: a tone is a set of CSS variables.** Each tone sets four variables: `--tag-bg`, `--tag-fg`, `--tag-line` and `--tag-muted`. The chip paints with them, and the ✕ reads `--tag-muted`. That keeps the ✕ dark enough on a tinted fill without a separate rule for every tone × part pair. It's the same approach as Badge and Alert.
+- **Found, not fixed (already on main):** axe flags `aria-orientation` on the ToggleGroup in the Toolbar story (`aria-allowed-attr`). React Aria sets it on a role that doesn't allow it. That's a separate follow-up.
+- Docs: https://www.w3.org/WAI/WCAG22/Understanding/non-text-contrast.html

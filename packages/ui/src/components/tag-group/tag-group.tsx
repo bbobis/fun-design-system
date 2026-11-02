@@ -18,7 +18,16 @@ export type TagItem = {
   label: string;
   /** Can't be removed or selected. */
   disabled?: boolean;
+  /**
+   * Color for a status tag ("Overdue" in `danger`). The label must still say the
+   * status: color is extra. @default 'neutral'
+   */
+  tone?: TagTone;
+  /** A small icon (or avatar) before the label. Decorative: hidden from screen readers. */
+  icon?: ReactNode;
 };
+
+export type TagTone = 'neutral' | 'info' | 'success' | 'warning' | 'danger';
 
 export type TagGroupProps<T extends TagItem> = {
   /** What the chips are ("Active filters"). Names the group. Required. */
@@ -51,6 +60,8 @@ export type TagGroupProps<T extends TagItem> = {
   emptyText?: ReactNode;
   /** @default 'sm' */
   size?: 'sm' | 'md';
+  /** `pill` makes the chips fully round. @default 'rounded' */
+  shape?: 'rounded' | 'pill';
   className?: string;
 };
 
@@ -82,6 +93,7 @@ export function TagGroup<T extends TagItem>({
   onSelectionChange,
   emptyText = 'None',
   size = 'sm',
+  shape = 'rounded',
   className,
 }: TagGroupProps<T>) {
   const ids = (keys: Iterable<Key>) => [...keys].map(String);
@@ -129,6 +141,8 @@ export function TagGroup<T extends TagItem>({
             textValue={item.label}
             className={tagVariants({
               size,
+              shape,
+              tone: item.tone,
               interactive: selectable,
               removable: Boolean(onRemove),
             })}
@@ -138,6 +152,15 @@ export function TagGroup<T extends TagItem>({
                 {/* A ✓ as well as the tint: selection must not be shown by color alone. */}
                 {isSelected && (
                   <CheckIcon className="-ms-0.5 me-0.5 size-3.5 shrink-0" />
+                )}
+                {item.icon && (
+                  <span
+                    aria-hidden="true"
+                    data-tag-icon=""
+                    className="-ms-0.5 me-0.5 flex shrink-0 *:size-3.5"
+                  >
+                    {item.icon}
+                  </span>
                 )}
                 <span className="truncate">{item.label}</span>
                 {allowsRemoving && <TagRemoveButton />}

@@ -24,7 +24,16 @@ export type SegmentedControlProps = {
    */
   onChange?: (id: string) => void;
   /** @default 'md' */
-  size?: 'sm' | 'md';
+  size?: 'sm' | 'md' | 'lg';
+  /** `pill`: a round track and round segments. @default 'rounded' */
+  shape?: 'rounded' | 'pill';
+  /**
+   * How the chosen segment looks: `raised` (white, lifted) or `primary` (filled with
+   * the brand color, for a control that should stand out). @default 'raised'
+   */
+  variant?: 'raised' | 'primary';
+  /** Stretch to the container's width; the segments share it equally. @default false */
+  fullWidth?: boolean;
   /**
    * Show icons only. Each option's `label` becomes its accessible name and a tooltip.
    * Every option needs an `icon`.
@@ -56,6 +65,9 @@ export function SegmentedControl({
   defaultValue,
   onChange,
   size = 'md',
+  shape = 'rounded',
+  variant = 'raised',
+  fullWidth = false,
   iconOnly = false,
   disabled = false,
   className,
@@ -83,7 +95,7 @@ export function SegmentedControl({
     // The wrapper only redirects focus as it enters; it's not focusable itself.
     <div
       onFocusCapture={onFocusCapture}
-      className={cn('inline-flex', className)}
+      className={cn(fullWidth ? 'flex w-full' : 'inline-flex', className)}
     >
       <ToggleButtonGroup
         aria-label={ariaLabel}
@@ -101,13 +113,15 @@ export function SegmentedControl({
           onChange?.(String(next));
         }}
         isDisabled={disabled}
-        className={segmentTrack}
+        className={segmentTrack({ shape, fullWidth })}
       >
         {options.map((option) => (
           <SegmentButton
             key={option.id}
             option={option}
             size={size}
+            shape={shape}
+            variant={variant}
             iconOnly={iconOnly}
           />
         ))}

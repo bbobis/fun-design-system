@@ -1,1 +1,6 @@
-export { TagGroup, type TagGroupProps, type TagItem } from './tag-group';
+export {
+  TagGroup,
+  type TagGroupProps,
+  type TagItem,
+  type TagTone,
+} from './tag-group';

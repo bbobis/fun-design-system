@@ -96,3 +96,84 @@ export const WithError: Story = {
     error: 'Add at least one person from Finance.',
   },
 };
+
+const toneStatuses: TagItem[] = [
+  { id: 'draft', label: 'Draft' },
+  { id: 'sent', label: 'Sent', tone: 'info' },
+  { id: 'paid', label: 'Paid', tone: 'success' },
+  { id: 'due-soon', label: 'Due soon', tone: 'warning' },
+  { id: 'overdue', label: 'Overdue', tone: 'danger' },
+];
+
+/**
+ * `tone` per tag, for statuses. The label still says the status; color is extra. The
+ * ✕ takes the tone's text color, so it keeps its contrast on the tinted fill.
+ */
+export const Tones: Story = {
+  render: function Render() {
+    const [items, setItems] = useState(toneStatuses);
+    return (
+      <div className="flex flex-col gap-6">
+        <TagGroup label="Invoice statuses" items={toneStatuses} />
+        <TagGroup
+          label="Removable"
+          items={items}
+          size="md"
+          onRemove={(ids) =>
+            setItems((i) => i.filter((x) => !ids.includes(x.id)))
+          }
+        />
+      </div>
+    );
+  },
+};
+
+/** Story-only avatar: initials in a circle. Apps bring their own. */
+function Initials({ name }: { name: string }) {
+  return (
+    <span className="flex items-center justify-center rounded-full bg-primary text-[0.5rem] font-semibold text-on-primary">
+      {name
+        .split(' ')
+        .map((w) => w[0])
+        .join('')}
+    </span>
+  );
+}
+
+const recipients: TagItem[] = [
+  { id: 'ana', label: 'Ana Ruiz', icon: <Initials name="Ana Ruiz" /> },
+  { id: 'sam', label: 'Sam Lee', icon: <Initials name="Sam Lee" /> },
+  { id: 'kim', label: 'Kim Park', icon: <Initials name="Kim Park" /> },
+];
+
+/**
+ * `shape="pill"` + an `icon` per tag: recipients with initials. The initials are
+ * hidden from screen readers: the label already says the name.
+ */
+export const PillsWithIcons: Story = {
+  render: function Render() {
+    const [items, setItems] = useState(recipients);
+    return (
+      <TagGroup
+        label="Recipients"
+        items={items}
+        shape="pill"
+        size="md"
+        onRemove={(ids) =>
+          setItems((i) => i.filter((x) => !ids.includes(x.id)))
+        }
+      />
+    );
+  },
+};
+
+/** Selectable pills: a ✓ and the primary tint show what's on, whatever the tone. */
+export const SelectablePills: Story = {
+  args: {
+    label: 'Show',
+    items: toneStatuses,
+    shape: 'pill',
+    selectionMode: 'multiple',
+    defaultSelectedIds: ['paid', 'overdue'],
+  },
+};

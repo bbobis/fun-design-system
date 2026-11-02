@@ -20,7 +20,16 @@ export type ToggleGroupProps = {
   /** Called with every id that's on, after any toggle. Can be empty. */
   onChange?: (ids: string[]) => void;
   /** @default 'md' */
-  size?: 'sm' | 'md';
+  size?: 'sm' | 'md' | 'lg';
+  /** `pill`: a round track and round segments. @default 'rounded' */
+  shape?: 'rounded' | 'pill';
+  /**
+   * How the chosen segment looks: `raised` (white, lifted) or `primary` (filled with
+   * the brand color, for a control that should stand out). @default 'raised'
+   */
+  variant?: 'raised' | 'primary';
+  /** Stretch to the container's width; the segments share it equally. @default false */
+  fullWidth?: boolean;
   /** Icons only; each `label` becomes the button's name and its tooltip. */
   iconOnly?: boolean;
   disabled?: boolean;
@@ -48,6 +57,9 @@ export function ToggleGroup({
   defaultValue,
   onChange,
   size = 'md',
+  shape = 'rounded',
+  variant = 'raised',
+  fullWidth = false,
   iconOnly = false,
   disabled = false,
   className,
@@ -65,13 +77,15 @@ export function ToggleGroup({
         onChange?.(options.map((o) => o.id).filter((id) => keys.has(id)))
       }
       isDisabled={disabled}
-      className={cn(segmentTrack, className)}
+      className={cn(segmentTrack({ shape, fullWidth }), className)}
     >
       {options.map((option) => (
         <SegmentButton
           key={option.id}
           option={option}
           size={size}
+          shape={shape}
+          variant={variant}
           iconOnly={iconOnly}
         />
       ))}
