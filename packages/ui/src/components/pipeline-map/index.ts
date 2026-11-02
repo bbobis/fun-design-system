@@ -39,3 +39,8 @@ export {
   segmentLabel,
   type PipelineMapProps,
 } from './pipeline-map';
+export {
+  isArrowKey,
+  nextInDirection,
+  type ArrowKey,
+} from './pipeline-navigation';

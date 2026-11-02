@@ -1,0 +1,7 @@
+## 2026-11-02 — Pipeline Map step 6: keyboard navigation and tooltips
+
+- **Built:** the map is now **one Tab stop** (roving tabindex). Arrow keys walk the network with a pure, tested `nextInDirection()`: facility → the pipe leaving that way → the facility at its end, anything within 60° of the arrow. Home/End jump to the first/last facility. Every pipe and facility has a tooltip (our existing `Tooltip`): batches with volumes for pipes, each tank's level for facilities.
+- **Remember (the prediction): Tab leaves the map.** Inside a composite widget, Tab means "next thing on the page", arrows mean "next thing in here". One item has `tabIndex=0` (the last one you moved to, else the selection, else the first facility); every other item is `-1` — still focusable by script, just skipped by Tab. Shift+Tab back in lands where you left off.
+- **Remember: navigation is a pure function first.** "Which way is that pipe?" is just vectors: the first leg away from a facility, or from a pipe's midpoint to each end, compared with the arrow by cosine. Unit tests cover elbows and dead ends without rendering anything.
+- **Remember: a tooltip can carry the details for everyone.** React Aria points `aria-describedby` at the tooltip, so screen readers hear the batches and tank levels after the item's name. Tested.
+- Docs: https://www.w3.org/WAI/ARIA/apg/practices/keyboard-interface/#kbd_roving_tabindex
