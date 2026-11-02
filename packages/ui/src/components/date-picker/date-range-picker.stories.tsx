@@ -131,3 +131,32 @@ export const WithError: Story = {
 };
 
 export const Disabled: Story = { args: { disabled: true } };
+
+/**
+ * `visibleMonths={2}`: two months side by side, so a range that crosses a month end
+ * (28 Oct – 3 Nov) is one look, no paging. ‹ › move both months. Under 40rem wide
+ * you get one month.
+ */
+export const TwoMonths: Story = {
+  args: {
+    visibleMonths: 2,
+    defaultValue: { start: '2026-10-28', end: '2026-11-03' },
+  },
+};
+
+/** Two months plus quick picks, at `size="sm"` (compact days). */
+export const TwoMonthsWithPresets: Story = {
+  args: {
+    visibleMonths: 2,
+    size: 'sm',
+    defaultValue: { start: '2026-10-28', end: '2026-11-03' },
+  },
+  render: function Render(args) {
+    return (
+      <DateRangePicker
+        {...args}
+        presets={commonRangePresets(parseDate('2026-11-02'))}
+      />
+    );
+  },
+};

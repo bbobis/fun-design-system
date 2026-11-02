@@ -2,7 +2,7 @@ import type { VariantProps } from 'class-variance-authority';
 import { DatePicker as AriaDatePicker, Group } from 'react-aria-components';
 import { cn } from '../../utils/cn';
 import { useFieldContext } from '../field/field-context';
-import { CalendarPopover } from './calendar-popover';
+import { CalendarPopover, CalendarSizeContext } from './calendar-popover';
 import {
   CalendarButton,
   DatePieces,
@@ -41,6 +41,11 @@ export type DatePickerProps = VariantProps<typeof dateFieldVariants> & {
   'aria-label'?: string;
   'aria-labelledby'?: string;
   'aria-describedby'?: string;
+  /**
+   * Adds a "Today" button under the calendar: picks today and closes. Disabled when
+   * today is outside `min` / `max`. @default false
+   */
+  showToday?: boolean;
   /** Classes for the outer wrapper (width, margins). */
   className?: string;
 };
@@ -69,6 +74,7 @@ export function DatePicker({
   'aria-label': ariaLabel,
   'aria-labelledby': ariaLabelledBy,
   'aria-describedby': ariaDescribedBy,
+  showToday = false,
   className,
 }: DatePickerProps) {
   const field = useFieldContext();
@@ -106,7 +112,10 @@ export function DatePicker({
         <DatePieces className="flex-1" />
         <CalendarButton />
       </Group>
-      <CalendarPopover />
+      {/* The calendar opens at the field's size (sm field, compact calendar). */}
+      <CalendarSizeContext.Provider value={size ?? 'md'}>
+        <CalendarPopover showToday={showToday} min={min} max={max} />
+      </CalendarSizeContext.Provider>
     </AriaDatePicker>
   );
 }

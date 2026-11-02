@@ -1,4 +1,11 @@
-import { useContext, type ReactNode, type SVGProps } from 'react';
+import { getLocalTimeZone, today } from '@internationalized/date';
+import {
+  createContext,
+  useContext,
+  useSyncExternalStore,
+  type ReactNode,
+  type SVGProps,
+} from 'react';
 import {
   Button,
   Calendar,
@@ -8,6 +15,7 @@ import {
   CalendarGridHeader,
   CalendarHeaderCell,
   DateRangePickerStateContext,
+  DatePickerStateContext,
   Dialog,
   Heading,
   Popover,
@@ -18,19 +26,108 @@ import { popoverMotion } from '../../utils/motion';
 import { toCalendarRange } from './iso-date';
 import type { RangePreset } from './range-presets';
 
+export type CalendarSize = 'sm' | 'md' | 'lg';
+
+/**
+ * The field's size, handed down to its calendar so an `sm` field opens a compact
+ * calendar and an `lg` field a roomy one. The pickers set it; the DataGrid's cell
+ * editor doesn't, so it gets `md`. Context (not a prop) because the calendar parts
+ * are a few levels down, inside React Aria's Popover.
+ */
+export const CalendarSizeContext = createContext<CalendarSize>('md');
+
+/** Static class tables: Tailwind can only see class names written out in full. */
+const cellSize: Record<CalendarSize, string> = {
+  sm: 'size-8 text-xs',
+  md: 'size-9 text-sm',
+  lg: 'size-10 text-base',
+};
+const navSize: Record<CalendarSize, string> = {
+  sm: 'size-7',
+  md: 'size-8',
+  lg: 'size-9',
+};
+const headingSize: Record<CalendarSize, string> = {
+  sm: 'text-xs',
+  md: 'text-sm',
+  lg: 'text-base',
+};
+
 /**
  * The calendar dropdown shared by DatePicker and the DataGrid's date cell editor.
- * Like ComboboxPopover, it takes no props: it reads the value, min/max and open state
- * from the surrounding React Aria `DatePicker` (through context).
+ * It reads the value and open state from the surrounding React Aria `DatePicker`
+ * (through context). With `showToday`, a "Today" button sits under the days.
  */
-export function CalendarPopover() {
+export function CalendarPopover({
+  showToday = false,
+  min,
+  max,
+}: {
+  /** Adds a "Today" button that picks today and closes. */
+  showToday?: boolean;
+  /** Only used to disable "Today" when today is outside the range. */
+  min?: string;
+  max?: string;
+}) {
   return (
     <CalendarShell>
       <Calendar>
         <MonthHeader />
         <DayGrid range={false} />
       </Calendar>
+      {showToday && <TodayButton min={min} max={max} />}
     </CalendarShell>
+  );
+}
+
+/** Picks today and closes. Disabled when today is outside min / max. */
+function TodayButton({ min, max }: { min?: string; max?: string }) {
+  const state = useContext(DatePickerStateContext);
+  const size = useContext(CalendarSizeContext);
+  const now = today(getLocalTimeZone());
+  const iso = now.toString();
+  // ISO strings compare like dates.
+  const outside =
+    (min !== undefined && iso < min) || (max !== undefined && iso > max);
+  return (
+    <div className="mt-2 flex justify-end border-t border-border pt-2">
+      <Button
+        isDisabled={outside}
+        onPress={() => {
+          if (!state) return;
+          state.setValue(now);
+          state.setOpen(false);
+        }}
+        className={cn(
+          'rounded-md px-2.5 py-1 font-medium text-link outline-hidden hover:bg-surface',
+          headingSize[size],
+          'data-disabled:cursor-not-allowed data-disabled:opacity-40 data-disabled:hover:bg-transparent',
+          'data-focus-visible:outline-2 data-focus-visible:outline-solid data-focus-visible:outline-focus-ring',
+        )}
+      >
+        Today
+      </Button>
+    </div>
+  );
+}
+
+/** Two months side by side need ~36rem; below `sm` (40rem) we show one. */
+const WIDE_ENOUGH = '(min-width: 40rem)';
+
+/**
+ * True when the media query matches, and re-renders when that changes.
+ * `useSyncExternalStore` is React's hook for reading something that lives outside
+ * React (here, the browser's media queries). The server snapshot is `true`.
+ */
+function useMediaQuery(query: string) {
+  return useSyncExternalStore(
+    (onChange) => {
+      const list = window.matchMedia?.(query);
+      list?.addEventListener('change', onChange);
+      return () => list?.removeEventListener('change', onChange);
+    },
+    () => window.matchMedia?.(query).matches ?? true,
+    () => true,
   );
 }
 
@@ -43,20 +140,31 @@ export function RangeCalendarPopover({
   presets,
   min,
   max,
+  visibleMonths = 1,
 }: {
   presets?: readonly RangePreset[];
   min?: string;
   max?: string;
+  /** 2 = two months side by side (one on narrow screens). */
+  visibleMonths?: 1 | 2;
 }) {
+  const wide = useMediaQuery(WIDE_ENOUGH);
+  const months = wide ? visibleMonths : 1;
   return (
     <CalendarShell>
       <div className="flex gap-3">
         {presets && presets.length > 0 && (
           <PresetList presets={presets} min={min} max={max} />
         )}
-        <RangeCalendar>
+        {/* visibleDuration: how many months one "page" holds. ‹ › move a whole page. */}
+        <RangeCalendar visibleDuration={{ months }}>
           <MonthHeader />
-          <DayGrid range />
+          <div className="flex gap-4">
+            {Array.from({ length: months }, (_, i) => (
+              // offset: which month of the page this grid draws (0 = first).
+              <DayGrid key={i} range offset={i} />
+            ))}
+          </div>
         </RangeCalendar>
       </div>
     </CalendarShell>
@@ -137,23 +245,26 @@ function CalendarShell({ children }: { children: ReactNode }) {
 
 /** ‹ October 2026 ›. Works in both calendars: they share the slot names. */
 function MonthHeader() {
+  const size = useContext(CalendarSizeContext);
   return (
     <header className="mb-2 flex items-center justify-between gap-2">
-      <Button slot="previous" className={navButton}>
+      <Button slot="previous" className={cn(navButton, navSize[size])}>
         <ArrowIcon className="size-4 rotate-180" />
       </Button>
-      <Heading className="text-sm font-medium" />
-      <Button slot="next" className={navButton}>
+      <Heading className={cn('font-medium', headingSize[size])} />
+      <Button slot="next" className={cn(navButton, navSize[size])}>
         <ArrowIcon className="size-4" />
       </Button>
     </header>
   );
 }
 
-function DayGrid({ range }: { range: boolean }) {
+function DayGrid({ range, offset = 0 }: { range: boolean; offset?: number }) {
+  const size = useContext(CalendarSizeContext);
   return (
     // A range needs no gap between days, or the band between start and end breaks up.
     <CalendarGrid
+      offset={offset ? { months: offset } : undefined}
       className={cn(
         'border-separate',
         range
@@ -173,7 +284,8 @@ function DayGrid({ range }: { range: boolean }) {
           <CalendarCell
             date={date}
             className={cn(
-              'flex size-9 cursor-default items-center justify-center rounded-md text-sm tabular-nums outline-hidden',
+              'flex cursor-default items-center justify-center rounded-md tabular-nums outline-hidden',
+              cellSize[size],
               'hover:bg-surface data-outside-month:invisible',
               'data-today:font-semibold data-today:underline data-today:underline-offset-4',
               range
@@ -197,7 +309,7 @@ function DayGrid({ range }: { range: boolean }) {
 }
 
 const navButton =
-  'flex size-8 items-center justify-center rounded-md text-fg-muted outline-hidden hover:bg-surface hover:text-fg data-disabled:opacity-40 data-focus-visible:outline-2 data-focus-visible:outline-solid data-focus-visible:outline-focus-ring';
+  'flex items-center justify-center rounded-md text-fg-muted outline-hidden hover:bg-surface hover:text-fg data-disabled:opacity-40 data-focus-visible:outline-2 data-focus-visible:outline-solid data-focus-visible:outline-focus-ring';
 
 function ArrowIcon(props: SVGProps<SVGSVGElement>) {
   return (
