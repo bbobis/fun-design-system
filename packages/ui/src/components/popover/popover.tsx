@@ -101,6 +101,19 @@ export type PopoverProps = TriggerProps & {
    * @default 'md'
    */
   panelSize?: VariantProps<typeof panelVariants>['size'];
+  /**
+   * Space around the content. `sm` for a small panel of quick settings; `none` for
+   * content that runs edge to edge (a list with its own row padding, an image). The
+   * header and footer keep their padding.
+   * @default 'md'
+   */
+  padding?: 'none' | 'sm' | 'md';
+  /**
+   * A line under the header, like Dialog's `divided`. Helps when the content scrolls
+   * or runs edge to edge.
+   * @default false
+   */
+  divided?: boolean;
   /** A small arrow pointing at the trigger. It turns when the panel flips sides. @default false */
   arrow?: boolean;
   /** Where the panel opens, relative to the trigger. Flips if there's no room. @default 'bottom start' */
@@ -110,6 +123,38 @@ export type PopoverProps = TriggerProps & {
   /** Called when the panel opens or closes (trigger, Escape, a click outside, `close`). */
   onOpenChange?: (open: boolean) => void;
 };
+
+/**
+ * Space inside the header, body and footer, per `padding`.
+ * - `header`: a plain header has no bottom padding; the body's `afterHeader` is the gap.
+ * - `divided`: a header with a line under it gets equal padding top and bottom.
+ * - `none`: the body has no padding, so edge-to-edge content fills the panel. Focus
+ *   rings inside it must then sit inside their element (`-outline-offset-2`), or the
+ *   scrolling body clips them. The header and footer keep `md` spacing.
+ */
+const spacing = {
+  md: {
+    header: 'px-4 pt-4',
+    divided: 'px-4 py-3',
+    body: 'p-4',
+    afterHeader: 'pt-3',
+    footer: 'px-4 py-3',
+  },
+  sm: {
+    header: 'px-3 pt-3',
+    divided: 'px-3 py-2',
+    body: 'p-3',
+    afterHeader: 'pt-2',
+    footer: 'px-3 py-2',
+  },
+  none: {
+    header: 'px-4 pt-4',
+    divided: 'px-4 py-3',
+    body: 'p-0',
+    afterHeader: 'pt-3',
+    footer: 'px-4 py-3',
+  },
+} as const;
 
 const render = (content: Content, api: Close) =>
   typeof content === 'function' ? content(api) : content;
@@ -142,6 +187,8 @@ export function Popover({
   children,
   footer,
   panelSize,
+  padding = 'md',
+  divided = false,
   arrow = false,
   placement = 'bottom start',
   open,
@@ -150,6 +197,7 @@ export function Popover({
 }: PopoverProps) {
   const descriptionId = useId();
   const hasHeader = Boolean(title || description || closeButton);
+  const space = spacing[padding];
   return (
     <DialogTrigger isOpen={open} onOpenChange={onOpenChange}>
       {triggerProps.trigger ? (
@@ -192,7 +240,14 @@ export function Popover({
           {({ close }) => (
             <>
               {hasHeader && (
-                <header className="flex items-start gap-3 px-4 pt-4">
+                <header
+                  className={cn(
+                    'flex items-start gap-3',
+                    divided
+                      ? ['border-b border-border', space.divided]
+                      : space.header,
+                  )}
+                >
                   <div className="min-w-0 flex-1">
                     {title && (
                       // slot="title" names the dialog. Without a title, React Aria
@@ -213,13 +268,20 @@ export function Popover({
                   {closeButton && <DialogCloseButton />}
                 </header>
               )}
-              {/* The body scrolls; header and footer stay. p-4 leaves room for focus
-                  rings, which overflow would otherwise clip (recipe rule 26). */}
-              <DialogBody className={cn('p-4', hasHeader && 'pt-3')}>
+              {/* The body scrolls; header and footer stay. Padding leaves room for
+                  focus rings, which overflow would otherwise clip (recipe rule 26). */}
+              <DialogBody
+                className={cn(
+                  space.body,
+                  hasHeader && !divided && space.afterHeader,
+                )}
+              >
                 {render(children, { close })}
               </DialogBody>
               {footer !== undefined && (
-                <DialogFooter className="border-t border-border px-4 py-3">
+                <DialogFooter
+                  className={cn('border-t border-border', space.footer)}
+                >
                   {render(footer, { close })}
                 </DialogFooter>
               )}
