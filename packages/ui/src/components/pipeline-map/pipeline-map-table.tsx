@@ -62,6 +62,14 @@ export type PipelineMapTableProps = Omit<
    * to the map's `onSelect` to keep the two in sync.
    */
   onSelect?: (id: string) => void;
+  /** Highlights this batch's lines (pass the map's `followedBatch`). */
+  followedBatch?: string | null;
+  /**
+   * When given, each batch becomes a toggle button that calls this with its name
+   * (or `null` to stop). Wire it to the map's `onFollowBatchChange`: it's the
+   * keyboard-friendly way to follow a batch, and lists every batch in one place.
+   */
+  onFollowBatch?: (name: string | null) => void;
 };
 
 /**
@@ -77,6 +85,8 @@ export function PipelineMapTable({
   network,
   selectedId = null,
   onSelect,
+  followedBatch = null,
+  onFollowBatch,
   className,
   ...props
 }: PipelineMapTableProps) {
@@ -133,11 +143,33 @@ export function PipelineMapTable({
                   <span className="text-fg-muted">None</span>
                 ) : (
                   <ul className="flex flex-col gap-0.5 tabular-nums">
-                    {s.batches.map((b) => (
-                      <li key={b.name}>
-                        {b.name} · {b.product} · {n(b.volume)} m³
-                      </li>
-                    ))}
+                    {s.batches.map((b) => {
+                      const text = `${b.name} · ${b.product} · ${n(b.volume)} m³`;
+                      const followed = b.name === followedBatch;
+                      return (
+                        <li key={b.name}>
+                          {onFollowBatch ? (
+                            <button
+                              type="button"
+                              aria-pressed={followed}
+                              onClick={() =>
+                                onFollowBatch(followed ? null : b.name)
+                              }
+                              className={cn(
+                                '-mx-1 cursor-pointer rounded-sm px-1 text-start tabular-nums hover:bg-surface',
+                                'focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-focus-ring',
+                                // Followed: wash + bold, so it isn't color alone.
+                                'aria-pressed:bg-primary/10 aria-pressed:font-semibold',
+                              )}
+                            >
+                              {text}
+                            </button>
+                          ) : (
+                            text
+                          )}
+                        </li>
+                      );
+                    })}
                   </ul>
                 )}
               </td>

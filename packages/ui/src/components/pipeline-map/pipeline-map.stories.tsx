@@ -7,6 +7,7 @@ import {
 } from './pipeline-map';
 import { Button } from '../button/button';
 import { MapLegend } from './map-legend';
+import { PipelineMapTable } from './pipeline-map-table';
 import type { MapFilter } from './pipeline-filter';
 import { DEMO_NETWORK, DEMO_PRODUCTS } from './pipeline-map.fixtures';
 
@@ -151,6 +152,37 @@ export const FilterWithLegend: Story = {
             products={DEMO_PRODUCTS}
             filter={filter}
             onFilterChange={setFilter}
+          />
+        </div>
+      );
+    }
+    return <Example />;
+  },
+};
+
+/**
+ * **Follow a batch.** B-1041 (SYN) straddles Station B: part of it is still in A-B,
+ * the front is already in B-C. Following it keeps both pipes bright and fades every
+ * other batch, even other SYN ones: follow is about one batch, not one product.
+ *
+ * Mouse: click a batch's band. Keyboard: focus a pipe and press `B` to step through
+ * its batches, or use the table, where every batch is a toggle button.
+ */
+export const FollowABatch: Story = {
+  render: (args) => {
+    function Example() {
+      const [batch, setBatch] = useState<string | null>('B-1041');
+      return (
+        <div className="flex flex-col gap-6">
+          <PipelineMap
+            {...args}
+            followedBatch={batch}
+            onFollowBatchChange={setBatch}
+          />
+          <PipelineMapTable
+            network={DEMO_NETWORK}
+            followedBatch={batch}
+            onFollowBatch={setBatch}
           />
         </div>
       );

@@ -263,16 +263,42 @@ const [filter, setFilter] = useState<MapFilter>({});
 - **Escape on the map doesn't clear a filter.** The legend owns it, so the user clears
   it where they set it.
 
-## 7. Keyboard and screen readers
+## 7. Follow a batch
 
-| Key           | Does                                                                                   |
-| ------------- | -------------------------------------------------------------------------------------- |
-| Tab           | enters the map (it is **one** Tab stop), then leaves it                                |
-| Arrow keys    | move along the network: facility → the pipe leaving that way → the facility at its end |
-| Home / End    | first / last facility                                                                  |
-| Enter / Space | select the focused item                                                                |
-| T             | traces the flow through the focused item (again to stop)                               |
-| Escape        | closes the tooltip if one is open, then clears the trace, then clears the selection    |
+A batch is identified by its `name` across the whole network. A batch crossing a
+station appears in two pipes, once in each, with the volume in each.
+
+```tsx
+const [batch, setBatch] = useState<string | null>(null);
+
+<PipelineMap … followedBatch={batch} onFollowBatchChange={setBatch} />
+<PipelineMapTable network={network} followedBatch={batch} onFollowBatch={setBatch} />
+```
+
+- **Bright:** the pipes holding that batch, and that batch in them. **Faded:** every
+  other pipe and every other batch, including other batches of the same product.
+- **Mouse:** click a batch's band (again to stop). The pipe gets selected too.
+- **Keyboard:** focus a pipe and press `B` to follow its first batch; `B` again moves
+  to the next, and after the last one it stops. In the table, every batch is a toggle
+  button.
+- **Screen readers** hear "Following B-1041, SYN: 96,000 m³ across 2 pipes.", and the
+  pipes holding it end their name with "holds B-1041".
+- **Use the same name in every pipe.** If your backend gives each part its own id,
+  map them to one name in `toNetwork()`, or the batch will look like two.
+- Combines with a trace and a filter by AND, like they do with each other.
+- `findBatch(network, name)` gives you the parts and the total, e.g. for a panel.
+
+## 8. Keyboard and screen readers
+
+| Key           | Does                                                                                        |
+| ------------- | ------------------------------------------------------------------------------------------- |
+| Tab           | enters the map (it is **one** Tab stop), then leaves it                                     |
+| Arrow keys    | move along the network: facility → the pipe leaving that way → the facility at its end      |
+| Home / End    | first / last facility                                                                       |
+| Enter / Space | select the focused item                                                                     |
+| T             | traces the flow through the focused item (again to stop)                                    |
+| B             | on a pipe: follows its next batch (stops after the last one)                                |
+| Escape        | closes the tooltip, then stops following a batch, then clears the trace, then the selection |
 
 - Hovering or focusing an item shows its details (batches, tank levels) in a tooltip.
   The same text is the item's screen-reader description.

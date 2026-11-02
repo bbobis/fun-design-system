@@ -530,4 +530,98 @@ describe('PipelineMap', () => {
       expect(live()).toBe('Filter off.');
     });
   });
+
+  describe('follow a batch', () => {
+    const dimmedSegments = (container: HTMLElement) =>
+      [...container.querySelectorAll('[data-segment-id][data-dimmed]')]
+        .map((el) => el.getAttribute('data-segment-id'))
+        .sort();
+    const dimmedBatches = (container: HTMLElement) =>
+      [...container.querySelectorAll('[data-batch][data-dimmed]')]
+        .map((el) => el.getAttribute('data-batch'))
+        .sort();
+    const live = () =>
+      document.querySelector('[aria-live="polite"]')?.textContent;
+
+    it('B on a pipe follows its first batch, across every pipe it spans', async () => {
+      const user = userEvent.setup();
+      const onFollowBatchChange = vi.fn();
+      const { container } = renderMap({ onFollowBatchChange });
+      await user.tab(); // Terminal A
+      await user.keyboard('{ArrowRight}'); // A-B
+      await user.keyboard('b');
+
+      expect(onFollowBatchChange).toHaveBeenCalledWith('B-1041');
+      // B-1041 is in A-B and B-C: those stay bright, the other pipes fade…
+      expect(dimmedSegments(container)).toEqual(['B-E', 'C-D', 'C-F']);
+      // …and inside them, every other batch fades (B-1042 in A-B, B-1039 in B-C).
+      expect(dimmedBatches(container)).toEqual(['B-1039', 'B-1042']);
+      expect(live()).toBe('Following B-1041, SYN: 96,000 m³ across 2 pipes.');
+      expect(
+        screen.getByRole('button', {
+          name: /^Station B to Station C.*, holds B-1041$/,
+        }),
+      ).toBeTruthy();
+    });
+
+    it('B again moves to the next batch, then stops following', async () => {
+      const user = userEvent.setup();
+      const { container } = renderMap();
+      await user.tab();
+      await user.keyboard('{ArrowRight}b'); // B-1041
+      await user.keyboard('b'); // B-1042
+      expect(dimmedSegments(container)).toEqual(['B-C', 'B-E', 'C-D', 'C-F']);
+      await user.keyboard('b'); // past the last: stop
+      expect(dimmedSegments(container)).toEqual([]);
+      expect(live()).toBe('Stopped following B-1042.');
+    });
+
+    it('B on a facility does nothing', async () => {
+      const user = userEvent.setup();
+      const onFollowBatchChange = vi.fn();
+      renderMap({ onFollowBatchChange });
+      await user.tab(); // Terminal A
+      await user.keyboard('b');
+      expect(onFollowBatchChange).not.toHaveBeenCalled();
+    });
+
+    it('clicking a batch follows it, and clicking it again stops', async () => {
+      const user = userEvent.setup();
+      const onFollowBatchChange = vi.fn();
+      const { container } = renderMap({ onFollowBatchChange });
+      const hit = () =>
+        container.querySelector(
+          '[data-segment-id="C-D"] [data-batch="B-1037"] [data-batch-hit]',
+        ) as Element;
+      await user.click(hit());
+      expect(onFollowBatchChange).toHaveBeenLastCalledWith('B-1037');
+      await user.click(hit());
+      expect(onFollowBatchChange).toHaveBeenLastCalledWith(null);
+    });
+
+    it('Escape: the followed batch first, then the trace, then the selection', async () => {
+      const user = userEvent.setup();
+      const onSelect = vi.fn();
+      const onTraceChange = vi.fn();
+      const onFollowBatchChange = vi.fn();
+      renderMap({
+        defaultSelectedId: 'D',
+        defaultTracedId: 'C',
+        defaultFollowedBatch: 'B-1037',
+        onSelect,
+        onTraceChange,
+        onFollowBatchChange,
+      });
+      await user.tab(); // Tank Farm D: tooltip opens
+      await user.keyboard('{Escape}'); // tooltip
+      await user.keyboard('{Escape}');
+      expect(onFollowBatchChange).toHaveBeenCalledWith(null);
+      expect(onTraceChange).not.toHaveBeenCalled();
+      await user.keyboard('{Escape}');
+      expect(onTraceChange).toHaveBeenCalledWith(null);
+      expect(onSelect).not.toHaveBeenCalled();
+      await user.keyboard('{Escape}');
+      expect(onSelect).toHaveBeenCalledWith(null);
+    });
+  });
 });
