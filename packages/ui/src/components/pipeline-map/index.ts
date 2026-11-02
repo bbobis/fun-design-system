@@ -17,3 +17,16 @@ export {
   type BatchTrainProps,
 } from './batch-train';
 export { toPathData } from './pipeline-geometry';
+export {
+  FacilityNode,
+  FACILITY_KIND_LABELS,
+  facilityLabel,
+  type FacilityNodeProps,
+} from './facility-node';
+export {
+  TankGauge,
+  tankFill,
+  tankGaugeLabel,
+  tankGaugeWidth,
+  type TankGaugeProps,
+} from './tank-gauge';
