@@ -82,4 +82,41 @@ describe('PipelineMapTable', () => {
     expect(root?.getAttribute('class')).toContain('mt-8');
     expect(root?.getAttribute('data-testid')).toBe('t');
   });
+
+  describe('follow a batch', () => {
+    it('batches are plain text unless onFollowBatch is given', () => {
+      render(<PipelineMapTable network={DEMO_NETWORK} />);
+      expect(screen.queryByRole('button', { name: /^B-1041/ })).toBeNull();
+    });
+
+    it('each part of a batch is a toggle; the followed one is pressed everywhere', async () => {
+      const user = userEvent.setup();
+      const onFollowBatch = vi.fn();
+      const { rerender } = render(
+        <PipelineMapTable
+          network={DEMO_NETWORK}
+          onFollowBatch={onFollowBatch}
+        />,
+      );
+      // B-1041 spans two pipes: one button in each row.
+      const parts = screen.getAllByRole('button', { name: /^B-1041/ });
+      expect(parts).toHaveLength(2);
+      await user.click(parts[0] as HTMLElement);
+      expect(onFollowBatch).toHaveBeenCalledWith('B-1041');
+
+      rerender(
+        <PipelineMapTable
+          network={DEMO_NETWORK}
+          followedBatch="B-1041"
+          onFollowBatch={onFollowBatch}
+        />,
+      );
+      for (const part of screen.getAllByRole('button', { name: /^B-1041/ }))
+        expect(part.getAttribute('aria-pressed')).toBe('true');
+      await user.click(
+        screen.getAllByRole('button', { name: /^B-1041/ })[1] as HTMLElement,
+      );
+      expect(onFollowBatch).toHaveBeenLastCalledWith(null); // pressed → stop
+    });
+  });
 });

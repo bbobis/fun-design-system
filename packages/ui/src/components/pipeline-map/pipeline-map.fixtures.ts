@@ -82,7 +82,9 @@ export const DEMO_NETWORK: PipelineNetwork = {
       status: 'restricted',
       batches: [
         { name: 'B-1039', product: 'SWT', volume: 28_000 },
-        { name: 'B-1040', product: 'SYN', volume: 44_000 },
+        // B-1041 straddles Station B: its front is here (upstream end of B-C, last
+        // in this downstream-first list), its tail is still in A-B (first there).
+        { name: 'B-1041', product: 'SYN', volume: 44_000 },
       ],
     },
     {

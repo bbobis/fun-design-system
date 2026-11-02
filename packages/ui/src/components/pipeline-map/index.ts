@@ -49,6 +49,12 @@ export {
   type ArrowKey,
 } from './pipeline-navigation';
 export {
+  batchSummary,
+  findBatch,
+  nextBatchInSegment,
+  type BatchLocation,
+} from './pipeline-batch';
+export {
   batchMatches,
   filterSummary,
   isFilterActive,

@@ -16,6 +16,12 @@ import { BatchTrain } from './batch-train';
 import { FacilityNode, facilityLabel } from './facility-node';
 import { PipeSegment } from './pipe-segment';
 import {
+  batchSummary,
+  findBatch,
+  nextBatchInSegment,
+  type BatchLocation,
+} from './pipeline-batch';
+import {
   batchMatches,
   filterSummary,
   isFilterActive,
@@ -33,6 +39,7 @@ import {
 import { tankFill } from './tank-gauge';
 import { segmentPoints, strokeWidthFor, toPathData } from './pipeline-geometry';
 import type {
+  Batch,
   Facility,
   PipelineNetwork,
   Point,
@@ -216,6 +223,10 @@ type MapContextValue = {
   trace: Trace | null;
   /** The legend filter. Pipes and batches that don't match are dimmed. */
   filter: MapFilter | undefined;
+  /** The followed batch, or `null`. Pipes without it, and every other batch, are dimmed. */
+  followed: BatchLocation | null;
+  /** Follows a batch by name (`null` stops). */
+  follow: (name: string | null) => void;
   /** The one item that is in the tab order (roving tabindex). */
   tabStopId: string | null;
   /** Remember the item the user moved to, so Tab comes back to it. */
@@ -287,6 +298,19 @@ export type PipelineMapProps = Omit<
    */
   filter?: MapFilter;
   /**
+   * The batch being followed, by name (controlled). Pipes it's in stay bright and
+   * every other batch fades, so you can see one batch across the stations it spans.
+   * `null` = none.
+   */
+  followedBatch?: string | null;
+  /** The starting followed batch when uncontrolled. */
+  defaultFollowedBatch?: string | null;
+  /**
+   * Called when the user follows a batch (click its band, or `B` on a pipe to cycle
+   * through that pipe's batches) or stops (the last `B`, a second click, or Escape).
+   */
+  onFollowBatchChange?: (name: string | null) => void;
+  /**
    * The layers to draw, in paint order. Defaults to pipes, then facilities on top.
    * SVG has no z-index: what comes later covers what came before.
    */
@@ -323,6 +347,9 @@ export function PipelineMap({
   defaultTracedId = null,
   onTraceChange,
   filter,
+  followedBatch: followedProp,
+  defaultFollowedBatch = null,
+  onFollowBatchChange,
   children,
   className,
   onKeyDown,
@@ -359,6 +386,20 @@ export function PipelineMap({
     [network, tracedId],
   );
 
+  // The followed batch: the same controlled/uncontrolled pattern, a third time.
+  const [ownFollowed, setOwnFollowed] = useState<string | null>(
+    defaultFollowedBatch,
+  );
+  const followedName = followedProp !== undefined ? followedProp : ownFollowed;
+  const follow = (name: string | null) => {
+    if (followedProp === undefined) setOwnFollowed(name);
+    onFollowBatchChange?.(name);
+  };
+  const followed = useMemo(
+    () => (followedName === null ? null : findBatch(network, followedName)),
+    [network, followedName],
+  );
+
   // Announce trace changes (not the first render: nothing changed yet).
   const [announcement, setAnnouncement] = useState('');
   const firstRender = useRef(true);
@@ -378,6 +419,17 @@ export function PipelineMap({
     setAnnouncement(traceSummary(trace, network, name));
     // Keyed on the origin only: a new trace speaks, a data refresh doesn't.
   }, [trace?.origin]);
+
+  // Announce following. The ref remembers the last name, to say what stopped.
+  const lastFollowed = useRef<string | null>(followedName);
+  useEffect(() => {
+    const previous = lastFollowed.current;
+    lastFollowed.current = followedName;
+    if (previous === followedName) return; // first render, or no change
+    setAnnouncement(
+      followed ? batchSummary(followed) : `Stopped following ${previous}.`,
+    );
+  }, [followedName]);
 
   // Announce filter changes too: the legend says "SYN, pressed", this says what it did.
   const filterKey = JSON.stringify(filter ?? {});
@@ -422,6 +474,8 @@ export function PipelineMap({
         select,
         trace,
         filter,
+        followed,
+        follow,
         tabStopId,
         setActiveId,
       }}
@@ -443,9 +497,22 @@ export function PipelineMap({
             e.preventDefault();
             const list = network.facilities;
             focusItem((e.key === 'Home' ? list[0] : list.at(-1))?.id ?? null);
+          } else if (
+            (e.key === 'b' || e.key === 'B') &&
+            currentId &&
+            !e.ctrlKey &&
+            !e.metaKey &&
+            !e.altKey
+          ) {
+            // On a pipe: follow its next batch (and stop after the last one).
+            if (network.segments.some((s) => s.id === currentId)) {
+              follow(nextBatchInSegment(network, currentId, followedName));
+            }
           } else if ((e.key === 't' || e.key === 'T') && currentId) {
             if (e.ctrlKey || e.metaKey || e.altKey) return; // leave shortcuts alone
             setTraced(tracedId === currentId ? null : currentId);
+          } else if (e.key === 'Escape' && followedName !== null) {
+            follow(null); // the narrowest thing first: one batch…
           } else if (e.key === 'Escape' && tracedId !== null) {
             setTraced(null);
           } else if (e.key === 'Escape' && selectedId !== null) {
@@ -488,6 +555,8 @@ function SegmentItem({
     select,
     trace,
     filter,
+    followed,
+    follow,
     tabStopId,
     setActiveId,
   } = useMap('PipelineMapSegments');
@@ -495,10 +564,24 @@ function SegmentItem({
   const role = trace ? traceRole(trace, segment.id) : null;
   const filtering = isFilterActive(filter);
   // Bright only if in the trace (when there is one) AND matching the filter (when on).
+  const holdsFollowed =
+    followed !== null &&
+    followed.parts.some((part) => part.segmentId === segment.id);
   const dimmed =
     (trace !== null && role === null) ||
-    (filtering && !segmentMatches(segment, filter));
-  const label = segmentLabel(segment, facilitiesById);
+    (filtering && !segmentMatches(segment, filter)) ||
+    (followed !== null && !holdsFollowed);
+  /** Inside a bright pipe: fade batches that miss the filter or aren't followed. */
+  const batchDimmed = (b: Batch) =>
+    (filtering && !batchMatches(b, filter)) ||
+    (followed !== null && b.name !== followed.name);
+  const label = [
+    segmentLabel(segment, facilitiesById),
+    role && TRACE_WORDS[role],
+    holdsFollowed && `holds ${followed.name}`,
+  ]
+    .filter(Boolean)
+    .join(', ');
   const ref = useRef<SVGGElement>(null);
   const { pressProps } = usePress({ ref, onPress: () => select(segment.id) });
   const d = toPathData(points);
@@ -518,7 +601,7 @@ function SegmentItem({
         tabIndex={tabStopId === segment.id ? 0 : -1}
         onFocus={() => setActiveId(segment.id)}
         data-map-item={segment.id}
-        aria-label={role ? `${label}, ${TRACE_WORDS[role]}` : label}
+        aria-label={label}
         aria-pressed={selected}
         data-segment-id={segment.id}
         data-selected={selected || undefined}
@@ -580,7 +663,11 @@ function SegmentItem({
           // A bright pipe can still carry other products: fade just those batches.
           // (A dimmed pipe is already faded as a whole; fading twice would vanish.)
           isDimmed={
-            filtering && !dimmed ? (b) => !batchMatches(b, filter) : undefined
+            (filtering || followed) && !dimmed ? batchDimmed : undefined
+          }
+          // Clicking a batch follows it (again to stop). The pipe is selected too.
+          onBatchPress={(b) =>
+            follow(followed?.name === b.name ? null : b.name)
           }
         />
       </g>

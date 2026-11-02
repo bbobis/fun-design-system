@@ -83,6 +83,12 @@ export type BatchTrainProps = Omit<
    * a product filter or a followed batch. Faded batches get `data-dimmed`.
    */
   isDimmed?: (batch: Batch) => boolean;
+  /**
+   * Makes each batch clickable (the map uses it to follow a batch). Adds a wider,
+   * invisible hit area along the band: a 4px line is hard to click.
+   * Pointer only: the map gives keyboard users `B` on a focused pipe instead.
+   */
+  onBatchPress?: (batch: Batch) => void;
 };
 
 /** Gap between neighbouring batches, in px, so equal colors still read as two batches. */
@@ -105,6 +111,7 @@ export function BatchTrain({
   insetPx = 0,
   label,
   isDimmed,
+  onBatchPress,
   className,
   ...props
 }: BatchTrainProps) {
@@ -144,7 +151,17 @@ export function BatchTrain({
             data-product={batch.product}
             data-dimmed={isDimmed?.(batch) || undefined}
             className="transition-opacity motion-reduce:transition-none data-dimmed:opacity-25"
+            onClick={onBatchPress && (() => onBatchPress(batch))}
           >
+            {onBatchPress && (
+              <path
+                d={d}
+                fill="none"
+                vectorEffect="non-scaling-stroke"
+                data-batch-hit=""
+                className="stroke-transparent [pointer-events:stroke] [stroke-width:10px]"
+              />
+            )}
             <path
               d={d}
               fill="none"
