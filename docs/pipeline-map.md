@@ -348,17 +348,44 @@ the map, and lay the two out however your page needs.
   is what it asks for. "Trace flow" stays focused; the map announces the trace.
 - `headingLevel` (default 2) fits the panel's heading into your page outline.
 
-## 10. Keyboard and screen readers
+## 10. Context menu
 
-| Key           | Does                                                                                        |
-| ------------- | ------------------------------------------------------------------------------------------- |
-| Tab           | enters the map (it is **one** Tab stop), then leaves it                                     |
-| Arrow keys    | move along the network: facility → the pipe leaving that way → the facility at its end      |
-| Home / End    | first / last facility                                                                       |
-| Enter / Space | select the focused item                                                                     |
-| T             | traces the flow through the focused item (again to stop)                                    |
-| B             | on a pipe: follows its next batch (stops after the last one)                                |
-| Escape        | closes the tooltip, then stops following a batch, then clears the trace, then the selection |
+Turn on a right-click / Shift+F10 / Menu-key menu on every facility and pipe:
+
+```tsx
+<PipelineMap … contextMenu />                      // built-in actions only
+
+<PipelineMap …
+  contextMenu={(id) => [                           // built-ins, a separator, then yours
+    { label: 'Show details', onAction: () => { setSelectedId(id); panelRef.current?.focus(); } },
+    { label: 'Copy id', onAction: () => navigator.clipboard.writeText(id) },
+  ]}
+/>
+```
+
+- **Built-in:** Select / Deselect, Trace flow from here / Stop tracing, and on a pipe a
+  "Follow a batch" group (one item per batch, "Stop following …" for the followed one).
+- **Off by default**, so right-click keeps the browser's menu until you opt in.
+- **Focus:** keyboard users land on the first item. Escape, or any pick, puts focus back
+  on the item. Your action runs **after** that, so one that moves focus on purpose
+  (to a details panel) keeps it.
+- **Why actions are data (`{ label, onAction }`) and not `<MenuItem>`s:** while the
+  menu is open its popover traps focus, so an action that moved focus from inside it
+  would be undone. The map runs your `onAction` once the menu has closed.
+- A right-click opens the menu at the pointer; the keyboard opens it under the item.
+
+## 11. Keyboard and screen readers
+
+| Key              | Does                                                                                        |
+| ---------------- | ------------------------------------------------------------------------------------------- |
+| Tab              | enters the map (it is **one** Tab stop), then leaves it                                     |
+| Arrow keys       | move along the network: facility → the pipe leaving that way → the facility at its end      |
+| Home / End       | first / last facility                                                                       |
+| Enter / Space    | select the focused item                                                                     |
+| T                | traces the flow through the focused item (again to stop)                                    |
+| B                | on a pipe: follows its next batch (stops after the last one)                                |
+| Shift+F10 / Menu | opens the context menu on the focused item (when `contextMenu` is on)                       |
+| Escape           | closes the tooltip, then stops following a batch, then clears the trace, then the selection |
 
 - Hovering or focusing an item shows its details (batches, tank levels) in a tooltip.
   The same text is the item's screen-reader description.

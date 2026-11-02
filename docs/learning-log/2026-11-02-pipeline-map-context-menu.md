@@ -1,0 +1,7 @@
+## 2026-11-02 — Pipeline Map interactive #6: context menu
+
+- **Built:** `PipelineMap contextMenu` (off by default). `true` gives the built-in actions: Select/Deselect, Trace flow from here/Stop tracing, and on a pipe a "Follow a batch" group. A function adds app actions as `{ label, onAction, intent?, disabled? }` (`MapMenuAction`). It opens with right-click (at the pointer), Shift+F10 or the Menu key (under the item). It's a React Aria `Popover` + `Menu` opened from code, using our `MenuItem`s.
+- **Remember (the prediction): a menu gives focus back to what opened it.** Escape or a pick puts focus back on Station C, so you can keep arrowing. An action whose job is to go somewhere ("Show details" → the panel) moves it on afterwards. Checked in Chromium: Escape → `C`; Show details → `ASIDE Details`.
+- **The bug that taught the most: a modal popover traps focus.** My first version ran the app's action inside the menu. Its `panel.focus()` was silently undone by React Aria's `FocusScope`, focus then fell to `<body>`, and my "back to the item" code took it. The fix: store the picked action, close the menu, put focus back on the item, *then* run the action, so an action that moves focus wins.
+- **Remember: data over elements when the parent must control *when* something runs.** That's why app items are `{ label, onAction }` instead of `<MenuItem>`s: the map wraps `onAction` to run after close. Passing elements would hand that timing to the app.
+- Docs: https://www.w3.org/WAI/ARIA/apg/patterns/menu-button/
