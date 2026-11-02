@@ -78,6 +78,11 @@ export type BatchTrainProps = Omit<
    * 5,000 m³, …". Without it the train is decorative (`aria-hidden`).
    */
   label?: string;
+  /**
+   * Fades a batch (opacity, so it still reads in grayscale): the map passes this for
+   * a product filter or a followed batch. Faded batches get `data-dimmed`.
+   */
+  isDimmed?: (batch: Batch) => boolean;
 };
 
 /** Gap between neighbouring batches, in px, so equal colors still read as two batches. */
@@ -99,6 +104,7 @@ export function BatchTrain({
   offsetPx = 10,
   insetPx = 0,
   label,
+  isDimmed,
   className,
   ...props
 }: BatchTrainProps) {
@@ -136,6 +142,8 @@ export function BatchTrain({
             key={batch.name}
             data-batch={batch.name}
             data-product={batch.product}
+            data-dimmed={isDimmed?.(batch) || undefined}
+            className="transition-opacity motion-reduce:transition-none data-dimmed:opacity-25"
           >
             <path
               d={d}

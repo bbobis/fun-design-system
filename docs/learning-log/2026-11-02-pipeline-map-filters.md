@@ -1,0 +1,7 @@
+## 2026-11-02 — Pipeline Map interactive #2: legend filters
+
+- **Built:** `MapFilter` (`{ products?, statuses? }`) plus pure `segmentMatches` / `batchMatches` / `filterSummary`. `MapLegend` takes `filter` + `onFilterChange`, and its Products and Pipe status rows become toggle buttons ("Other" toggles every product past the sixth; "Clear filters" appears while a filter is on). `PipelineMap` takes `filter`: non-matching pipes fade, and inside a bright pipe the other products' batches fade (`BatchTrain isDimmed`). Combined with a trace by AND.
+- **Remember: lift shared state to the page.** The legend and the map are siblings, so neither can own the filter. The page holds `useState<MapFilter>` and passes it to both: the legend changes it, the map reads it. It's the same reason you'd put shared data in a Spring service rather than in one of two controllers.
+- **Remember: a group of toggle buttons is a `toolbar`.** React Aria's `ToggleButtonGroup` gives it `role="toolbar"`: one Tab stop, arrow keys inside, each button `aria-pressed`. A screen reader says "SYN, toggle button, pressed". "On" is shown three ways (wash, bold, check mark), never by color alone.
+- **Gotcha (again): a prop name that's also a native attribute.** `filter` exists on every SVG element (a string). Spreading `ComponentProps<'svg'>` merged them into `string & MapFilter`. The fix is the same as for `points` on `BatchTrain`: `Omit<…, 'filter'>`.
+- Docs: https://react-spectrum.adobe.com/react-aria/ToggleButtonGroup.html

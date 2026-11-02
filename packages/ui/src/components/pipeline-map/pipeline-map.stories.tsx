@@ -6,6 +6,8 @@ import {
   PipelineMapSegments,
 } from './pipeline-map';
 import { Button } from '../button/button';
+import { MapLegend } from './map-legend';
+import type { MapFilter } from './pipeline-filter';
 import { DEMO_NETWORK, DEMO_PRODUCTS } from './pipeline-map.fixtures';
 
 const meta = {
@@ -123,6 +125,32 @@ export const TraceTheFlow: Story = {
             onSelect={setSelectedId}
             tracedId={tracedId}
             onTraceChange={setTracedId}
+          />
+        </div>
+      );
+    }
+    return <Example />;
+  },
+};
+
+/**
+ * **Legend filters.** Press "SYN" in the legend: pipes without SYN fade, and inside
+ * A-B the DIL batch fades too. Add "running" and a pipe must match both. A trace
+ * (focus an item, press `T`) combines the same way: bright = in the trace AND matching.
+ *
+ * The page owns the filter and hands the same object to the legend and the map.
+ */
+export const FilterWithLegend: Story = {
+  render: (args) => {
+    function Example() {
+      const [filter, setFilter] = useState<MapFilter>({ products: ['SYN'] });
+      return (
+        <div className="flex flex-col gap-6">
+          <PipelineMap {...args} filter={filter} />
+          <MapLegend
+            products={DEMO_PRODUCTS}
+            filter={filter}
+            onFilterChange={setFilter}
           />
         </div>
       );
