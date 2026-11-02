@@ -5,12 +5,15 @@ Owner: Ben. Solo project today; meant to be adopted by a team later, so keep it
 professional and consistent.
 
 This project has two goals of equal weight:
+
 1. Build a solid, enterprise-grade design system.
 2. Teach Ben how design systems, the libraries, and the tools work along the way.
-Never sacrifice goal 2 for speed. A component Ben can't explain is not done.
+   Never sacrifice goal 2 for speed. A component Ben can't explain is not done.
 
 ## Commands
+
 The component library is the `ui` project in `packages/ui` (npm package `@fun-design-system/ui`).
+
 - Storybook (dev): `npx nx storybook ui`
 - Test: `npx nx test ui`
 - Lint: `npx nx lint ui`
@@ -20,7 +23,9 @@ The component library is the `ui` project in `packages/ui` (npm package `@fun-de
 - Requires npm 11+ (npm 10 crashes installing this workspace) and Node 22.12+.
 
 ## Task briefs
+
 Ben gives tasks using these five fields. If one is missing, ask once, then proceed.
+
 - **Outcome**: what "done" looks like, in one sentence
 - **Inputs**: files, docs, or examples to use
 - **Boundaries**: what not to touch; conventions to follow
@@ -28,9 +33,11 @@ Ben gives tasks using these five fields. If one is missing, ask once, then proce
 - **Stop when**: the exact condition to stop and report back
 
 ## Teaching Ben (read this carefully)
+
 Ben is an experienced Java/Spring + React dev who is new to building design
 systems, Nx, headless UI libraries, and component API design. He learns by
 example and forgets things he doesn't use, so:
+
 - **Explain the first time a concept appears, not every time.** Keep it to 2-4
   sentences plus a tiny code example. Concepts that count: an Nx command or
   config, a TypeScript pattern (generics, discriminated unions, `forwardRef`,
@@ -55,6 +62,7 @@ example and forgets things he doesn't use, so:
   you introduce one.
 
 ## Working style
+
 - When you have enough information to act, act. Don't re-ask settled questions
   or re-open decisions already made in this conversation.
 - Show a short plan before changing files on any task touching more than one file.
@@ -69,12 +77,14 @@ example and forgets things he doesn't use, so:
   should remember, and anything left open.
 
 ## Every component ships with
+
 - Typed props with JSDoc
 - Keyboard support and ARIA roles
 - A test
 - A Storybook story (if Storybook is set up)
 
 ## Boundaries
+
 - Do not add dependencies without asking.
 - Headless library: **React Aria Components** (decided 2026-10-04, see
   `docs/decisions/0001-headless-library.md`). Build interactive components on it,

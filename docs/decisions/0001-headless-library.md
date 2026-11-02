@@ -24,11 +24,11 @@ Our public components wrap it: apps import `@fun-design-system/ui`, never
 
 ## Options considered
 
-| Option | Why not |
-|---|---|
-| **A. React Aria everywhere** | Chosen. The only option that covers every component on the roadmap, including DatePicker / DateField / Calendar. |
-| B. Base UI + React Aria only for dates | Easiest to learn (Radix/shadcn anatomy), but two libraries with different focus, dismiss and positioning models that would meet exactly where it's hardest: date popovers inside dialogs and grid cells. Revisit only if we outgrow React Aria. |
-| C. Downshift + Base UI + a date library | Smallest bundle, but three libraries, the most code to own, and Downshift is maintained mostly by one person. |
+| Option                                  | Why not                                                                                                                                                                                                                                         |
+| --------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **A. React Aria everywhere**            | Chosen. The only option that covers every component on the roadmap, including DatePicker / DateField / Calendar.                                                                                                                                |
+| B. Base UI + React Aria only for dates  | Easiest to learn (Radix/shadcn anatomy), but two libraries with different focus, dismiss and positioning models that would meet exactly where it's hardest: date popovers inside dialogs and grid cells. Revisit only if we outgrow React Aria. |
+| C. Downshift + Base UI + a date library | Smallest bundle, but three libraries, the most code to own, and Downshift is maintained mostly by one person.                                                                                                                                   |
 
 ## Consequences
 
@@ -48,5 +48,5 @@ Our public components wrap it: apps import `@fun-design-system/ui`, never
   stays Tailwind-only and sizes with its CSS variables (e.g. `w-(--trigger-width)`).
   The exact wording of the styling rule for library-set styles is still to be confirmed.
 - **Dependencies:** `react-aria-components` is added with the first component that uses
-  it (Select). Its own dependencies come with it; any *other* new dependency still needs
+  it (Select). Its own dependencies come with it; any _other_ new dependency still needs
   Ben's approval.

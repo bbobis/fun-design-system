@@ -55,7 +55,6 @@ describe('SearchField', () => {
   it('Escape on an empty field is left alone, so a Dialog around it can close', () => {
     const outer = vi.fn();
     render(
-      // eslint-disable-next-line jsx-a11y/no-static-element-interactions
       <div onKeyDown={(e) => e.key === 'Escape' && outer()}>
         <SearchField aria-label="Search" />
       </div>,

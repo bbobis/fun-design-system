@@ -1,6 +1,7 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
+import { must } from '../../utils/must';
 import {
   PipelineMap,
   PipelineMapFacilities,
@@ -153,7 +154,7 @@ describe('PipelineMap', () => {
       ...DEMO_NETWORK,
       segments: [
         ...DEMO_NETWORK.segments,
-        { ...DEMO_NETWORK.segments[0]!, id: 'X', to: 'nowhere' },
+        { ...must(DEMO_NETWORK.segments[0]), id: 'X', to: 'nowhere' },
       ],
     };
     const { container } = renderMap({ network: broken });

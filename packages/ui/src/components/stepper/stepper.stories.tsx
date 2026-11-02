@@ -161,7 +161,11 @@ export const WithIcons: Story = {
         label: 'Billing',
         icon: <Svg d="M2 4.5h12v7H2zM2 7h12" />,
       },
-      { id: 'review', label: 'Review', icon: <Svg d="M14 2 7 9M14 2l-4.5 12-2.5-5-5-2.5z" /> },
+      {
+        id: 'review',
+        label: 'Review',
+        icon: <Svg d="M14 2 7 9M14 2l-4.5 12-2.5-5-5-2.5z" />,
+      },
     ],
   },
 };

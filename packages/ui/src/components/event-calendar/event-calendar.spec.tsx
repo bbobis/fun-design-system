@@ -2,6 +2,7 @@ import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 import { Dialog } from '../dialog';
+import { must } from '../../utils/must';
 import {
   EventCalendar,
   groupByDay,
@@ -171,7 +172,7 @@ describe('EventCalendar', () => {
       />,
     );
     // [0]: React Aria also adds hidden ‹ › at the end of the grid for screen readers.
-    await user.click(screen.getAllByRole('button', { name: 'Next' })[0]!);
+    await user.click(must(screen.getAllByRole('button', { name: 'Next' })[0]));
     expect(onMonthChange).toHaveBeenLastCalledWith('2026-11');
     expect(screen.getByRole('heading', { name: 'November 2026' })).toBeTruthy();
   });
@@ -438,7 +439,7 @@ describe('EventCalendar', () => {
       );
       const offsite = screen.getAllByRole('button', { name: 'Offsite' });
       expect(offsite).toHaveLength(3); // Wed, Thu, Fri
-      await user.click(offsite[1]!);
+      await user.click(must(offsite[1]));
       expect(onEventAction).toHaveBeenCalledWith(weekEvents[3]);
     });
 
@@ -663,7 +664,7 @@ describe('EventCalendar', () => {
       expect(
         document
           .getElementById(
-            block().getAttribute('aria-describedby')!.split(' ')[0]!,
+            must(must(block().getAttribute('aria-describedby')).split(' ')[0]),
           )
           ?.getAttribute('aria-label'),
       ).toBe('Friday, October 16');
@@ -692,7 +693,9 @@ describe('EventCalendar', () => {
     it('announces each move and tells screen readers the keys', async () => {
       const user = userEvent.setup();
       render(<Draggable />);
-      const hintId = block().getAttribute('aria-describedby')!.split(' ')[1]!;
+      const hintId = must(
+        must(block().getAttribute('aria-describedby')).split(' ')[1],
+      );
       expect(document.getElementById(hintId)?.textContent).toMatch(
         /Arrow keys move/,
       );

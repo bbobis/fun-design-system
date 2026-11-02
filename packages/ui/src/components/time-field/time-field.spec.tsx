@@ -1,5 +1,6 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { Field } from '../field';
+import { must } from '../../utils/must';
 import { fromTime, toTime } from './iso-time';
 import { TimeField } from './time-field';
 
@@ -32,8 +33,8 @@ const press = (el: Element, key: string) =>
 
 describe('iso-time', () => {
   it('reads and writes 24-hour text, and rejects impossible times', () => {
-    expect(fromTime(toTime('09:05')!, 'minute')).toBe('09:05');
-    expect(fromTime(toTime('23:59:30')!, 'second')).toBe('23:59:30');
+    expect(fromTime(must(toTime('09:05')), 'minute')).toBe('09:05');
+    expect(fromTime(must(toTime('23:59:30')), 'second')).toBe('23:59:30');
     for (const bad of ['25:00', '12:60', '9:05', '09-05', '', null, undefined])
       expect(toTime(bad)).toBeNull();
   });

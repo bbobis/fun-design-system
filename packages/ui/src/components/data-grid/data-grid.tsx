@@ -748,7 +748,11 @@ export function DataGrid<TData extends RowData>({
       cols,
     );
     return mergeErrors(client, serverErrors);
-    // `columns` stands in for the table's columns; newRows for newRowsRef.
+    // Two deps the linter calls unnecessary are on purpose. `table` is the same object
+    // on every render, so `columns` is what tells this memo the columns changed; and
+    // `newRows` stands in for `newRowsRef`, which a ref change alone wouldn't signal.
+    // Dropping them would keep showing errors for old columns / missing new rows.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isEditing, draft, serverErrors, rowsById, newRows, columns, table]);
 
   /** Every error as a position, in reading order (row, then column). */
