@@ -197,3 +197,35 @@ export const Empty: Story = {
     />
   ),
 };
+
+/**
+ * `guides`: a thin line per ancestor shows which folder each row is in. Visual only:
+ * screen readers hear the depth from `aria-level` ("level 3").
+ */
+export const Guides: Story = {
+  render: () => (
+    <TreeView
+      aria-label="Files"
+      nodes={files}
+      defaultExpanded={['billing', 'invoices', 'receipts', 'customers']}
+      guides
+      className="max-w-sm rounded-md border border-border p-1"
+    />
+  ),
+};
+
+/** `size="sm"` with guides: a dense sidebar. Smaller text, rows and indent. */
+export const Small: Story = {
+  render: () => (
+    <TreeView
+      aria-label="Files"
+      nodes={files}
+      defaultExpanded={['billing', 'invoices', 'customers']}
+      size="sm"
+      guides
+      selectionMode="single"
+      defaultSelected={['inv-1043']}
+      className="max-w-60 rounded-md border border-border p-1"
+    />
+  ),
+};

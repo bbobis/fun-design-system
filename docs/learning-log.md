@@ -717,3 +717,13 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Remember: `pathLength={100}`** makes an SVG circle 100 units long, whatever its radius. The fill is then plain math: `stroke-dashoffset = 100 − percent`. The percent arrives as one CSS variable through `cssVars`, the same as the bar's `scale-x`.
 - **Caught by an existing test:** I briefly showed the value under the bar when `hideLabel` was on. The FileUpload and Progress tests failed, because that changed a default. I reverted it. This is why "defaults unchanged" needs the old tests, not just new ones.
 - Docs: https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/pathLength
+
+## 2026-11-02 — Accordion / Disclosure / TreeView: variants, sizes, chevron at start, tree guides
+- **Built:**
+  - Accordion and Disclosure take `variant` (`bordered`, `separated`, `flush`, `filled`), `size` (`sm`, `md`, `lg`) and `chevronPosition="start"`. Set them once on the Accordion; a section's own prop wins.
+  - TreeView takes `size="sm"` and `guides`.
+  - Defaults are unchanged.
+- **Remember (the prediction): depth comes from `aria-level`, not the lines.** React Aria puts `aria-level="3"` on a row three folders deep, and screen readers say "level 3". The guide lines are one CSS pseudo-element (`before:`) per row, so they add nothing to the accessibility tree. A test checks the level and the row count.
+- **Remember: CSS variables plus `calc` replace per-level classes.** React Aria sets `--tree-item-level` on each row. The row's indent is `calc((level − 1) × --tree-indent)`, and the guide is a gradient tile (a 1px line, then transparent) repeated every `--tree-indent` across that same width. Level 3 gets two lines, level 1 none, with no JavaScript.
+- **Remember: "who draws the border" is a variant decision.** In `bordered` and `flush`, the group draws the box and the dividers. In `separated` and `filled`, each section draws its own. Mixing them would give double lines, so the section asks the context which case it's in.
+- Docs: https://react-spectrum.adobe.com/react-aria/Tree.html#styling

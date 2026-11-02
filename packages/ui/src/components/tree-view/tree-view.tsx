@@ -57,8 +57,37 @@ export type TreeViewProps = {
   onAction?: (id: string) => void;
   /** Shown when `nodes` is empty. @default 'Nothing here yet.' */
   emptyState?: ReactNode;
+  /** Row density: `sm` for dense sidebars (smaller text, rows and indent). @default 'md' */
+  size?: 'sm' | 'md';
+  /**
+   * Thin vertical lines that show which folder a row is in. Visual only: screen
+   * readers get the depth from `aria-level`, which React Aria sets on every row.
+   * @default false
+   */
+  guides?: boolean;
   className?: string;
 };
+
+/**
+ * Per size. The indent and the guide position are CSS variables on the tree, so each
+ * row's padding and guide lines are one calc each (React Aria sets
+ * --tree-item-level on the row: 1 at the top).
+ * --tree-guide-x is the middle of the arrow column, where a parent's line runs down.
+ */
+const treeSizes = {
+  md: {
+    tree: '[--tree-indent:1.25rem] [--tree-guide-x:0.875rem] text-sm',
+    row: 'gap-1.5 py-1.5',
+    chevron: 'size-5',
+    chevronIcon: 'size-3.5',
+  },
+  sm: {
+    tree: '[--tree-indent:1rem] [--tree-guide-x:0.75rem] text-xs',
+    row: 'gap-1 py-1',
+    chevron: 'size-4',
+    chevronIcon: 'size-3',
+  },
+} as const;
 
 const toIds = (keys: Selection | Set<Key>): string[] =>
   keys === 'all' ? [] : [...keys].map(String);
@@ -90,11 +119,19 @@ export function TreeView({
   onExpandedChange,
   onAction,
   emptyState = 'Nothing here yet.',
+  size = 'md',
+  guides = false,
   className,
 }: TreeViewProps) {
   // One function renders a node, and calls itself (through Collection) for its children.
   const renderNode = (node: TreeNode) => (
-    <TreeRow key={node.id} node={node} selectionMode={selectionMode}>
+    <TreeRow
+      key={node.id}
+      node={node}
+      selectionMode={selectionMode}
+      size={size}
+      guides={guides}
+    >
       {node.children && (
         <Collection items={node.children}>{renderNode}</Collection>
       )}
@@ -126,7 +163,10 @@ export function TreeView({
         </p>
       )}
       className={cn(
-        'flex flex-col gap-px overflow-auto rounded-md text-sm text-fg outline-hidden',
+        'flex flex-col overflow-auto rounded-md text-fg outline-hidden',
+        treeSizes[size].tree,
+        // A 1px gap between rows, except with guides: it would break the lines.
+        !guides && 'gap-px',
         // The tree itself gets focus only when it's empty.
         'data-focus-visible:outline-2 data-focus-visible:outline-solid data-focus-visible:outline-focus-ring',
         className,
@@ -140,21 +180,36 @@ export function TreeView({
 function TreeRow({
   node,
   selectionMode,
+  size,
+  guides,
   children,
 }: {
   node: TreeNode;
   selectionMode: TreeViewProps['selectionMode'];
+  size: 'sm' | 'md';
+  guides: boolean;
   children?: ReactNode;
 }) {
+  const s = treeSizes[size];
   return (
     <AriaTreeItem
       id={node.id}
       textValue={node.label}
       isDisabled={node.disabled}
       className={cn(
-        'group relative flex cursor-default items-center gap-1.5 rounded-md py-1.5 pe-2 outline-hidden select-none',
+        'group relative flex cursor-default items-center rounded-md pe-2 outline-hidden select-none',
+        s.row,
         // Indent by depth: React Aria sets --tree-item-level (1 at the top).
-        'ps-[calc((var(--tree-item-level)-1)*1.25rem+0.25rem)]',
+        'ps-[calc((var(--tree-item-level)-1)*var(--tree-indent)+0.25rem)]',
+        // Guides: one 1px line per ancestor, from a single pseudo-element. It's as
+        // wide as the indent, and a gradient tile (1px line, then transparent)
+        // repeats every --tree-indent: level 3 gets two lines, level 1 none.
+        guides && [
+          'before:pointer-events-none before:absolute before:inset-y-0 before:start-(--tree-guide-x)',
+          'before:w-[calc((var(--tree-item-level)-1)*var(--tree-indent))]',
+          'before:bg-[linear-gradient(to_right,var(--color-border)_1px,transparent_1px)] before:bg-size-[var(--tree-indent)_100%] before:bg-repeat-x',
+          'rtl:before:bg-[linear-gradient(to_left,var(--color-border)_1px,transparent_1px)] rtl:before:bg-right',
+        ],
         'hover:bg-surface',
         'data-selected:bg-surface data-selected:font-medium',
         // Inside the row, so a scrolling tree can't clip it (recipe rule 26).
@@ -171,12 +226,20 @@ function TreeRow({
               // stop; → and ← do the same from the keyboard.
               <AriaButton
                 slot="chevron"
-                className="flex size-5 shrink-0 items-center justify-center rounded text-fg-muted outline-hidden hover:text-fg"
+                className={cn(
+                  'flex shrink-0 items-center justify-center rounded text-fg-muted outline-hidden hover:text-fg',
+                  s.chevron,
+                )}
               >
-                <ChevronIcon className="size-3.5 transition-transform group-data-expanded:rotate-90 rtl:-scale-x-100 motion-reduce:transition-none" />
+                <ChevronIcon
+                  className={cn(
+                    'transition-transform group-data-expanded:rotate-90 rtl:-scale-x-100 motion-reduce:transition-none',
+                    s.chevronIcon,
+                  )}
+                />
               </AriaButton>
             ) : (
-              <span className="size-5 shrink-0" aria-hidden="true" />
+              <span className={cn('shrink-0', s.chevron)} aria-hidden="true" />
             )}
             {selectionMode === 'multiple' && (
               // slot="selection": React Aria wires this checkbox to the row's selection.
@@ -185,19 +248,34 @@ function TreeRow({
               </AriaCheckbox>
             )}
             {node.icon && (
-              <span className="flex size-4 shrink-0 items-center justify-center text-fg-muted">
+              <span
+                className={cn(
+                  'flex shrink-0 items-center justify-center text-fg-muted',
+                  size === 'sm' ? 'size-3.5 *:size-3.5' : 'size-4',
+                )}
+              >
                 {node.icon}
               </span>
             )}
             <span className="min-w-0 flex-1 truncate">{node.label}</span>
             {node.meta && (
-              <span className="shrink-0 text-xs font-normal text-fg-muted">
+              <span
+                className={cn(
+                  'shrink-0 font-normal text-fg-muted',
+                  size === 'sm' ? 'text-[0.6875rem]' : 'text-xs',
+                )}
+              >
                 {node.meta}
               </span>
             )}
             {selectionMode === 'single' && isSelected && (
               // Selected isn't shown by color alone (WCAG 1.4.1).
-              <CheckIcon className="size-4 shrink-0" />
+              <CheckIcon
+                className={cn(
+                  'shrink-0',
+                  size === 'sm' ? 'size-3.5' : 'size-4',
+                )}
+              />
             )}
           </>
         )}
