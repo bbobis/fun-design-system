@@ -153,6 +153,11 @@
   --fds-fg: var(--color-gray-900);
   --fds-fg-muted: var(--color-gray-500);
   --fds-fg-danger: var(--color-cherry-500); /* error text on bg: 5.9:1 */
+  /* Status text on the page background (Text tone). The same shades as the soft
+   * pairs' text, so a status reads the same in a badge and in a sentence. */
+  --fds-fg-success: var(--color-leaf-800);
+  --fds-fg-warning: var(--color-clementine-800);
+  --fds-fg-info: var(--color-sky-800);
   --fds-border: var(
     --color-gray-100
   ); /* decorative dividers, no contrast requirement */
@@ -204,6 +209,9 @@
   --fds-fg-danger: var(
     --color-cherry-300
   ); /* cherry-500 is only 3.2:1 on gray-900 */
+  --fds-fg-success: var(--color-leaf-300);
+  --fds-fg-warning: var(--color-clementine-300);
+  --fds-fg-info: var(--color-sky-300);
   --fds-border: var(--color-gray-700);
   /* border-strong stays gray-400: 4.2:1 on gray-900 */
 
@@ -253,6 +261,9 @@
   --color-fg: var(--fds-fg);
   --color-fg-muted: var(--fds-fg-muted);
   --color-fg-danger: var(--fds-fg-danger);
+  --color-fg-success: var(--fds-fg-success);
+  --color-fg-warning: var(--fds-fg-warning);
+  --color-fg-info: var(--fds-fg-info);
   --color-border: var(--fds-border);
   --color-border-strong: var(--fds-border-strong);
 

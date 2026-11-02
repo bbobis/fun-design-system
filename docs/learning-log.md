@@ -784,3 +784,16 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Remember: a token can pass for text-on-color and fail as a line.** `warning` (clementine-500) works as a button background with dark text, but it's only 2.9:1 against white as a 2px line. WCAG 1.4.11 asks 3:1 for graphics, so lines get their own tokens.
 - **Remember: sizes relative to a CSS variable.** Dashes are `calc(var(--pipe-w)*3)`, so a thick and a thin dashed pipe show the same pattern. `max(var(--pipe-w),4px)` gives shutdown dots a floor.
 - Docs: https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Attribute/vector-effect
+
+## 2026-11-02 — Text / Heading: status tones, truncation, display sizes, eyebrow
+- **Built:**
+  - Text gets `tone` `success`, `warning` and `info`, backed by new `fg-success`, `fg-warning` and `fg-info` tokens (the soft-pair text shades, light and dark). It also gets `truncate` (`true` = one line, 2–5 = that many lines) and `size="xl"`.
+  - Heading gets `size` `3xl` and `4xl`, `weight`, `tone`, `truncate` and `eyebrow`.
+  - Defaults are unchanged.
+- **Remember (the prediction): the eyebrow goes *next to* the heading, not inside it.**
+  - Inside the `<h2>`, screen-reader users jumping by heading would hear "Billing Invoices" every time.
+  - Next to it, both inside an `<hgroup>`, the heading is just "Invoices" and the eyebrow is a plain paragraph before it. Chromium's tree shows `paragraph: Billing`, then `heading "Invoices" [level=2]`.
+  - `uppercase` is CSS only: the source text stays "Billing", so it isn't spelled out letter by letter.
+- **Remember: truncation is only visual.** `truncate` / `line-clamp-*` hide overflow, but screen readers and copy-paste still get the whole text. When the hidden part matters, offer it another way, e.g. a tooltip or a details view.
+- **Remember: Tailwind only sees class names written out in full.** `line-clamp-${n}` built at runtime would never be generated, so `truncateClass` lists `line-clamp-2` … `line-clamp-5`.
+- Docs: https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/hgroup
