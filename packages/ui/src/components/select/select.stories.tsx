@@ -172,3 +172,76 @@ export const LongList: Story = {
     placeholder: 'Choose a country',
   },
 };
+
+/** A coloured dot: the colour is decoration, the label says the status. */
+const Dot = ({ className }: { className: string }) => (
+  <span className={`size-2 rounded-full ${className}`} />
+);
+
+const statusesWithIcons: SelectOption[] = [
+  { value: 'draft', label: 'Draft', icon: <Dot className="bg-fg-muted" /> },
+  { value: 'pending', label: 'Pending', icon: <Dot className="bg-info" /> },
+  { value: 'overdue', label: 'Overdue', icon: <Dot className="bg-danger" /> },
+  { value: 'paid', label: 'Paid', icon: <Dot className="bg-success" /> },
+];
+
+/**
+ * Option `icon`: a dot, a flag, a logo. The chosen option's icon also shows in the
+ * closed field. Icons are hidden from screen readers: the label says it all.
+ */
+export const OptionIcons: Story = {
+  args: { options: statusesWithIcons, defaultValue: 'overdue' },
+};
+
+const roles: SelectOption[] = [
+  {
+    value: 'viewer',
+    label: 'Viewer',
+    description: 'Can see invoices and reports',
+  },
+  {
+    value: 'editor',
+    label: 'Editor',
+    description: 'Can create and send invoices',
+  },
+  {
+    value: 'admin',
+    label: 'Admin',
+    description: 'Can change billing, users and every setting',
+  },
+  {
+    value: 'owner',
+    label: 'Owner',
+    description: 'Only one per account',
+    disabled: true,
+  },
+];
+
+/**
+ * Option `description`: a grey second line. Screen readers read it after the label
+ * ("Admin, Can change billing, users and every setting"): React Aria's `Text
+ * slot="description"` wires `aria-describedby`. The closed field shows the label only.
+ */
+export const OptionDescriptions: Story = {
+  args: { 'aria-label': 'Role', options: roles, defaultValue: 'editor' },
+};
+
+/**
+ * The list matches the field: open each one. `sm` rows are 28px, `md` 32px, `lg`
+ * 40px; rows with a description are taller.
+ */
+export const ListSizes: Story = {
+  render: (args) => (
+    <div className="flex flex-col gap-3">
+      {(['sm', 'md', 'lg'] as const).map((size) => (
+        <Select
+          key={size}
+          {...args}
+          options={statusesWithIcons}
+          size={size}
+          aria-label={`Status ${size}`}
+        />
+      ))}
+    </div>
+  ),
+};

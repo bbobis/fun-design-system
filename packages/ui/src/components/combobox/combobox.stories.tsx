@@ -196,3 +196,50 @@ export const AutoHighlight: Story = {
     </div>
   ),
 };
+
+/** Initials in a circle: decoration (hidden from screen readers), the name says it. */
+const Initials = ({ name }: { name: string }) => (
+  <span className="flex size-4 items-center justify-center rounded-full border border-border-strong bg-bg text-[0.5rem] font-semibold text-fg">
+    {name
+      .split(' ')
+      .map((part) => part[0])
+      .join('')}
+  </span>
+);
+
+const people: ComboboxOption[] = [
+  ['Ada Lovelace', 'ada@northwind.example'],
+  ['Alan Turing', 'alan@acme.example'],
+  ['Grace Hopper', 'grace@cobalt.example'],
+  ['Katherine Johnson', 'katherine@delta.example'],
+  ['Margaret Hamilton', 'margaret@northwind.example'],
+  ['Tim Berners-Lee', 'tim@acme.example'],
+].map(([name, email]) => ({
+  value: email,
+  label: name,
+  description: email,
+  icon: <Initials name={name} />,
+}));
+
+/**
+ * Options with an `icon` and a `description` (the email). Rows get taller (48px at
+ * `md`) so the virtualized list still knows every row's height up front. Typing
+ * matches the label only.
+ */
+export const PeoplePicker: Story = {
+  args: {
+    'aria-label': 'Assign to',
+    options: people,
+    placeholder: 'Type a name',
+  },
+};
+
+/** `size="sm"`: the list is as dense as the field (28px rows, 44px with descriptions). */
+export const SmallList: Story = {
+  args: {
+    'aria-label': 'Assign to',
+    options: people,
+    placeholder: 'Type a name',
+    size: 'sm',
+  },
+};
