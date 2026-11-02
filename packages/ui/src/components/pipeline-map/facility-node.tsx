@@ -22,6 +22,30 @@ const KIND_SHAPES: Record<FacilityKind, ReactNode> = {
   refinery: <path d="M -9 9 L -9 -3 L -3 -9 L 3 -3 L 9 -9 L 9 9 Z" />,
 };
 
+/**
+ * Just the marker shape for a kind, outlined, drawn around (0, 0) in px. Shared by
+ * `FacilityNode` and `MapLegend`, so the legend always matches the map.
+ */
+export function FacilityKindMarker({
+  kind,
+  filled = false,
+}: {
+  kind: FacilityKind;
+  /** Solid fill (the selected look). */
+  filled?: boolean;
+}) {
+  return (
+    <g
+      className={cn(
+        'stroke-fg [stroke-width:2.5] [stroke-linejoin:round]',
+        filled ? 'fill-fg' : 'fill-bg',
+      )}
+    >
+      {KIND_SHAPES[kind]}
+    </g>
+  );
+}
+
 /** The alert badge: warning is a triangle, danger a circle (shape **and** color). */
 function AlertBadge({ level }: { level: 'warning' | 'danger' }) {
   return (
@@ -129,14 +153,7 @@ export function FacilityNode({
         className="fill-none stroke-focus-ring opacity-0 [stroke-width:2] group-focus-visible:opacity-100"
       />
       {/* Selected also fills the marker solid: the yellow halo alone is only 1.7:1 on white. */}
-      <g
-        className={cn(
-          'stroke-fg [stroke-width:2.5] [stroke-linejoin:round]',
-          selected ? 'fill-fg' : 'fill-bg',
-        )}
-      >
-        {KIND_SHAPES[kind]}
-      </g>
+      <FacilityKindMarker kind={kind} filled={selected} />
       {alert && <AlertBadge level={alert.level} />}
       <text
         y={34}
