@@ -209,6 +209,10 @@ export type PipelineMapProps = Omit<
  * focusing an item shows its details (batches, tank levels) in a tooltip, which is
  * also its screen-reader description.
  *
+ * Escape does one thing at a time: if a tooltip is open, it only closes the tooltip
+ * (React Aria catches that Escape on the document, before it reaches the map); the
+ * next Escape clears the selection.
+ *
  * Facility and segment ids must be unique across both lists.
  */
 export function PipelineMap({
