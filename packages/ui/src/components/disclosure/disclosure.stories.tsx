@@ -79,3 +79,83 @@ export const Standalone: Story = {
       'Webhook URL, retry policy and API rate limits. Most teams never need to change these.',
   },
 };
+
+const settings = [
+  {
+    id: 'profile',
+    title: 'Company profile',
+    body: 'Name, address and tax number, as they appear on your invoices.',
+  },
+  {
+    id: 'numbering',
+    title: 'Invoice numbering',
+    body: 'Prefix INV-, next number 1045. Numbers never repeat, even after a delete.',
+  },
+  {
+    id: 'reminders',
+    title: 'Payment reminders',
+    body: 'Sent 3 days before and 7 days after the due date.',
+  },
+];
+
+/**
+ * The four `variant`s side by side: `bordered` (default), `separated`, `flush` and
+ * `filled`. Same keyboard and headings in all of them; only the look changes.
+ */
+export const Variants: Story = {
+  decorators: [
+    (Story) => (
+      <div className="max-w-4xl">
+        <Story />
+      </div>
+    ),
+  ],
+  render: () => (
+    <div className="grid gap-6 sm:grid-cols-2">
+      {(['bordered', 'separated', 'flush', 'filled'] as const).map(
+        (variant) => (
+          <div key={variant} className="flex flex-col gap-2">
+            <p className="text-xs font-medium text-fg-muted">{variant}</p>
+            <Accordion variant={variant} defaultExpandedIds={['numbering']}>
+              {settings.map((x) => (
+                <Disclosure key={x.id} id={x.id} title={x.title}>
+                  {x.body}
+                </Disclosure>
+              ))}
+            </Accordion>
+          </div>
+        ),
+      )}
+    </div>
+  ),
+};
+
+/**
+ * `size` and `chevronPosition="start"`: the arrow before the title, pointing right
+ * and turning down when open (like a tree). The content lines up with the title.
+ */
+export const SizesAndChevronStart: Story = {
+  render: () => (
+    <div className="flex flex-col gap-6">
+      {(['sm', 'md', 'lg'] as const).map((size) => (
+        <Accordion
+          key={size}
+          size={size}
+          chevronPosition="start"
+          variant="flush"
+          defaultExpandedIds={[`${size}-numbering`]}
+        >
+          {settings.slice(0, 2).map((x) => (
+            <Disclosure
+              key={x.id}
+              id={`${size}-${x.id}`}
+              title={`${x.title} (${size})`}
+            >
+              {x.body}
+            </Disclosure>
+          ))}
+        </Accordion>
+      ))}
+    </div>
+  ),
+};
