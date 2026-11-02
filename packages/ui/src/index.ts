@@ -5,6 +5,7 @@ export * from './components/badge';
 export * from './components/bento';
 export * from './components/breadcrumbs';
 export * from './components/button';
+export * from './components/calendar';
 export * from './components/card';
 export * from './components/checkbox';
 export * from './components/checkbox-group';
