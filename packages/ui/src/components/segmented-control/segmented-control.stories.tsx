@@ -108,3 +108,69 @@ export const DisabledOption: Story = {
     defaultValue: 'day',
   },
 };
+
+/** Three sizes. `lg` suits touch screens and page-level switches. */
+export const Sizes: Story = {
+  render: () => (
+    <div className="flex flex-col items-start gap-3">
+      {(['sm', 'md', 'lg'] as const).map((size) => (
+        <SegmentedControl
+          key={size}
+          aria-label={`Period (${size})`}
+          options={periods}
+          defaultValue="week"
+          size={size}
+        />
+      ))}
+    </div>
+  ),
+};
+
+/**
+ * `variant="primary"`: the chosen segment is filled with the brand color. The thin
+ * ring around it stays: the fill alone is too faint against the track (under 3:1).
+ * `shape="pill"` rounds the track and the segments.
+ */
+export const PrimaryAndPill: Story = {
+  render: () => (
+    <div className="flex flex-col items-start gap-3">
+      <SegmentedControl
+        aria-label="Period"
+        options={periods}
+        defaultValue="month"
+        variant="primary"
+      />
+      <SegmentedControl
+        aria-label="View"
+        options={views}
+        defaultValue="list"
+        shape="pill"
+      />
+      <SegmentedControl
+        aria-label="Billing"
+        options={[
+          { id: 'monthly', label: 'Monthly' },
+          { id: 'yearly', label: 'Yearly' },
+        ]}
+        defaultValue="yearly"
+        shape="pill"
+        variant="primary"
+        size="lg"
+      />
+    </div>
+  ),
+};
+
+/** `fullWidth`: fills its container, segments share it equally. Good in a card or on a phone. */
+export const FullWidth: Story = {
+  render: () => (
+    <div className="w-80 rounded-lg border border-border p-4">
+      <SegmentedControl
+        aria-label="Period"
+        options={periods.slice(0, 3)}
+        defaultValue="day"
+        fullWidth
+      />
+    </div>
+  ),
+};

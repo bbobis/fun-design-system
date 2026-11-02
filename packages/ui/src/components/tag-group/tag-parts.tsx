@@ -9,7 +9,9 @@ import { XIcon } from '../combobox/combobox-parts';
  */
 export const tagVariants = cva(
   [
-    'flex max-w-full cursor-default items-center gap-0.5 rounded border border-border bg-surface text-fg outline-hidden',
+    'flex max-w-full cursor-default items-center gap-0.5 border outline-hidden',
+    // The tone (below) names the colors; these paint them. Same idea as Badge.
+    'border-(--tag-line) bg-(--tag-bg) text-(--tag-fg)',
     'transition-colors',
     // outline-solid is required: outline-hidden above sets --tw-outline-style:none,
     // which outline-2 would otherwise inherit (same trap as Button).
@@ -23,13 +25,41 @@ export const tagVariants = cva(
         sm: 'h-6 ps-2 pe-0.5 text-sm',
         md: 'h-8 ps-2.5 pe-1 text-sm',
       },
+      /**
+       * Colors for status tags ("Overdue"). `neutral` is the plain chip. Each tone
+       * sets four variables: fill, text, border, and the ✕'s resting color (muted
+       * on neutral; the tone's text color otherwise, so it keeps its contrast on
+       * the tinted fill). Selection (primary tint + ✓) still wins over the tone.
+       */
+      tone: {
+        neutral:
+          '[--tag-bg:var(--color-surface)] [--tag-fg:var(--color-fg)] [--tag-line:var(--color-border)] [--tag-muted:var(--color-fg-muted)]',
+        info: '[--tag-bg:var(--color-info-soft)] [--tag-fg:var(--color-on-info-soft)] [--tag-line:color-mix(in_oklab,var(--color-info)_30%,transparent)] [--tag-muted:var(--color-on-info-soft)]',
+        success:
+          '[--tag-bg:var(--color-success-soft)] [--tag-fg:var(--color-on-success-soft)] [--tag-line:color-mix(in_oklab,var(--color-success)_30%,transparent)] [--tag-muted:var(--color-on-success-soft)]',
+        warning:
+          '[--tag-bg:var(--color-warning-soft)] [--tag-fg:var(--color-on-warning-soft)] [--tag-line:color-mix(in_oklab,var(--color-warning)_40%,transparent)] [--tag-muted:var(--color-on-warning-soft)]',
+        danger:
+          '[--tag-bg:var(--color-danger-soft)] [--tag-fg:var(--color-on-danger-soft)] [--tag-line:color-mix(in_oklab,var(--color-danger)_30%,transparent)] [--tag-muted:var(--color-on-danger-soft)]',
+      },
+      /** `pill` is fully round. The ✕ follows (it reads the --tag-radius variable). */
+      shape: {
+        rounded: 'rounded [--tag-radius:0.25rem]',
+        pill: 'rounded-full [--tag-radius:9999px]',
+      },
       /** Selectable chips are pressed, so they get a pointer and a hover. */
       interactive: { true: 'cursor-pointer hover:bg-border/60', false: '' },
       /** Without a remove button, the end padding matches the start. */
       removable: { true: '', false: 'pe-2' },
     },
     compoundVariants: [{ size: 'md', removable: false, class: 'pe-2.5' }],
-    defaultVariants: { size: 'sm', interactive: false, removable: true },
+    defaultVariants: {
+      size: 'sm',
+      tone: 'neutral',
+      shape: 'rounded',
+      interactive: false,
+      removable: true,
+    },
   },
 );
 
@@ -39,7 +69,7 @@ export function TagRemoveButton() {
     <Button
       slot="remove"
       className={cn(
-        'rounded p-0.5 text-fg-muted outline-hidden hover:bg-border hover:text-fg',
+        'rounded-(--tag-radius) p-0.5 text-(--tag-muted) outline-hidden hover:bg-fg/10 hover:text-(--tag-fg)',
         // It takes keyboard focus, so it needs a visible ring (WCAG 2.4.7). outline-solid
         // is required: outline-hidden sets the style to none, outline-2 only the width.
         'data-focus-visible:outline-2 data-focus-visible:outline-solid data-focus-visible:outline-focus-ring',
