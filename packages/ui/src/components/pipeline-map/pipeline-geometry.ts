@@ -30,8 +30,112 @@ export function segmentPath(
   facilitiesById: ReadonlyMap<string, Facility>,
 ): string | null {
   const points = segmentPoints(segment, facilitiesById);
-  if (!points) return null;
+  return points ? toPathData(points) : null;
+}
+
+/** SVG path data for a polyline: `'M 0 0 L 4 0'`. Empty for no points. */
+export function toPathData(points: readonly Point[]): string {
   return points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
+}
+
+/** Total length of a polyline, in its own units. */
+export function polylineLength(points: readonly Point[]): number {
+  let total = 0;
+  for (let i = 1; i < points.length; i++) {
+    const a = points[i - 1] as Point;
+    const b = points[i] as Point;
+    total += Math.hypot(b.x - a.x, b.y - a.y);
+  }
+  return total;
+}
+
+/**
+ * A copy of a polyline moved sideways by `distance`, to the **left of the direction
+ * of travel** (for a pipe drawn left to right, that is above it; SVG `y` grows down).
+ * Corners are mitred, so a right-angle elbow stays a right angle.
+ * Zero-length legs are skipped. Fewer than two distinct points → the input unchanged.
+ */
+export function offsetPolyline(
+  points: readonly Point[],
+  distance: number,
+): Point[] {
+  const pts = points.filter(
+    (p, i) => i === 0 || p.x !== points[i - 1]?.x || p.y !== points[i - 1]?.y,
+  );
+  if (pts.length < 2 || distance === 0) return [...pts];
+
+  // Left-hand unit normal of each leg: direction (dx, dy) → (dy, -dx).
+  const normals = pts.slice(1).map((b, i) => {
+    const a = pts[i] as Point;
+    const len = Math.hypot(b.x - a.x, b.y - a.y);
+    return { x: (b.y - a.y) / len, y: -(b.x - a.x) / len };
+  });
+
+  return pts.map((p, i) => {
+    const before = normals[i - 1];
+    const after = normals[i];
+    if (!before || !after) {
+      const n = (before ?? after) as Point;
+      return { x: p.x + n.x * distance, y: p.y + n.y * distance };
+    }
+    // Mitre: push along the average normal, scaled so each leg stays `distance` away.
+    const k = distance / (1 + before.x * after.x + before.y * after.y);
+    return {
+      x: p.x + (before.x + after.x) * k,
+      y: p.y + (before.y + after.y) * k,
+    };
+  });
+}
+
+/**
+ * The piece of a polyline between two fractions of its **length** (0 = first point,
+ * 1 = last point). Corners inside the piece are kept, so a slice across an elbow
+ * still turns the corner.
+ *
+ * This is how batches are drawn: one sub-path per `batchOffsets` span. (Dashes with
+ * `pathLength` would be simpler, but they break with `non-scaling-stroke`.)
+ *
+ * Fractions are clamped to 0–1. Gives `[]` when there is nothing to draw: fewer than
+ * two points, a zero-length line, or `end <= start`.
+ */
+export function slicePolyline(
+  points: readonly Point[],
+  start: number,
+  end: number,
+): Point[] {
+  const from = Math.min(Math.max(start, 0), 1);
+  const to = Math.min(Math.max(end, 0), 1);
+  if (points.length < 2 || to <= from) return [];
+
+  // Distance from the first point to each point.
+  const at: number[] = [0];
+  for (let i = 1; i < points.length; i++) {
+    const a = points[i - 1] as Point;
+    const b = points[i] as Point;
+    at.push((at[i - 1] as number) + Math.hypot(b.x - a.x, b.y - a.y));
+  }
+  const total = at[at.length - 1] as number;
+  if (total === 0) return [];
+
+  /** The point `d` along the line, by walking to the leg that contains it. */
+  const pointAt = (d: number): Point => {
+    let i = 1;
+    while (i < points.length - 1 && (at[i] as number) < d) i++;
+    const a = points[i - 1] as Point;
+    const b = points[i] as Point;
+    const legStart = at[i - 1] as number;
+    const leg = (at[i] as number) - legStart;
+    const t = leg === 0 ? 0 : (d - legStart) / leg;
+    return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t };
+  };
+
+  const startD = from * total;
+  const endD = to * total;
+  const corners = points.filter((_, i) => {
+    const d = at[i] as number;
+    return d > startD && d < endD;
+  });
+  return [pointAt(startD), ...corners, pointAt(endD)];
 }
 
 /**
