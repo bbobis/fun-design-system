@@ -288,7 +288,36 @@ const [batch, setBatch] = useState<string | null>(null);
 - Combines with a trace and a filter by AND, like they do with each other.
 - `findBatch(network, name)` gives you the parts and the total, e.g. for a panel.
 
-## 8. Keyboard and screen readers
+## 8. Search and jump
+
+`PipelineMapSearch` is a combobox of every facility and pipe. It hands you an id;
+you tell the map to focus it through the map's **ref handle**.
+
+```tsx
+const mapRef = useRef<PipelineMapHandle>(null);
+
+<PipelineMapSearch
+  network={network}
+  onPick={(id) => {
+    setSelectedId(id);                // optional: select it too
+    mapRef.current?.focusItem(id);    // move keyboard focus onto it
+  }}
+/>
+<PipelineMap ref={mapRef} … selectedId={selectedId} onSelect={setSelectedId} />
+```
+
+- **Why a ref and not a prop?** Focus is an _action at a moment_, not a state to hold.
+  A `focusedId` prop would have to be cleared after every jump, or jumping to the same
+  item twice would do nothing. `focusItem(id)` just does it, and returns `false` for an
+  unknown id.
+- **The map's `ref` is the handle, not the `<svg>`.** Need the element? Wrap the map in
+  a `<div ref>`.
+- After a jump the item is the map's tab stop and shows its tooltip, so arrow keys carry
+  on from there.
+- The box clears after each pick, so you can search again straight away.
+- `searchOptions(network)` builds the option list if you'd rather use your own search UI.
+
+## 9. Keyboard and screen readers
 
 | Key           | Does                                                                                        |
 | ------------- | ------------------------------------------------------------------------------------------- |

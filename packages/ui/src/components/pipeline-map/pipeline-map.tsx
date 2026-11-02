@@ -2,12 +2,14 @@ import {
   createContext,
   useContext,
   useEffect,
+  useImperativeHandle,
   useLayoutEffect,
   useMemo,
   useRef,
   useState,
   type ComponentProps,
   type ReactNode,
+  type Ref,
 } from 'react';
 import { usePress } from 'react-aria';
 import { cn } from '../../utils/cn';
@@ -262,12 +264,34 @@ function useWidth(ref: React.RefObject<Element | null>): number {
 
 /* ---------- PipelineMap ---------- */
 
+/**
+ * What you can do to a map from outside it, through its `ref`. For things a prop
+ * can't express: moving focus is an *action* at a moment, not a state to hold.
+ *
+ * @example
+ * const mapRef = useRef<PipelineMapHandle>(null);
+ * <PipelineMap ref={mapRef} … />
+ * mapRef.current?.focusItem('D');
+ */
+export interface PipelineMapHandle {
+  /**
+   * Moves keyboard focus to a facility or pipe (it becomes the map's tab stop and
+   * shows its tooltip). Returns `false` if no item has that id.
+   */
+  focusItem: (id: string) => boolean;
+}
+
 export type PipelineMapProps = Omit<
   ComponentProps<'svg'>,
   // `filter` is also a native SVG attribute (a string naming an SVG filter effect):
   // ours replaces it, so TypeScript doesn't merge the two into `string & MapFilter`.
-  'children' | 'onSelect' | 'viewBox' | 'filter'
+  'children' | 'onSelect' | 'viewBox' | 'filter' | 'ref'
 > & {
+  /**
+   * Gives you a `PipelineMapHandle` (not the `<svg>` element) to move focus from
+   * outside, e.g. from `PipelineMapSearch`.
+   */
+  ref?: Ref<PipelineMapHandle>;
   /** Facilities and segments to draw. Positions are hand-placed grid units. */
   network: PipelineNetwork;
   /** Product codes in legend order; a product's position picks its color everywhere. */
@@ -350,6 +374,7 @@ export function PipelineMap({
   followedBatch: followedProp,
   defaultFollowedBatch = null,
   onFollowBatchChange,
+  ref,
   children,
   className,
   onKeyDown,
@@ -456,12 +481,17 @@ export function PipelineMap({
       : (network.facilities[0]?.id ?? null);
 
   /** Moves DOM focus to an item; its onFocus then makes it the tab stop. */
-  const focusItem = (id: string | null) => {
-    if (!id) return;
-    svgRef.current
-      ?.querySelector<SVGGElement>(`[data-map-item="${CSS.escape(id)}"]`)
-      ?.focus();
+  const focusItem = (id: string | null): boolean => {
+    if (!id) return false;
+    const item = svgRef.current?.querySelector<SVGGElement>(
+      `[data-map-item="${CSS.escape(id)}"]`,
+    );
+    item?.focus();
+    return Boolean(item);
   };
+  // The parent's ref gets this object instead of the <svg>. React 19: `ref` is a
+  // plain prop on function components, so no forwardRef is needed.
+  useImperativeHandle(ref, () => ({ focusItem }));
 
   return (
     <MapContext.Provider
