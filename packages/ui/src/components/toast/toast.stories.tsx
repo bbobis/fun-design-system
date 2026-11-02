@@ -12,6 +12,17 @@ const meta = {
   argTypes: {
     variant: { control: 'radio', options: ['bar', 'soft', 'outline', 'solid'] },
     size: { control: 'radio', options: ['sm', 'md'] },
+    placement: {
+      control: 'select',
+      options: [
+        'top-start',
+        'top-center',
+        'top-end',
+        'bottom-start',
+        'bottom-center',
+        'bottom-end',
+      ],
+    },
   },
   // The region is rendered once per app; here, once per story, with the story's args.
   decorators: [
@@ -89,7 +100,7 @@ export const Tones: Story = {
  * Shows four toasts right away (the region shows at most 4) and closes them when you
  * leave the story. Info looks like success here; the Tones story has every tone.
  */
-function AllTones() {
+function AllTones({ where = 'bottom-right corner' }: { where?: string }) {
   useEffect(() => {
     const keys = [
       toast.show({ title: 'Draft saved', tone: 'neutral' }, { timeout: null }),
@@ -110,7 +121,7 @@ function AllTones() {
   }, []);
   return (
     <p className="text-sm text-fg-muted">
-      The toasts are in the bottom-right corner. Press F6 to jump to them.
+      The toasts are in the {where}. Press F6 to jump to them.
     </p>
   );
 }
@@ -133,4 +144,29 @@ export const VariantSolid: Story = {
 export const SizeSmall: Story = {
   args: { variant: 'soft', size: 'sm' },
   render: () => <AllTones />,
+};
+
+/** `icons`: the tone's icon before the title (the same icons as Alert). */
+export const WithIcons: Story = {
+  args: { icons: true },
+  render: () => <AllTones />,
+};
+/** `icons` on a soft fill: each icon takes the toast's text colour. */
+export const WithIconsSoft: Story = {
+  args: { icons: true, variant: 'soft' },
+  render: () => <AllTones />,
+};
+
+/**
+ * `placement="top-center"`: the newest toast is at the top, nearest the edge. Use the
+ * top when the bottom is busy (a chat input, a sticky action bar).
+ */
+export const PlacementTopCenter: Story = {
+  args: { placement: 'top-center', icons: true },
+  render: () => <AllTones where="top center" />,
+};
+/** `placement="bottom-start"`: bottom-left in English, bottom-right in Arabic. */
+export const PlacementBottomStart: Story = {
+  args: { placement: 'bottom-start' },
+  render: () => <AllTones where="bottom-left corner" />,
 };

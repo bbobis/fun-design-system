@@ -1,6 +1,7 @@
 import { cva, type VariantProps } from 'class-variance-authority';
-import type { ReactNode, SVGProps } from 'react';
+import type { ReactNode } from 'react';
 import { cn } from '../../utils/cn';
+import { statusIcons, XIcon } from './status-icons';
 
 const alertVariants = cva('flex border', {
   variants: {
@@ -9,6 +10,9 @@ const alertVariants = cva('flex border', {
      * which of them paint the fill, border, text and icon.
      */
     tone: {
+      // No colour of its own: grey surface, page text, the strong border.
+      neutral:
+        '[--alert-soft:var(--color-surface)] [--alert-on-soft:var(--color-fg)] [--alert-solid:var(--color-fg)] [--alert-on-solid:var(--color-bg)] [--alert-line:var(--color-border)] [--alert-strong-line:var(--color-border-strong)]',
       info: '[--alert-soft:var(--color-info-soft)] [--alert-on-soft:var(--color-on-info-soft)] [--alert-solid:var(--color-info)] [--alert-on-solid:var(--color-on-info)] [--alert-line:color-mix(in_oklab,var(--color-info)_30%,transparent)] [--alert-strong-line:var(--color-info)]',
       success:
         '[--alert-soft:var(--color-success-soft)] [--alert-on-soft:var(--color-on-success-soft)] [--alert-solid:var(--color-success)] [--alert-on-solid:var(--color-on-success)] [--alert-line:color-mix(in_oklab,var(--color-success)_30%,transparent)] [--alert-strong-line:var(--color-success)]',
@@ -24,6 +28,9 @@ const alertVariants = cva('flex border', {
       // icon uses the soft-text token, which contrasts with the page in both themes.
       outline:
         'border-(--alert-strong-line) bg-bg text-fg [--alert-icon:var(--alert-on-soft)]',
+      // A plain card with a thick coloured edge on the start side (left in English,
+      // right in Arabic): the same look as Toast's `bar`. `border-s-*` = "start" side.
+      bar: 'border-border border-s-4 border-s-(--alert-strong-line) bg-bg text-fg [--alert-icon:var(--alert-on-soft)]',
       // Strongest: for the one message that must not be missed.
       solid: 'border-transparent bg-(--alert-solid) text-(--alert-on-solid)',
     },
@@ -46,7 +53,8 @@ export type AlertVariant = NonNullable<
 >;
 
 /** Read before the title, so the tone isn't carried by color and icon alone. */
-const toneWord: Record<Tone, string> = {
+const toneWord: Record<Tone, string | null> = {
+  neutral: null,
   info: 'Information',
   success: 'Success',
   warning: 'Warning',
@@ -54,12 +62,17 @@ const toneWord: Record<Tone, string> = {
 };
 
 export type AlertProps = {
-  /** @default 'info' */
+  /**
+   * `neutral` is grey, for news with no good or bad in it ("New version available").
+   * @default 'info'
+   */
   tone?: Tone;
   /**
    * - `soft`: tinted box (most messages).
    * - `outline`: the page's background with a coloured border and icon; quieter, for
    *   pages with several alerts.
+   * - `bar`: the page's background with a thick coloured edge on the start side
+   *   (the same look as Toast's `bar`).
    * - `solid`: strong fill, for the one message that must not be missed.
    * @default 'soft'
    */
@@ -74,6 +87,11 @@ export type AlertProps = {
    * It is still an alert, not the page's `banner` landmark. @default false
    */
   banner?: boolean;
+  /**
+   * Replace the tone's icon with your own (decorative: give it `aria-hidden`), or
+   * `false` for no icon. @default the tone's icon
+   */
+  icon?: ReactNode | false;
   /** One short line in bold: what happened ("Payment failed"). */
   title?: string;
   /** Details, and what the user can do about it. */
@@ -117,10 +135,15 @@ export function Alert({
   actions,
   onDismiss,
   announce = false,
+  icon,
   className,
 }: AlertProps) {
   const t: Tone = tone ?? 'info';
-  const Icon = icons[t];
+  const Icon = statusIcons[t];
+  const word = toneWord[t];
+  // Outline and bar sit on the page's background: the icon takes the tone's
+  // readable colour (--alert-icon). Soft and solid icons follow the text.
+  const iconColour = variant === 'outline' || variant === 'bar';
   const compact = size === 'sm';
   return (
     <div
@@ -136,13 +159,17 @@ export function Alert({
         className,
       )}
     >
-      <Icon
-        className={cn(
-          'size-4 shrink-0',
-          compact ? '' : 'mt-0.5',
-          variant === 'outline' && 'text-(--alert-icon)',
-        )}
-      />
+      {icon !== false && (
+        <span
+          className={cn(
+            'flex shrink-0 *:size-4',
+            compact ? '' : 'mt-0.5',
+            iconColour && 'text-(--alert-icon)',
+          )}
+        >
+          {icon ?? <Icon />}
+        </span>
+      )}
       <div
         className={cn(
           'min-w-0 flex-1',
@@ -152,11 +179,11 @@ export function Alert({
       >
         {title ? (
           <p className="font-semibold">
-            <span className="sr-only">{toneWord[t]}: </span>
+            {word && <span className="sr-only">{word}: </span>}
             {title}
           </p>
         ) : (
-          <span className="sr-only">{toneWord[t]}: </span>
+          word && <span className="sr-only">{word}: </span>
         )}
         {children && (
           <div className={cn(title && !compact && 'mt-0.5')}>{children}</div>
@@ -183,53 +210,5 @@ export function Alert({
         </button>
       )}
     </div>
-  );
-}
-
-function Svg(props: SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      aria-hidden="true"
-      viewBox="0 0 16 16"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.5}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      {...props}
-    />
-  );
-}
-const icons: Record<Tone, (p: SVGProps<SVGSVGElement>) => ReactNode> = {
-  info: (p) => (
-    <Svg {...p}>
-      <circle cx="8" cy="8" r="6.25" />
-      <path d="M8 7.25v3.5M8 5.25h.01" />
-    </Svg>
-  ),
-  success: (p) => (
-    <Svg {...p}>
-      <circle cx="8" cy="8" r="6.25" />
-      <path d="m5.5 8.25 1.75 1.75 3.25-3.75" />
-    </Svg>
-  ),
-  warning: (p) => (
-    <Svg {...p}>
-      <path d="M8 2.25 1.75 13.25h12.5z" />
-      <path d="M8 6.75v3M8 11.5h.01" />
-    </Svg>
-  ),
-  danger: (p) => (
-    <Svg {...p}>
-      <circle cx="8" cy="8" r="6.25" />
-      <path d="m5.75 5.75 4.5 4.5m0-4.5-4.5 4.5" />
-    </Svg>
-  ),
-};
-function XIcon(p: SVGProps<SVGSVGElement>) {
-  return (
-    <Svg {...p} strokeWidth={1.75}>
-      <path d="m4.5 4.5 7 7m0-7-7 7" />
-    </Svg>
   );
 }

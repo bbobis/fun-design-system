@@ -3,6 +3,7 @@ export {
   ToastRegion,
   type ToastContent,
   type ToastOptions,
+  type ToastPlacement,
   type ToastRegionProps,
   type ToastTone,
   type ToastVariant,

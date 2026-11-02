@@ -16,9 +16,12 @@ const meta = {
   argTypes: {
     tone: {
       control: 'radio',
-      options: ['info', 'success', 'warning', 'danger'],
+      options: ['neutral', 'info', 'success', 'warning', 'danger'],
     },
-    variant: { control: 'radio', options: ['soft', 'outline', 'solid'] },
+    variant: {
+      control: 'radio',
+      options: ['soft', 'outline', 'bar', 'solid'],
+    },
     size: { control: 'radio', options: ['md', 'sm'] },
   },
   decorators: [
@@ -93,6 +96,7 @@ export const AfterAFailedSave: Story = {
 };
 
 const tones = [
+  ['neutral', 'Version 4.2 is available'],
   ['info', '3 invoices are waiting for approval'],
   ['success', 'Import finished: 1,240 rows added'],
   ['warning', 'Exchange rates are 2 days old'],
@@ -101,12 +105,14 @@ const tones = [
 
 /**
  * Every tone in every `variant`: `soft` (default), `outline` (quieter, for pages with
- * several alerts), `solid` (the one that must not be missed). axe checks each one.
+ * several alerts), `bar` (a coloured edge, like Toast), `solid` (the one that must not
+ * be missed). `neutral` has no tone word for screen readers: it's just news. axe
+ * checks each one.
  */
 export const Variants: Story = {
   render: () => (
     <div className="flex flex-col gap-6">
-      {(['soft', 'outline', 'solid'] as const).map((variant) => (
+      {(['soft', 'outline', 'bar', 'solid'] as const).map((variant) => (
         <div key={variant} className="flex flex-col gap-2">
           <p className="text-xs text-fg-muted">{variant}</p>
           {tones.map(([tone, title]) => (
@@ -196,4 +202,35 @@ export const Compact: Story = {
     }
     return <Example />;
   },
+};
+
+/**
+ * `icon`: your own icon (here a sparkle for a new feature), or `icon={false}` for none,
+ * e.g. in a tight table row where the colour and the words are enough.
+ */
+export const CustomIcon: Story = {
+  render: () => (
+    <div className="flex flex-col gap-3">
+      <Alert
+        tone="neutral"
+        variant="bar"
+        icon={
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 16 16"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={1.5}
+            strokeLinejoin="round"
+          >
+            <path d="M8 1.75 9.5 6.5l4.75 1.5L9.5 9.5 8 14.25 6.5 9.5 1.75 8 6.5 6.5z" />
+          </svg>
+        }
+        title="New: recurring invoices"
+      >
+        Set an invoice to repeat every month from its menu.
+      </Alert>
+      <Alert tone="warning" size="sm" icon={false} title="2 rows skipped" />
+    </div>
+  ),
 };
