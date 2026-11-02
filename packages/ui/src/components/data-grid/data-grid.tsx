@@ -81,6 +81,7 @@ import {
   ROW_ERROR_KEY,
   SELECT_COLUMN_ID,
   toEditorText,
+  type PinnedColumns,
 } from './data-grid-utils';
 import { PencilIcon, SearchIcon, SortIndicator } from './icons';
 import { SaveBar } from './editing/save-bar';
@@ -104,7 +105,7 @@ type Overrides<TData> = {
 };
 
 /** Row heights in px. Fixed heights are what keep 10k+ rows fast: no measuring. */
-const ROW_HEIGHT = { compact: 32, standard: 40 } as const;
+const ROW_HEIGHT = { compact: 32, standard: 40, comfortable: 48 } as const;
 const EMPTY_SELECTION: RowSelectionState = {};
 const NO_SORTING: SortingState = [];
 
@@ -149,8 +150,24 @@ export type DataGridProps<TData extends RowData> = {
   editing?: DataGridEditing<TData>;
   /** Shows the header bar (title, count, search, actions). @default true */
   showToolbar?: boolean;
-  /** Row height: `compact` (32px) for dense data, `standard` (40px). @default 'compact' */
+  /**
+   * Row height: `compact` (32px) for dense data, `standard` (40px), `comfortable`
+   * (48px) for short tables people read rather than scan. @default 'compact'
+   */
   density?: keyof typeof ROW_HEIGHT;
+  /**
+   * A light fill on every other row, to help the eye follow wide rows. Counted by
+   * the row's index, so it stays put while the virtual list scrolls. @default false
+   */
+  striped?: boolean;
+  /** `rows`: lines between rows. `all`: between cells too. @default 'rows' */
+  gridLines?: 'rows' | 'all';
+  /**
+   * Keep the first column (and the checkbox column, if any) in place while the rest
+   * scrolls sideways. For wide tables where the first column says which row is
+   * which (invoice number, customer). @default false
+   */
+  pinFirstColumn?: boolean;
   /** Shown when there are no rows, or no rows match the search. */
   emptyMessage?: ReactNode;
   /**
@@ -192,6 +209,9 @@ export function DataGrid<TData extends RowData>({
   editing,
   showToolbar = true,
   density = 'compact',
+  striped = false,
+  gridLines = 'rows',
+  pinFirstColumn = false,
   emptyMessage = 'No rows to show.',
   className,
 }: DataGridProps<TData>) {
@@ -374,6 +394,31 @@ export function DataGrid<TData extends RowData>({
   const headerGroups = table.getHeaderGroups();
   const columnCount = leafColumns.length;
   const totalWidth = table.getTotalSize();
+  // Pinned columns: the checkbox column (if shown) and the first data column, with the
+  // left offset each sticks at. Recomputed only when the columns or sizes change.
+  const pinKey = pinFirstColumn
+    ? leafColumns
+        .slice(0, 2)
+        .map((c) => `${c.id}:${c.getSize()}`)
+        .join('|')
+    : '';
+  const pinned = useMemo<PinnedColumns>(() => {
+    if (!pinKey) return null;
+    const result: Record<string, number> = {};
+    let offset = 0;
+    for (const part of pinKey.split('|')) {
+      const [id, size] = part.split(':');
+      result[id] = offset;
+      offset += Number(size);
+      if (id !== SELECT_COLUMN_ID) break; // pin up to the first data column
+    }
+    return result;
+  }, [pinKey]);
+  const pinnedWidth = pinned
+    ? leafColumns
+        .filter((c) => c.id in pinned)
+        .reduce((w, c) => w + c.getSize(), 0)
+    : 0;
   const rowIndexById = useMemo(
     () => new Map(rows.map((row, i) => [row.id, i])),
     [rows],
@@ -1379,7 +1424,13 @@ export function DataGrid<TData extends RowData>({
         role="region"
         aria-label={ariaLabel}
         tabIndex={isEditing ? -1 : 0}
-        className="relative min-h-0 flex-1 scroll-pt-9 overflow-auto focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus-ring"
+        className={cn(
+          'relative min-h-0 flex-1 scroll-pt-9 overflow-auto focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus-ring',
+          // Like scroll-pt-9 for the sticky header: scrolling a cell into view keeps
+          // it clear of the pinned columns, not hidden underneath them.
+          pinned && 'scroll-ps-(--pin-w)',
+        )}
+        style={pinned ? cssVars({ '--pin-w': `${pinnedWidth}px` }) : undefined}
       >
         {/*
           Explicit roles: display:grid/flex on table elements makes some browsers drop
@@ -1434,12 +1485,24 @@ export function DataGrid<TData extends RowData>({
                       }
                       className={cn(
                         // `group` lets children react to hovering the whole header cell.
-                        'group flex h-9 w-(--w) shrink-0 items-center gap-1 border-y border-border px-3',
+                        'group relative flex h-9 w-(--w) shrink-0 items-center gap-1 border-y border-border px-3',
                         'text-xs font-medium whitespace-nowrap text-fg-muted',
                         meta?.align === 'end' && 'justify-end',
                         column.id === SELECT_COLUMN_ID && 'justify-center px-0',
+                        gridLines === 'all' && 'border-e',
+                        pinned &&
+                          column.id in pinned && [
+                            'sticky start-(--pin) z-[1] bg-bg',
+                            isLastPinned(pinned, column.id) &&
+                              "after:pointer-events-none after:absolute after:inset-y-0 after:end-0 after:w-px after:bg-border-strong after:content-['']",
+                          ],
                       )}
-                      style={cssVars({ '--w': `${header.getSize()}px` })}
+                      style={cssVars({
+                        '--w': `${header.getSize()}px`,
+                        ...(pinned && column.id in pinned
+                          ? { '--pin': `${pinned[column.id]}px` }
+                          : {}),
+                      })}
                     >
                       {header.isPlaceholder ? null : !isEditing &&
                         column.getCanSort() ? (
@@ -1539,6 +1602,9 @@ export function DataGrid<TData extends RowData>({
                     isNew={newRows.has(row.id)}
                     isTrailing={row.id === NEW_ROW_ID}
                     hintColumnId={hintColumnId}
+                    striped={striped}
+                    verticalLines={gridLines === 'all'}
+                    pinned={pinned}
                   />
                 );
               })
@@ -1646,4 +1712,10 @@ function conflictMessage(conflict: SaveConflict, label: string) {
  */
 function parseOptions(meta: DataGridColumnMeta | undefined) {
   return meta?.searchOptions ? [] : meta?.options;
+}
+
+/** The pinned column that borders the scrolling ones (it gets the edge line). */
+function isLastPinned(pinned: NonNullable<PinnedColumns>, id: string) {
+  const ids = Object.keys(pinned);
+  return ids[ids.length - 1] === id;
 }

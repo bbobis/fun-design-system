@@ -68,6 +68,45 @@ export const TenThousandRows: Story = {
   },
 };
 
+/**
+ * The table looks: `density="comfortable"` (48px rows), `striped`, `gridLines="all"`
+ * and `pinFirstColumn`. Scroll sideways: the checkbox and invoice-number columns stay,
+ * with a line on their edge. Hover or tick a row: the pinned cells change with it.
+ */
+export const Styles: Story = {
+  args: {
+    title: 'Invoices',
+    data: tenThousand.slice(0, 200),
+    enableRowSelection: true,
+    density: 'comfortable',
+    striped: true,
+    gridLines: 'all',
+    pinFirstColumn: true,
+    className: 'h-[30rem] max-w-3xl',
+  },
+};
+
+/** Side by side: compact (default), standard and comfortable. */
+export const Densities: Story = {
+  render: () => (
+    <div className="grid gap-4 lg:grid-cols-3">
+      {(['compact', 'standard', 'comfortable'] as const).map((density) => (
+        <DataGrid
+          key={density}
+          aria-label={`Invoices (${density})`}
+          title={density}
+          data={twentyFive}
+          columns={invoiceColumns.slice(0, 4)}
+          getRowId={getRowId}
+          density={density}
+          striped
+          className="h-80"
+        />
+      ))}
+    </div>
+  ),
+};
+
 /** Without a title or actions: just search, the count and the grid. */
 export const Minimal: Story = {
   args: {

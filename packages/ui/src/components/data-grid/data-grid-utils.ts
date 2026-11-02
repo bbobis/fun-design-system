@@ -66,3 +66,41 @@ export function toEditorText(value: unknown): string {
 export function isEmptyValue(value: unknown): boolean {
   return value == null || value === '';
 }
+
+/**
+ * Pinned columns (`pinFirstColumn`): column id → its left offset in px. Cells read
+ * the offset as `--pin`. `null` when nothing is pinned.
+ */
+export type PinnedColumns = Readonly<Record<string, number>> | null;
+
+/**
+ * Classes for a pinned cell. It sticks to the start edge while the rest scrolls under
+ * it, so it needs a **solid** background: the row's own fills are see-through
+ * (`bg-primary/10`, `bg-surface/60`), which would show the scrolled cells through it.
+ * Each row state therefore gets an opaque mix with the page color here.
+ */
+export function pinnedCellClass(opts: {
+  last: boolean;
+  first: boolean;
+  striped: boolean;
+}) {
+  return [
+    'sticky start-(--pin) z-[1] bg-bg',
+    opts.striped &&
+      'bg-[color-mix(in_oklab,var(--color-surface)_60%,var(--color-bg))]',
+    'group-hover/row:bg-surface',
+    'group-data-selected/row:bg-[color-mix(in_oklab,var(--color-primary)_10%,var(--color-bg))]',
+    'group-data-selected/row:group-hover/row:bg-[color-mix(in_oklab,var(--color-primary)_15%,var(--color-bg))]',
+    // The row's selected / changed / error rails are drawn on the row, under this
+    // opaque cell, so the first pinned cell draws them again.
+    opts.first && [
+      'group-data-selected/row:shadow-[inset_2px_0_0_var(--color-primary)]',
+      'group-data-[state=changed]/row:shadow-[inset_3px_0_0_var(--color-primary)]',
+      'group-data-[state=error]/row:shadow-[inset_3px_0_0_var(--color-danger)]',
+    ],
+    // The edge between pinned and scrolling cells. A pseudo-element inside the cell
+    // (cells clip their overflow, so it can't sit outside).
+    opts.last &&
+      "after:pointer-events-none after:absolute after:inset-y-0 after:end-0 after:w-px after:bg-border-strong after:content-['']",
+  ];
+}
