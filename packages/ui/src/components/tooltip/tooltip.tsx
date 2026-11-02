@@ -1,6 +1,7 @@
 import type { DOMAttributes, ReactElement, ReactNode } from 'react';
 import {
   Focusable,
+  OverlayArrow,
   Tooltip as AriaTooltip,
   TooltipTrigger,
 } from 'react-aria-components';
@@ -37,7 +38,30 @@ export type TooltipProps = {
    * @default 'description'
    */
   kind?: 'description' | 'label';
+  /**
+   * `inverse`: dark on a light page (light on a dark one), the usual tooltip.
+   * `light`: the page's own colors with a border, for a calmer hint on busy screens.
+   * @default 'inverse'
+   */
+  variant?: 'inverse' | 'light';
+  /** `sm` for a few words; `md` for one sentence (bigger text, wider). @default 'sm' */
+  size?: 'sm' | 'md';
+  /** A small arrow pointing at the element. It turns when the hint flips sides. @default false */
+  arrow?: boolean;
 };
+
+const variants = {
+  inverse: { panel: 'bg-secondary text-on-secondary', arrow: 'fill-secondary' },
+  light: {
+    panel: 'border border-border bg-bg text-fg',
+    arrow: 'fill-bg stroke-border',
+  },
+} as const;
+
+const sizes = {
+  sm: 'max-w-64 px-2 py-1 text-xs',
+  md: 'max-w-80 px-3 py-2 text-sm',
+} as const;
 
 /**
  * A small hint that appears when you hover or keyboard-focus an element, and hides
@@ -61,6 +85,9 @@ export function Tooltip({
   delay = 700,
   disabled,
   kind = 'description',
+  variant = 'inverse',
+  size = 'sm',
+  arrow = false,
 }: TooltipProps) {
   return (
     <TooltipTrigger delay={delay} closeDelay={300} isDisabled={disabled}>
@@ -72,12 +99,33 @@ export function Tooltip({
       </Focusable>
       <AriaTooltip
         placement={placement}
-        offset={6}
+        offset={arrow ? 9 : 6}
         className={cn(
-          'max-w-64 rounded-md bg-secondary px-2 py-1 text-xs text-on-secondary shadow-md',
+          'rounded-md shadow-md',
+          variants[variant].panel,
+          sizes[size],
           tooltipMotion,
         )}
       >
+        {arrow && (
+          <OverlayArrow className="group">
+            {/* Points down (tooltip above the element); React Aria sets
+                data-placement so we can turn it for the other sides. */}
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 10 10"
+              className={cn(
+                'block size-2.5',
+                variants[variant].arrow,
+                'group-data-[placement=bottom]:rotate-180',
+                'group-data-[placement=left]:-rotate-90',
+                'group-data-[placement=right]:rotate-90',
+              )}
+            >
+              <path d="M0 0 L5 5 L10 0" />
+            </svg>
+          </OverlayArrow>
+        )}
         {kind === 'label' ? (
           // React Aria still points aria-describedby at the tooltip. A description
           // follows that reference even to hidden elements, but skips the referenced

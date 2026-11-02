@@ -706,3 +706,14 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Remember: React Aria's `render` prop** lets you change the final DOM props before the element is made: `render={(props) => <div {...props} />}`. Keep the same element type and pass `props` through, `ref` included, or React Aria warns. Use it for small fixes like this one, not for restyling.
 - **Habit:** write the test first and watch it fail on the old code. This one went red on `main` and green with the fix.
 - Docs: https://www.w3.org/TR/wai-aria-1.2/#group
+
+## 2026-11-02 — Progress / Tooltip: tones, sizes, value at the end, ProgressCircle, light tooltips
+- **Built:**
+  - ProgressBar: `tone`, `size` (`sm` / `md` / `lg`) and `valuePosition="end"`.
+  - New `ProgressCircle`: a ring with sizes, tones, `showValue`, and a spinning arc when there's no value.
+  - Tooltip: `variant="light"`, `size="md"` and `arrow`.
+  - Defaults are unchanged.
+- **Remember (the prediction): the shape is only visual.** The ring and the bar are the same `role="progressbar"` with `aria-valuenow` / `aria-valuetext`, so a screen reader can't tell them apart (and doesn't need to). The SVG and the "45%" in the middle are `aria-hidden`; the number comes from `aria-valuetext`. A test checks both.
+- **Remember: `pathLength={100}`** makes an SVG circle 100 units long, whatever its radius. The fill is then plain math: `stroke-dashoffset = 100 − percent`. The percent arrives as one CSS variable through `cssVars`, the same as the bar's `scale-x`.
+- **Caught by an existing test:** I briefly showed the value under the bar when `hideLabel` was on. The FileUpload and Progress tests failed, because that changed a default. I reverted it. This is why "defaults unchanged" needs the old tests, not just new ones.
+- Docs: https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/pathLength

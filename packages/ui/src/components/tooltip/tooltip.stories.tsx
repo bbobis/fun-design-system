@@ -92,3 +92,46 @@ const PrintIcon = (p: SVGProps<SVGSVGElement>) => (
 const RefreshIcon = (p: SVGProps<SVGSVGElement>) => (
   <Icon d="M13 8a5 5 0 1 1-1.5-3.5M13 2.5v3h-3" {...p} />
 );
+
+/**
+ * `variant="light"` and `arrow`. Tab to each button to show its hint (keyboard focus
+ * shows it straight away).
+ */
+export const LightAndArrow: Story = {
+  render: () => (
+    <div className="flex gap-3 pt-6">
+      <Tooltip content="Export as CSV" arrow delay={0}>
+        <Button intent="secondary" size="sm">
+          Inverse + arrow
+        </Button>
+      </Tooltip>
+      <Tooltip content="Export as CSV" variant="light" delay={0}>
+        <Button intent="secondary" size="sm">
+          Light
+        </Button>
+      </Tooltip>
+      <Tooltip content="Export as CSV" variant="light" arrow delay={0}>
+        <Button intent="secondary" size="sm">
+          Light + arrow
+        </Button>
+      </Tooltip>
+    </div>
+  ),
+};
+
+/** `size="md"`: one sentence, bigger text, wider panel. Placed below here. */
+export const Medium: Story = {
+  render: () => (
+    <Tooltip
+      content="Invoices you can still edit. They're sent when you press Send."
+      size="md"
+      placement="bottom"
+      arrow
+      delay={0}
+    >
+      <Button intent="secondary" size="sm">
+        Drafts
+      </Button>
+    </Tooltip>
+  ),
+};
