@@ -69,3 +69,22 @@ export const WithPageSize: Story = {
     );
   },
 };
+
+/**
+ * `variant="simple"`: Previous, "Page 3 of 12", Next. Press Next with a screen
+ * reader on: focus stays on Next, and the page text (a polite live region) says
+ * "Page 4 of 12".
+ */
+export const Simple: Story = {
+  args: { page: 3, pageCount: 12, variant: 'simple' },
+};
+
+/** `variant="compact"`: icon-only arrows around "3 / 12". For a table footer or a card. */
+export const Compact: Story = {
+  args: { page: 3, pageCount: 12, variant: 'compact', showEdges: true },
+};
+
+/** `size="md"` with `showEdges`: First and Last buttons (« ») at the ends. */
+export const MediumWithEdges: Story = {
+  args: { page: 6, pageCount: 42, size: 'md', showEdges: true },
+};

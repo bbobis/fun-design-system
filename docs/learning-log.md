@@ -727,3 +727,17 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Remember: CSS variables plus `calc` replace per-level classes.** React Aria sets `--tree-item-level` on each row. The row's indent is `calc((level − 1) × --tree-indent)`, and the guide is a gradient tile (a 1px line, then transparent) repeated every `--tree-indent` across that same width. Level 3 gets two lines, level 1 none, with no JavaScript.
 - **Remember: "who draws the border" is a variant decision.** In `bordered` and `flush`, the group draws the box and the dividers. In `separated` and `filled`, each section draws its own. Mixing them would give double lines, so the section asks the context which case it's in.
 - Docs: https://react-spectrum.adobe.com/react-aria/Tree.html#styling
+
+## 2026-11-02 — Pagination / Stepper: simple and compact paging, edges, sizes, dots, step icons
+- **Built:**
+  - Pagination gets `variant` (`full`, `simple`, `compact`), `size` (`sm` / `md`) and `showEdges` (First and Last buttons).
+  - Stepper gets `size` (`sm` / `md`), `variant="dots"` and an `icon` on each step.
+  - Defaults are unchanged.
+- **Remember (the prediction): a live region speaks for you.**
+  - When you press Next, focus stays on Next, so nothing new gets announced on its own. In `full`, sighted users see the highlighted page number change, but `simple` and `compact` have no page buttons.
+  - So the "Page 4 of 12" text has `aria-live="polite"`: the screen reader reads it when it changes, after it finishes what it's saying.
+  - The region has to exist from the first render. One that appears at the same moment as its text often isn't announced.
+- **Remember: show one thing, say another.** `compact` shows "3 / 12" (`aria-hidden`) and gives screen readers "Page 3 of 12" (`sr-only`). A slash read out loud is meaningless.
+- **Remember: shape as well as color.** The current dot in `dots` has a ring around it, so it doesn't look like the done dots in any color scheme (WCAG 1.4.1). The words ", completed" and "current step" are still there for screen readers.
+- **Gotcha (lint):** `act(() => fireEvent.click(x))` returns the click's result, so act's return type looks like a promise and `no-floating-promises` fails. Use a block body instead: `act(() => { fireEvent.click(x); })`.
+- Docs: https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Guides/Live_regions
