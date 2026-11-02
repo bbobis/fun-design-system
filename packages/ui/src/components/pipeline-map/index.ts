@@ -44,3 +44,9 @@ export {
   nextInDirection,
   type ArrowKey,
 } from './pipeline-navigation';
+export { FacilityKindMarker } from './facility-node';
+export { MapLegend, type MapLegendProps } from './map-legend';
+export {
+  PipelineMapTable,
+  type PipelineMapTableProps,
+} from './pipeline-map-table';
