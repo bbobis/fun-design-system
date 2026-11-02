@@ -797,3 +797,9 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Remember: truncation is only visual.** `truncate` / `line-clamp-*` hide overflow, but screen readers and copy-paste still get the whole text. When the hidden part matters, offer it another way, e.g. a tooltip or a details view.
 - **Remember: Tailwind only sees class names written out in full.** `line-clamp-${n}` built at runtime would never be generated, so `truncateClass` lists `line-clamp-2` … `line-clamp-5`.
 - Docs: https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/hgroup
+## 2026-11-02 — Pipeline Map step 3: BatchTrain + product colors
+- **Built:** `BatchTrain`, the batches in a pipe drawn as a thin band beside it ("two tracks", Ben's pick), one piece per batch sized by its share of the linefill, 2px gaps between pieces. Geometry: `slicePolyline`, `offsetPolyline` (mitred corners), `polylineLength`, `toPathData`. Tokens: `product-1..3` from a new `viz-*` primitive group.
+- **Remember: validate a palette, don't eyeball it.** Products can sit next to *any* other product in a pipe, so every pair must be distinguishable (not just neighbours in a legend). Only 3 hues passed that, including colour-blind simulation, so slots 4–6 reuse them **with stripes** and 7+ become "other". Colour follows the product's legend position, never its position in a pipe.
+- **Remember: pixels vs grid units.** Points live in grid units, but "10px beside the pipe" and "2px gaps" are screen sizes. One number converts them: `unitsPerPx`. The map will compute it from its size in step 5.
+- **Gotcha (TypeScript): native props can collide with yours.** `ComponentProps<'g'>` already has `points?: string` (an SVG attribute), so my `points: Point[]` became `string & Point[]`. Fix: `Omit<ComponentProps<'g'>, 'children' | 'points'>`.
+- Docs: https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Attribute/stroke-dasharray

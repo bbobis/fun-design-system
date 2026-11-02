@@ -162,6 +162,27 @@ const UI_PAIRS = [
     fgClass: 'border-line-neutral',
     minimum: 3,
   },
+  {
+    bg: 'bg',
+    fg: 'product-1',
+    bgClass: 'bg-bg',
+    fgClass: 'border-product-1',
+    minimum: 3,
+  },
+  {
+    bg: 'bg',
+    fg: 'product-2',
+    bgClass: 'bg-bg',
+    fgClass: 'border-product-2',
+    minimum: 3,
+  },
+  {
+    bg: 'bg',
+    fg: 'product-3',
+    bgClass: 'bg-bg',
+    fgClass: 'border-product-3',
+    minimum: 3,
+  },
 ] as const;
 
 /** Formats an RGB triple as 6-digit hex, since the CSS build may shorten `#ff8833` to `#f83`. */

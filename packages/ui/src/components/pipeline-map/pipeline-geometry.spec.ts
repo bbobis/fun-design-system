@@ -1,8 +1,12 @@
 import {
   batchOffsets,
+  offsetPolyline,
+  polylineLength,
   segmentPath,
   segmentPoints,
+  slicePolyline,
   strokeWidthFor,
+  toPathData,
 } from './pipeline-geometry';
 import type { Batch, Facility, Segment } from './pipeline-model';
 
@@ -141,6 +145,130 @@ describe('pipeline-geometry', () => {
         batch('C', 1),
       ]);
       expect(thirds.at(-1)?.start).toBe(0);
+    });
+  });
+
+  describe('slicePolyline', () => {
+    // An L: 4 units right, then 4 units down. Total length 8.
+    const elbow = [
+      { x: 0, y: 0 },
+      { x: 4, y: 0 },
+      { x: 4, y: 4 },
+    ];
+
+    it('cuts a straight piece out of one leg', () => {
+      expect(slicePolyline(elbow, 0.125, 0.375)).toEqual([
+        { x: 1, y: 0 },
+        { x: 3, y: 0 },
+      ]);
+    });
+
+    it('keeps the corner when the piece crosses it', () => {
+      expect(slicePolyline(elbow, 0.25, 0.75)).toEqual([
+        { x: 2, y: 0 },
+        { x: 4, y: 0 },
+        { x: 4, y: 2 },
+      ]);
+    });
+
+    it('0 to 1 gives the whole line back', () => {
+      expect(slicePolyline(elbow, 0, 1)).toEqual(elbow);
+    });
+
+    it('measures by length, not by point count', () => {
+      // First leg 1 long, second 3 long: halfway (2) is 1 unit into the second leg.
+      const uneven = [
+        { x: 0, y: 0 },
+        { x: 1, y: 0 },
+        { x: 4, y: 0 },
+      ];
+      expect(slicePolyline(uneven, 0, 0.5).at(-1)).toEqual({ x: 2, y: 0 });
+    });
+
+    it('gives nothing to draw for empty or backwards input', () => {
+      expect(slicePolyline(elbow, 0.5, 0.5)).toEqual([]);
+      expect(slicePolyline(elbow, 0.6, 0.4)).toEqual([]);
+      expect(slicePolyline([{ x: 1, y: 1 }], 0, 1)).toEqual([]);
+      expect(
+        slicePolyline(
+          [
+            { x: 1, y: 1 },
+            { x: 1, y: 1 },
+          ],
+          0,
+          1,
+        ),
+      ).toEqual([]);
+    });
+
+    it('clamps fractions outside 0–1', () => {
+      expect(slicePolyline(elbow, -1, 2)).toEqual(elbow);
+    });
+
+    it('batch spans slice the pipe end to end with no gaps', () => {
+      const spans = batchOffsets([
+        batch('A', 500),
+        batch('B', 300),
+        batch('C', 200),
+      ]);
+      const pieces = spans.map((s) =>
+        slicePolyline(elbow, s.start, s.start + s.length),
+      );
+      // A is downstream (ends at the last point), C upstream (starts at the first).
+      expect(pieces[0]?.at(-1)).toEqual({ x: 4, y: 4 });
+      expect(pieces[2]?.[0]).toEqual({ x: 0, y: 0 });
+      expect(toPathData(pieces[0] ?? [])).toBe('M 4 0 L 4 4');
+    });
+  });
+
+  describe('polylineLength / offsetPolyline', () => {
+    const elbow = [
+      { x: 0, y: 0 },
+      { x: 4, y: 0 },
+      { x: 4, y: 4 },
+    ];
+
+    it('adds up the legs', () => {
+      expect(polylineLength(elbow)).toBe(8);
+      expect(polylineLength([])).toBe(0);
+    });
+
+    it('moves a left-to-right line up (left of travel)', () => {
+      expect(
+        offsetPolyline(
+          [
+            { x: 0, y: 1 },
+            { x: 4, y: 1 },
+          ],
+          0.5,
+        ),
+      ).toEqual([
+        { x: 0, y: 0.5 },
+        { x: 4, y: 0.5 },
+      ]);
+    });
+
+    it('keeps a right-angle elbow square (mitred corner)', () => {
+      // Right then down: left of travel is up, then right.
+      const out = offsetPolyline(elbow, 1);
+      expect(out[0]).toEqual({ x: 0, y: -1 });
+      expect(out[1]?.x).toBeCloseTo(5);
+      expect(out[1]?.y).toBeCloseTo(-1);
+      expect(out[2]).toEqual({ x: 5, y: 4 });
+    });
+
+    it('skips repeated points and leaves short input alone', () => {
+      expect(
+        offsetPolyline(
+          [
+            { x: 0, y: 0 },
+            { x: 0, y: 0 },
+            { x: 2, y: 0 },
+          ],
+          1,
+        ),
+      ).toHaveLength(2);
+      expect(offsetPolyline([{ x: 3, y: 3 }], 1)).toEqual([{ x: 3, y: 3 }]);
     });
   });
 });
