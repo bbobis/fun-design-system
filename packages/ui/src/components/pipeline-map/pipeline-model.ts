@@ -37,6 +37,13 @@ export interface Tank {
   capacity: number;
 }
 
+/**
+ * Where a facility's name sits around its marker. Use it to keep labels off pipes:
+ * a station with a branch going down reads better with its label `above`.
+ * `left`/`right` are screen sides (SVG text positions don't flip in right-to-left).
+ */
+export type LabelPlacement = 'below' | 'above' | 'left' | 'right';
+
 /** A place on the network: a terminal, pump station, tank farm or refinery. */
 export interface Facility {
   /** Unique id. Segments refer to facilities by this id. */
@@ -45,6 +52,8 @@ export interface Facility {
   kind: FacilityKind;
   /** Where the node sits on the schematic grid. Placed by hand in v1 (no auto-layout). */
   position: Point;
+  /** Where the name goes. @default 'below' */
+  labelPlacement?: LabelPlacement;
   tanks?: Tank[];
   /** A problem to flag on the node. */
   alert?: { level: 'warning' | 'danger'; message: string };

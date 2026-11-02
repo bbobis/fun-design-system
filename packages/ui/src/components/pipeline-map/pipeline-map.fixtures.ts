@@ -23,12 +23,16 @@ export const DEMO_NETWORK: PipelineNetwork = {
       label: 'Station B',
       kind: 'pump-station',
       position: { x: 4, y: 1 },
+      // A branch leaves downward, so the name goes above, off the pipe.
+      labelPlacement: 'above',
     },
     {
       id: 'C',
       label: 'Station C',
       kind: 'pump-station',
       position: { x: 8, y: 1 },
+      // A branch leaves downward, so the name goes above, off the pipe.
+      labelPlacement: 'above',
     },
     {
       id: 'D',

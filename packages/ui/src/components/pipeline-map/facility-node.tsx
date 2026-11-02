@@ -1,6 +1,11 @@
 import type { ComponentProps, ReactNode } from 'react';
 import { cn } from '../../utils/cn';
-import type { Facility, FacilityKind, Point } from './pipeline-model';
+import type {
+  Facility,
+  FacilityKind,
+  LabelPlacement,
+  Point,
+} from './pipeline-model';
 import { TankGauge, tankGaugeLabel, tankGaugeWidth } from './tank-gauge';
 
 /** Spoken name of each kind, used in the default accessible label. */
@@ -44,6 +49,28 @@ export function FacilityKindMarker({
       {KIND_SHAPES[kind]}
     </g>
   );
+}
+
+/**
+ * Where the label and tank gauge go for each placement, in px around the marker.
+ * The gauge stays under the marker; only `below` stacks it under the label too.
+ */
+export function labelLayout(placement: LabelPlacement): {
+  label: { x: number; y: number; anchor: 'start' | 'middle' | 'end' };
+  gaugeY: number;
+} {
+  switch (placement) {
+    case 'above':
+      // Above the alert badge (which reaches y −21).
+      return { label: { x: 0, y: -26, anchor: 'middle' }, gaugeY: 18 };
+    case 'left':
+      return { label: { x: -18, y: 5, anchor: 'end' }, gaugeY: 18 };
+    case 'right':
+      // Clear of the alert badge on the marker's top-right.
+      return { label: { x: 22, y: 5, anchor: 'start' }, gaugeY: 18 };
+    case 'below':
+      return { label: { x: 0, y: 34, anchor: 'middle' }, gaugeY: 44 };
+  }
 }
 
 /** The alert badge: warning is a triangle, danger a circle (shape **and** color). */
@@ -101,6 +128,11 @@ export type FacilityNodeProps = Omit<ComponentProps<'g'>, 'children'> & {
   kind: FacilityKind;
   /** A problem to flag: a badge on the marker, and the message in the accessible name. */
   alert?: Facility['alert'];
+  /**
+   * Where the name goes around the marker.
+   * @default 'below'
+   */
+  labelPlacement?: LabelPlacement;
   /** Tanks at this facility: drawn as a `TankGauge` under the label, and summarised in the accessible name. */
   tanks?: Facility['tanks'];
   /**
@@ -129,11 +161,13 @@ export function FacilityNode({
   kind,
   alert,
   tanks,
+  labelPlacement = 'below',
   highLevel = 0.9,
   selected = false,
   className,
   ...props
 }: FacilityNodeProps) {
+  const place = labelLayout(labelPlacement);
   return (
     <g
       role="img"
@@ -156,8 +190,10 @@ export function FacilityNode({
       <FacilityKindMarker kind={kind} filled={selected} />
       {alert && <AlertBadge level={alert.level} />}
       <text
-        y={34}
-        textAnchor="middle"
+        x={place.label.x}
+        y={place.label.y}
+        textAnchor={place.label.anchor}
+        data-placement={labelPlacement}
         aria-hidden
         // A halo in the page color keeps the label readable where it crosses a pipe.
         className="fill-fg stroke-bg text-[13px] font-semibold [paint-order:stroke] [stroke-linejoin:round] [stroke-width:4]"
@@ -172,7 +208,7 @@ export function FacilityNode({
           highLevel={highLevel}
           aria-hidden
           role="presentation"
-          transform={`translate(${-tankGaugeWidth(tanks.length) / 2} 44)`}
+          transform={`translate(${-tankGaugeWidth(tanks.length) / 2} ${place.gaugeY})`}
         />
       )}
     </g>
