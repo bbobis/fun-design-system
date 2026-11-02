@@ -38,7 +38,10 @@ export function productStyle(
   };
 }
 
-export type BatchTrainProps = Omit<ComponentProps<'g'>, 'children' | 'points'> & {
+export type BatchTrainProps = Omit<
+  ComponentProps<'g'>,
+  'children' | 'points'
+> & {
   /**
    * The pipe's points, upstream (`from`) first, in map grid units. The same points
    * the pipe is drawn from, so the band follows it around elbows.
