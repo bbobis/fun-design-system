@@ -46,6 +46,7 @@ export * from './components/tag-group';
 export * from './components/text';
 export * from './components/textarea';
 export * from './components/time-field';
+export * from './components/timeline';
 export * from './components/toast';
 export * from './components/toggle-group';
 export * from './components/toolbar';
