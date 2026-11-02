@@ -13,6 +13,7 @@ export * from './components/combobox';
 export * from './components/command-palette';
 export * from './components/data-grid';
 export * from './components/date-picker';
+export * from './components/description-list';
 export * from './components/dialog';
 export * from './components/drawer';
 export * from './components/disclosure';
