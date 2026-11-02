@@ -17,6 +17,7 @@ import {
   ComboboxPopover,
   SpinnerIcon,
 } from './combobox-parts';
+import { hasDescriptions } from '../select/option-content';
 
 /** One choice in a Combobox. Same shape as a Select option. */
 export type ComboboxOption = SelectOption;
@@ -239,7 +240,12 @@ export function Combobox({
         </Button>
       </Group>
       {autoHighlight && <AutoHighlightFirst />}
-      <ComboboxPopover loading={loading} emptyMessage={emptyMessage} />
+      <ComboboxPopover
+        loading={loading}
+        emptyMessage={emptyMessage}
+        size={size ?? 'md'}
+        withDescriptions={hasDescriptions(options)}
+      />
     </AriaComboBox>
   );
 }

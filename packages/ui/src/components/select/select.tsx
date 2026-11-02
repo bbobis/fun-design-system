@@ -12,6 +12,13 @@ import { cn } from '../../utils/cn';
 import { useFieldContext } from '../field/field-context';
 import { fieldSurface } from '../field/field-surface';
 import { popoverMotion } from '../../utils/motion';
+import {
+  hasDescriptions,
+  listRowClass,
+  listRowText,
+  OptionContent,
+  optionRowClass,
+} from './option-content';
 
 /** One choice in a Select. */
 export type SelectOption = {
@@ -21,6 +28,17 @@ export type SelectOption = {
   label: string;
   /** Shown but can't be picked. @default false */
   disabled?: boolean;
+  /**
+   * A small icon before the label (a flag, a status dot). Decoration: hidden from
+   * screen readers, so the label must say it all. In a Select, the chosen option's
+   * icon also shows in the closed field.
+   */
+  icon?: ReactNode;
+  /**
+   * A grey second line ("Can change billing and users"). Screen readers read it after
+   * the label. Kept to one line: longer text is cut with "…".
+   */
+  description?: string;
 };
 
 // Same heights and padding as Input and Button, so they line up in a row.
@@ -109,6 +127,8 @@ export function Select({
   className,
 }: SelectProps) {
   const field = useFieldContext();
+  const listSize = size ?? 'md';
+  const rows = hasDescriptions(options) ? 'described' : 'plain';
   // Explicit props win over the Field's values (same rule as Input).
   const describedBy =
     [field?.describedBy, ariaDescribedBy].filter(Boolean).join(' ') ||
@@ -151,7 +171,33 @@ export function Select({
             {startIcon}
           </span>
         )}
-        <SelectValue className="me-auto truncate data-placeholder:text-fg-muted" />
+        <SelectValue<SelectOption> className="me-auto flex min-w-0 items-center gap-2 data-placeholder:text-fg-muted">
+          {({
+            selectedItems,
+            selectedText,
+            isPlaceholder,
+            defaultChildren,
+          }) => {
+            // The chosen option's icon, unless the field has its own startIcon.
+            const chosenIcon = startIcon ? null : selectedItems[0]?.icon;
+            return (
+              <>
+                {chosenIcon && (
+                  <span
+                    aria-hidden="true"
+                    className="flex size-4 shrink-0 items-center justify-center [&_svg]:size-full"
+                  >
+                    {chosenIcon}
+                  </span>
+                )}
+                {/* The label only: never the option's description or check. */}
+                <span className="truncate">
+                  {isPlaceholder ? defaultChildren : selectedText}
+                </span>
+              </>
+            );
+          }}
+        </SelectValue>
         <ChevronIcon className="size-4 shrink-0 text-fg-muted" />
       </Button>
       {/*
@@ -174,18 +220,14 @@ export function Select({
               id={option.value}
               textValue={option.label}
               className={cn(
-                'flex cursor-default items-center justify-between gap-2 rounded px-2 py-1.5 text-sm text-fg outline-hidden',
-                // data-focused = the highlighted option (keyboard or mouse).
-                'data-focused:bg-surface',
-                'data-selected:font-medium',
-                'data-disabled:cursor-not-allowed data-disabled:text-fg-muted data-disabled:opacity-60',
+                optionRowClass,
+                // The list matches the field: sm field, compact rows.
+                listRowClass[rows][listSize],
+                listRowText[listSize],
               )}
             >
               {({ isSelected }) => (
-                <>
-                  <span className="truncate">{option.label}</span>
-                  {isSelected && <CheckIcon className="size-4 shrink-0" />}
-                </>
+                <OptionContent option={option} isSelected={isSelected} />
               )}
             </ListBoxItem>
           )}
@@ -208,23 +250,6 @@ function ChevronIcon(props: SVGProps<SVGSVGElement>) {
       {...props}
     >
       <path d="m4 6 4 4 4-4" />
-    </svg>
-  );
-}
-
-function CheckIcon(props: SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      aria-hidden="true"
-      viewBox="0 0 16 16"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      {...props}
-    >
-      <path d="m3.5 8.5 3 3 6-7" />
     </svg>
   );
 }

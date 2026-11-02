@@ -18,6 +18,7 @@ import {
   ComboboxPopover,
   SpinnerIcon,
 } from '../combobox/combobox-parts';
+import { hasDescriptions } from '../select/option-content';
 import { useFieldContext } from '../field/field-context';
 import { fieldSurface } from '../field/field-surface';
 import { TagRemoveButton, tagVariants } from '../tag-group/tag-parts';
@@ -285,7 +286,12 @@ export function MultiCombobox({
           <ChevronIcon className="size-4" />
         </Button>
       </Group>
-      <ComboboxPopover loading={loading} emptyMessage={emptyMessage} />
+      <ComboboxPopover
+        loading={loading}
+        emptyMessage={emptyMessage}
+        size={size ?? 'md'}
+        withDescriptions={hasDescriptions(options)}
+      />
     </AriaComboBox>
   );
 }
