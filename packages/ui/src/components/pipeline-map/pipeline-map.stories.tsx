@@ -6,6 +6,7 @@ import {
   PipelineMapSegments,
   type PipelineMapHandle,
 } from './pipeline-map';
+import { PipelineMapDetails } from './pipeline-map-details';
 import { PipelineMapSearch } from './pipeline-map-search';
 import { Button } from '../button/button';
 import { MapLegend } from './map-legend';
@@ -220,6 +221,52 @@ export const SearchAndJump: Story = {
             ref={mapRef}
             selectedId={selectedId}
             onSelect={setSelectedId}
+          />
+        </div>
+      );
+    }
+    return <Example />;
+  },
+};
+
+/**
+ * **Details panel.** The map uses `selectionFollowsFocus`, so as you arrow around the
+ * panel shows where you are. From the panel: trace the flow, follow a batch, jump to
+ * a connected pipe or station, or "Show on map" (the one button that moves focus).
+ *
+ * The panel is a non-modal `<aside>`: the page lays it out beside the map and passes
+ * the same state to both.
+ */
+export const WithDetailsPanel: Story = {
+  render: (args) => {
+    function Example() {
+      const mapRef = useRef<PipelineMapHandle>(null);
+      const [selectedId, setSelectedId] = useState<string | null>('C');
+      const [tracedId, setTracedId] = useState<string | null>(null);
+      const [batch, setBatch] = useState<string | null>(null);
+      return (
+        <div className="grid gap-6 lg:grid-cols-[1fr_18rem]">
+          <PipelineMap
+            {...args}
+            ref={mapRef}
+            selectionFollowsFocus
+            selectedId={selectedId}
+            onSelect={setSelectedId}
+            tracedId={tracedId}
+            onTraceChange={setTracedId}
+            followedBatch={batch}
+            onFollowBatchChange={setBatch}
+          />
+          <PipelineMapDetails
+            network={DEMO_NETWORK}
+            selectedId={selectedId}
+            onSelect={setSelectedId}
+            tracedId={tracedId}
+            onTraceChange={setTracedId}
+            followedBatch={batch}
+            onFollowBatch={setBatch}
+            onShowOnMap={(id) => mapRef.current?.focusItem(id)}
+            className="rounded-lg border border-border p-4"
           />
         </div>
       );

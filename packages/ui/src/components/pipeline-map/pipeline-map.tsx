@@ -231,8 +231,8 @@ type MapContextValue = {
   follow: (name: string | null) => void;
   /** The one item that is in the tab order (roving tabindex). */
   tabStopId: string | null;
-  /** Remember the item the user moved to, so Tab comes back to it. */
-  setActiveId: (id: string) => void;
+  /** An item got focus: it becomes the tab stop (and the selection, if that follows focus). */
+  onItemFocus: (id: string) => void;
 };
 
 const MapContext = createContext<MapContextValue | null>(null);
@@ -335,6 +335,13 @@ export type PipelineMapProps = Omit<
    */
   onFollowBatchChange?: (name: string | null) => void;
   /**
+   * Select whatever gets focus, so arrow keys change the selection as you move
+   * (like ARIA tabs). Handy next to a details panel that shows the selection.
+   * Off by default: then arrows only move, and Enter/Space select.
+   * @default false
+   */
+  selectionFollowsFocus?: boolean;
+  /**
    * The layers to draw, in paint order. Defaults to pipes, then facilities on top.
    * SVG has no z-index: what comes later covers what came before.
    */
@@ -374,6 +381,7 @@ export function PipelineMap({
   followedBatch: followedProp,
   defaultFollowedBatch = null,
   onFollowBatchChange,
+  selectionFollowsFocus = false,
   ref,
   children,
   className,
@@ -507,7 +515,10 @@ export function PipelineMap({
         followed,
         follow,
         tabStopId,
-        setActiveId,
+        onItemFocus: (id) => {
+          setActiveId(id);
+          if (selectionFollowsFocus && id !== selectedId) select(id);
+        },
       }}
     >
       <svg
@@ -588,7 +599,7 @@ function SegmentItem({
     followed,
     follow,
     tabStopId,
-    setActiveId,
+    onItemFocus,
   } = useMap('PipelineMapSegments');
   const selected = selectedId === segment.id;
   const role = trace ? traceRole(trace, segment.id) : null;
@@ -629,7 +640,7 @@ function SegmentItem({
         {...pressProps}
         role="button"
         tabIndex={tabStopId === segment.id ? 0 : -1}
-        onFocus={() => setActiveId(segment.id)}
+        onFocus={() => onItemFocus(segment.id)}
         data-map-item={segment.id}
         aria-label={label}
         aria-pressed={selected}
@@ -721,7 +732,7 @@ export function PipelineMapSegments() {
 }
 
 function FacilityItem({ facility }: { facility: Facility }) {
-  const { unitsPerPx, selectedId, select, trace, tabStopId, setActiveId } =
+  const { unitsPerPx, selectedId, select, trace, tabStopId, onItemFocus } =
     useMap('PipelineMapFacilities');
   const selected = selectedId === facility.id;
   const role = trace ? traceRole(trace, facility.id) : null;
@@ -738,7 +749,7 @@ function FacilityItem({ facility }: { facility: Facility }) {
         {...pressProps}
         role="button"
         tabIndex={tabStopId === facility.id ? 0 : -1}
-        onFocus={() => setActiveId(facility.id)}
+        onFocus={() => onItemFocus(facility.id)}
         data-map-item={facility.id}
         aria-pressed={selected}
         data-facility-id={facility.id}
