@@ -7,8 +7,10 @@ import {
   cellKey,
   cssVars,
   isEmptyValue,
+  pinnedCellClass,
   ROW_ERROR_KEY,
   SELECT_COLUMN_ID,
+  type PinnedColumns,
 } from './data-grid-utils';
 import { CheckIcon } from './icons';
 import {
@@ -77,6 +79,12 @@ type DataGridRowProps<TData extends RowData> = {
   isTrailing: boolean;
   /** Which column shows the "Type here to add a row…" hint. */
   hintColumnId: string | null;
+  /** A light fill on every other row (by real index, not DOM order). */
+  striped: boolean;
+  /** Lines between cells as well as between rows. */
+  verticalLines: boolean;
+  /** Pinned columns and their offsets (`pinFirstColumn`). */
+  pinned: PinnedColumns;
 };
 
 /**
@@ -109,7 +117,14 @@ export const DataGridRow = memo(function DataGridRow<TData extends RowData>({
   isNew,
   isTrailing,
   hintColumnId,
+  striped,
+  verticalLines,
+  pinned,
 }: DataGridRowProps<TData>) {
+  const pinnedIds = pinned ? Object.keys(pinned) : [];
+  // Odd *data* index: the virtualizer renders only rows in view, so DOM order (and
+  // CSS :nth-child) shifts as you scroll; the index doesn't.
+  const stripe = striped && index % 2 === 1;
   const rowState = rowErrors
     ? 'error'
     : rowDraft || isNew
@@ -125,8 +140,10 @@ export const DataGridRow = memo(function DataGridRow<TData extends RowData>({
       data-state={rowState}
       data-locked={locked || undefined}
       className={cn(
-        'absolute top-0 left-0 flex h-(--row-h) w-full translate-y-(--y)',
+        // group/row: pinned cells copy the row's hover / selected / state fills.
+        'group/row absolute top-0 left-0 flex h-(--row-h) w-full translate-y-(--y)',
         'border-b border-border',
+        stripe && 'bg-surface/60',
         'hover:bg-surface',
         // Selected: a soft brand wash plus a 2px rail on the leading edge (inset shadow,
         // so nothing shifts by a pixel).
@@ -144,13 +161,26 @@ export const DataGridRow = memo(function DataGridRow<TData extends RowData>({
         const column = cell.column;
         const meta = column.columnDef.meta;
         const isSelectColumn = column.id === SELECT_COLUMN_ID;
+        const pinIndex = pinnedIds.indexOf(column.id);
         const base = cn(
           'relative flex w-(--w) shrink-0 items-center overflow-hidden whitespace-nowrap',
           meta?.align === 'end' && 'justify-end tabular-nums',
           meta?.mono && 'font-mono text-[0.8125rem]',
           isSelectColumn && 'justify-center',
+          verticalLines && 'border-e border-border',
+          pinIndex >= 0 &&
+            pinnedCellClass({
+              first: pinIndex === 0,
+              last: pinIndex === pinnedIds.length - 1,
+              striped: stripe,
+            }),
         );
-        const style = cssVars({ '--w': `${column.getSize()}px` });
+        const style = cssVars({
+          '--w': `${column.getSize()}px`,
+          ...(pinIndex >= 0 && pinned
+            ? { '--pin': `${pinned[column.id]}px` }
+            : {}),
+        });
         const label =
           typeof column.columnDef.header === 'string'
             ? column.columnDef.header
@@ -263,7 +293,9 @@ export const DataGridRow = memo(function DataGridRow<TData extends RowData>({
               // Range: a light tint, plus an outline drawn by a ::before layer (borders on
               // the cell itself would shift the layout; one box-shadow is already the ring).
               inRange && [
-                'bg-primary/10',
+                pinIndex >= 0
+                  ? 'bg-[color-mix(in_oklab,var(--color-primary)_10%,var(--color-bg))]'
+                  : 'bg-primary/10',
                 'before:pointer-events-none before:absolute before:inset-0 before:border-primary',
                 rangeTop && 'before:border-t-2',
                 rangeBottom && 'before:border-b-2',
