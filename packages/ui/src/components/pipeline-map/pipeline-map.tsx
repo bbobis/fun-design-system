@@ -29,6 +29,38 @@ import type {
 /** Space around the network for labels, badges and gauges, in px. */
 export const MAP_PADDING = { x: 64, top: 36, bottom: 76 };
 
+/** Extra room for a label beside an edge marker (`left`/`right`) or on top (`above`), in px. */
+const SIDE_LABEL_PADDING = 150;
+const TOP_LABEL_PADDING = 60;
+
+export type MapPadding = {
+  left: number;
+  right: number;
+  top: number;
+  bottom: number;
+};
+
+/**
+ * Padding per side, in px. Widens a side only when a facility on that edge puts its
+ * label out that way, so most maps keep the default and don't shrink for nothing.
+ */
+export function mapPadding(network: PipelineNetwork): MapPadding {
+  const b = networkBounds(network);
+  const onEdge = (side: 'left' | 'right' | 'above') =>
+    network.facilities.some((f) => {
+      if (f.labelPlacement !== side) return false;
+      if (side === 'left') return f.position.x === b.minX;
+      if (side === 'right') return f.position.x === b.maxX;
+      return f.position.y === b.minY;
+    });
+  return {
+    left: onEdge('left') ? SIDE_LABEL_PADDING : MAP_PADDING.x,
+    right: onEdge('right') ? SIDE_LABEL_PADDING : MAP_PADDING.x,
+    top: onEdge('above') ? TOP_LABEL_PADDING : MAP_PADDING.top,
+    bottom: MAP_PADDING.bottom,
+  };
+}
+
 /** Before the first measurement (and in jsdom), assume this width. */
 const FALLBACK_WIDTH_PX = 720;
 
@@ -54,21 +86,21 @@ export function networkBounds(network: PipelineNetwork) {
  *
  * The catch: padding is in px, but the viewBox is in grid units, and the conversion
  * (`unitsPerPx`) depends on the viewBox width, which includes the padding. Solving
- * `viewBoxWidth = span + 2·padX·unitsPerPx` with `unitsPerPx = viewBoxWidth / widthPx`
- * gives `unitsPerPx = span / (widthPx − 2·padX)`.
+ * `viewBoxWidth = span + (left + right)·unitsPerPx` with
+ * `unitsPerPx = viewBoxWidth / widthPx` gives `unitsPerPx = span / (widthPx − left − right)`.
  */
 export function mapLayout(
   network: PipelineNetwork,
   widthPx: number,
-  padding = MAP_PADDING,
+  padding: MapPadding = mapPadding(network),
 ) {
   const b = networkBounds(network);
   const span = Math.max(b.maxX - b.minX, 1);
-  const usable = Math.max(widthPx - 2 * padding.x, 1);
+  const usable = Math.max(widthPx - padding.left - padding.right, 1);
   const unitsPerPx = span / usable;
-  const x = b.minX - padding.x * unitsPerPx;
+  const x = b.minX - padding.left * unitsPerPx;
   const y = b.minY - padding.top * unitsPerPx;
-  const width = span + 2 * padding.x * unitsPerPx;
+  const width = span + (padding.left + padding.right) * unitsPerPx;
   const height = b.maxY - b.minY + (padding.top + padding.bottom) * unitsPerPx;
   return { viewBox: `${x} ${y} ${width} ${height}`, unitsPerPx };
 }
@@ -459,6 +491,7 @@ function FacilityItem({ facility }: { facility: Facility }) {
         kind={facility.kind}
         alert={facility.alert}
         tanks={facility.tanks}
+        labelPlacement={facility.labelPlacement}
         selected={selected}
       />
     </Tooltip>

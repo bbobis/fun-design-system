@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react';
 import {
   FacilityNode,
   facilityLabel,
+  labelLayout,
   type FacilityNodeProps,
 } from './facility-node';
 
@@ -130,5 +131,41 @@ describe('FacilityNode', () => {
     const node = screen.getByRole('img');
     expect(node.getAttribute('class')).toContain('opacity-50');
     expect(node.getAttribute('data-facility-id')).toBe('C');
+  });
+
+  describe('label placement', () => {
+    it('labelLayout puts the name on the asked side; the gauge stays under the marker', () => {
+      expect(labelLayout('below')).toEqual({
+        label: { x: 0, y: 34, anchor: 'middle' },
+        gaugeY: 44,
+      });
+      expect(labelLayout('above').label).toMatchObject({
+        x: 0,
+        anchor: 'middle',
+      });
+      expect(labelLayout('above').label.y).toBeLessThan(-21); // clear of the alert badge
+      expect(labelLayout('left').label).toMatchObject({ anchor: 'end' });
+      expect(labelLayout('right').label).toMatchObject({ anchor: 'start' });
+      for (const p of ['above', 'left', 'right'] as const)
+        expect(labelLayout(p).gaugeY).toBe(18);
+    });
+
+    it('defaults to below', () => {
+      const { container } = renderNode();
+      const text = container.querySelector('text[data-placement]');
+      expect(text?.getAttribute('data-placement')).toBe('below');
+      expect(text?.getAttribute('y')).toBe('34');
+    });
+
+    it('moves the label and the gauge for other placements', () => {
+      const { container } = renderNode({
+        labelPlacement: 'left',
+        tanks: [{ id: 'T-1', label: 'T-1', volume: 1, capacity: 2 }],
+      });
+      const text = container.querySelector('text[data-placement]');
+      expect(text?.getAttribute('text-anchor')).toBe('end');
+      const gauge = container.querySelector('[data-tank]')?.parentElement;
+      expect(gauge?.getAttribute('transform')).toBe('translate(-22 18)');
+    });
   });
 });

@@ -2,6 +2,7 @@ export type {
   Batch,
   Facility,
   FacilityKind,
+  LabelPlacement,
   PipelineNetwork,
   Point,
   Segment,
@@ -21,6 +22,7 @@ export {
   FacilityNode,
   FACILITY_KIND_LABELS,
   facilityLabel,
+  labelLayout,
   type FacilityNodeProps,
 } from './facility-node';
 export {
@@ -35,6 +37,8 @@ export {
   PipelineMapFacilities,
   PipelineMapSegments,
   mapLayout,
+  mapPadding,
+  type MapPadding,
   networkBounds,
   segmentLabel,
   type PipelineMapProps,

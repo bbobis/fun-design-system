@@ -5,6 +5,7 @@ import {
   PipelineMap,
   PipelineMapFacilities,
   mapLayout,
+  mapPadding,
   networkBounds,
   segmentLabel,
 } from './pipeline-map';
@@ -43,6 +44,40 @@ describe('layout helpers', () => {
     // The padding converts back to exactly 64px at either width.
     const [x, , w] = wide.viewBox.split(' ').map(Number);
     expect(((0 - (x ?? 0)) / (w ?? 1)) * 1080).toBeCloseTo(64);
+  });
+
+  it('mapPadding widens a side only for a label pointing out of that edge', () => {
+    const base = { x: 64, top: 36 };
+    const net = (
+      placement: 'left' | 'right' | 'above' | 'below',
+      id = 'A',
+    ): PipelineNetwork => ({
+      ...DEMO_NETWORK,
+      facilities: DEMO_NETWORK.facilities.map((f) =>
+        f.id === id
+          ? { ...f, labelPlacement: placement }
+          : { ...f, labelPlacement: 'below' },
+      ),
+    });
+    expect(mapPadding(net('below'))).toEqual({
+      left: base.x,
+      right: base.x,
+      top: base.top,
+      bottom: 76,
+    });
+    expect(mapPadding(net('left')).left).toBe(150); // Terminal A is on the left edge
+    expect(mapPadding(net('left', 'B')).left).toBe(base.x); // Station B isn't
+    expect(mapPadding(net('right', 'D')).right).toBe(150);
+    expect(mapPadding(net('above', 'C')).top).toBe(60); // Station C is on the top row
+    expect(mapPadding(net('above', 'E')).top).toBe(base.top); // Terminal E isn't
+  });
+
+  it('mapLayout uses each side’s padding (closed form still holds)', () => {
+    const pad = { left: 150, right: 64, top: 36, bottom: 76 };
+    const { unitsPerPx, viewBox } = mapLayout(DEMO_NETWORK, 1000, pad);
+    expect(unitsPerPx).toBeCloseTo(12 / (1000 - 150 - 64));
+    const [x] = viewBox.split(' ').map(Number);
+    expect((0 - (x ?? 0)) / unitsPerPx).toBeCloseTo(150); // left padding is 150px
   });
 
   it('segmentLabel says route, status, flow and batch count', () => {

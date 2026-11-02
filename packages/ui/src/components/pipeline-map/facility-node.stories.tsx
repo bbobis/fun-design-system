@@ -189,3 +189,33 @@ export const OnANetwork: Story = { render: () => <Network /> };
 export const SelectedAndFocus: Story = {
   render: () => <Network selectedId="B" focusable />,
 };
+
+/**
+ * `labelPlacement` moves the name around the marker: below (default), above, left,
+ * right. The tank gauge stays under the marker. Use it to keep names off pipes.
+ */
+export const LabelPlacements: Story = {
+  render: () => (
+    <svg
+      viewBox="0 0 12 2.6"
+      width={WIDTH}
+      className="block rounded-md border border-border bg-bg"
+    >
+      {(['below', 'above', 'left', 'right'] as const).map((placement, i) => (
+        <FacilityNode
+          key={placement}
+          position={{ x: 1.5 + i * 3, y: 1.1 }}
+          unitsPerPx={UNITS_PER_PX}
+          label={placement}
+          kind="tank-farm"
+          labelPlacement={placement}
+          alert={{ level: 'warning', message: 'High level' }}
+          tanks={[
+            { id: 'T-1', label: 'T-1', volume: 30, capacity: 50 },
+            { id: 'T-2', label: 'T-2', volume: 48, capacity: 50 },
+          ]}
+        />
+      ))}
+    </svg>
+  ),
+};
