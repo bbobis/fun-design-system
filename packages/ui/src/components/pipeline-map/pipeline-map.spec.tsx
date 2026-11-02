@@ -288,6 +288,24 @@ describe('PipelineMap', () => {
       expect(pipe.getAttribute('aria-describedby')).toBe(tip.id);
     });
 
+    it('Escape does one thing at a time: closes the tooltip, then clears the selection', async () => {
+      const user = userEvent.setup();
+      const onSelect = vi.fn();
+      renderMap({ defaultSelectedId: 'D', onSelect });
+      await user.tab(); // Tank Farm D: selected, and its tooltip opens on keyboard focus
+      await screen.findByRole('tooltip');
+      const node = screen.getByRole('button', { name: /^Tank Farm D/ });
+
+      await user.keyboard('{Escape}');
+      expect(screen.queryByRole('tooltip')).toBeNull(); // 1st Escape: tooltip closes…
+      expect(node.getAttribute('aria-pressed')).toBe('true'); // …selection stays
+      expect(onSelect).not.toHaveBeenCalled();
+
+      await user.keyboard('{Escape}');
+      expect(node.getAttribute('aria-pressed')).toBe('false'); // 2nd Escape: clears
+      expect(onSelect).toHaveBeenCalledWith(null);
+    });
+
     it('a facility tooltip lists each tank level', async () => {
       const user = userEvent.setup();
       renderMap({ defaultSelectedId: 'D' });
