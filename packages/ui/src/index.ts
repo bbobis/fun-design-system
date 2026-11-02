@@ -29,6 +29,7 @@ export * from './components/multi-combobox';
 export * from './components/number-field';
 export * from './components/page-header';
 export * from './components/pagination';
+export * from './components/pipeline-map';
 export * from './components/popover';
 export * from './components/progress';
 export * from './components/radio-group';
