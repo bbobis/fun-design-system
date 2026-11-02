@@ -80,3 +80,8 @@ export {
   searchOptions,
   type PipelineMapSearchProps,
 } from './pipeline-map-search';
+export {
+  PipelineMapDetails,
+  connectedPipes,
+  type PipelineMapDetailsProps,
+} from './pipeline-map-details';

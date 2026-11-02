@@ -317,7 +317,38 @@ const mapRef = useRef<PipelineMapHandle>(null);
 - The box clears after each pick, so you can search again straight away.
 - `searchOptions(network)` builds the option list if you'd rather use your own search UI.
 
-## 9. Keyboard and screen readers
+## 9. Details panel
+
+`PipelineMapDetails` shows everything about the selected item next to the map: numbers,
+tanks or batches, connected pipes and stations, and actions. Pass it the same state as
+the map, and lay the two out however your page needs.
+
+```tsx
+<div className="grid gap-6 lg:grid-cols-[1fr_18rem]">
+  <PipelineMap ref={mapRef} … selectionFollowsFocus
+    selectedId={selectedId} onSelect={setSelectedId}
+    tracedId={tracedId} onTraceChange={setTracedId}
+    followedBatch={batch} onFollowBatchChange={setBatch} />
+  <PipelineMapDetails network={network}
+    selectedId={selectedId} onSelect={setSelectedId}
+    tracedId={tracedId} onTraceChange={setTracedId}
+    followedBatch={batch} onFollowBatch={setBatch}
+    onShowOnMap={(id) => mapRef.current?.focusItem(id)} />
+</div>
+```
+
+- **Non-modal `<aside>`** (a "complementary" landmark named "Details"): the map stays
+  usable, and screen-reader users can jump to the panel with their landmarks list.
+- **`selectionFollowsFocus`** on the map makes arrow keys select as they move (like
+  tabs), so the panel updates as you go. Without it, arrows only move and Enter/Space
+  select.
+- Each action shows only when you pass its callback (`onTraceChange`, `onFollowBatch`,
+  `onSelect`, `onShowOnMap`).
+- **Buttons never move focus on their own**, except "Show on map", because moving focus
+  is what it asks for. "Trace flow" stays focused; the map announces the trace.
+- `headingLevel` (default 2) fits the panel's heading into your page outline.
+
+## 10. Keyboard and screen readers
 
 | Key           | Does                                                                                        |
 | ------------- | ------------------------------------------------------------------------------------------- |
