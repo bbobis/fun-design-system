@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { useState } from 'react';
 import { Button } from '../button';
-import { Skeleton } from './skeleton';
+import { Skeleton, SkeletonMedia, SkeletonText } from './skeleton';
 
 const meta = {
   title: 'Components/Skeleton',
@@ -71,4 +71,39 @@ export const LoadingACard: Story = {
     }
     return <Example />;
   },
+};
+
+/**
+ * `animation`: `pulse` (default), `wave` and `none`. With "reduce motion" on in the
+ * OS, pulse and wave stand still: same shapes, no movement.
+ */
+export const Animations: Story = {
+  render: () => (
+    <div className="flex max-w-sm flex-col gap-6">
+      {(['pulse', 'wave', 'none'] as const).map((animation) => (
+        <div key={animation} className="flex flex-col gap-2">
+          <span className="text-xs font-medium text-fg-muted">{animation}</span>
+          <SkeletonMedia animation={animation} />
+        </div>
+      ))}
+    </div>
+  ),
+};
+
+/**
+ * Presets. `SkeletonText` takes the text size of what it stands in for (here
+ * `text-sm`), so the height barely changes when the real text arrives.
+ * `SkeletonMedia` is one list row; repeat it.
+ */
+export const Presets: Story = {
+  render: () => (
+    <div className="grid max-w-2xl gap-8 sm:grid-cols-2">
+      <SkeletonText lines={4} animation="wave" className="text-sm" />
+      <div className="flex flex-col gap-3">
+        <SkeletonMedia size="sm" animation="wave" />
+        <SkeletonMedia size="sm" animation="wave" />
+        <SkeletonMedia size="sm" media="thumbnail" animation="wave" />
+      </div>
+    </div>
+  ),
 };

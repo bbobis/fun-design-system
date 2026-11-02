@@ -6,6 +6,22 @@
 @import 'tailwindcss';
 @import './tokens.css';
 
+/* Skeleton's `wave`: a lighter band sweeps across. The band is a background
+ * gradient twice the element's width; moving its position slides it through. Used
+ * with motion-safe: only, so with "reduce motion" the block stays still. */
+@theme {
+  --animate-skeleton-wave: skeleton-wave 1.6s linear infinite;
+
+  @keyframes skeleton-wave {
+    from {
+      background-position: 100% 0;
+    }
+    to {
+      background-position: -100% 0;
+    }
+  }
+}
+
 /* The indeterminate ProgressBar: a bar sliding left to right. Its motion-reduce
  * classes swap this for a still, half-transparent bar. */
 @theme {
