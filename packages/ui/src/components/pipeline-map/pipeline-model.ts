@@ -7,7 +7,11 @@
  */
 
 /** What a facility is. Picks the icon on its node. */
-export type FacilityKind = 'terminal' | 'pump-station' | 'tank-farm' | 'refinery';
+export type FacilityKind =
+  | 'terminal'
+  | 'pump-station'
+  | 'tank-farm'
+  | 'refinery';
 
 /**
  * How a segment is running. Drawn with color **and** a dash pattern, never color alone.

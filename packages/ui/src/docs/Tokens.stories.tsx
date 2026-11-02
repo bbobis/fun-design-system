@@ -141,6 +141,27 @@ const UI_PAIRS = [
     fgClass: 'decoration-link-underline',
     minimum: 3,
   },
+  {
+    bg: 'bg',
+    fg: 'line-success',
+    bgClass: 'bg-bg',
+    fgClass: 'border-line-success',
+    minimum: 3,
+  },
+  {
+    bg: 'bg',
+    fg: 'line-warning',
+    bgClass: 'bg-bg',
+    fgClass: 'border-line-warning',
+    minimum: 3,
+  },
+  {
+    bg: 'bg',
+    fg: 'line-neutral',
+    bgClass: 'bg-bg',
+    fgClass: 'border-line-neutral',
+    minimum: 3,
+  },
 ] as const;
 
 /** Formats an RGB triple as 6-digit hex, since the CSS build may shorten `#ff8833` to `#f83`. */

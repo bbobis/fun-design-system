@@ -31,9 +31,7 @@ export function segmentPath(
 ): string | null {
   const points = segmentPoints(segment, facilitiesById);
   if (!points) return null;
-  return points
-    .map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`)
-    .join(' ');
+  return points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
 }
 
 /**

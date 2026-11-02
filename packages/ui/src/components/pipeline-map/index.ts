@@ -8,3 +8,5 @@ export type {
   SegmentStatus,
   Tank,
 } from './pipeline-model';
+export { PipeSegment, type PipeSegmentProps } from './pipe-segment';
+export type { StrokeRange } from './pipeline-geometry';

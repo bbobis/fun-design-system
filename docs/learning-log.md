@@ -764,3 +764,10 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Remember: pure functions first, components second.** Geometry with no React is tested in milliseconds with plain inputs. The components in steps 2–5 just call these and draw.
 - **Remember: return `null`, don't guess.** A segment pointing at a missing facility gives `null` instead of a line to (0, 0), so the map can skip it visibly instead of drawing nonsense.
 - Docs: https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Attribute/d
+
+## 2026-11-02 — Pipeline Map step 2: PipeSegment + line-color tokens
+- **Built:** `PipeSegment`, one SVG pipe: width = flow ÷ max flow (2–10px), status = color **and** pattern (running solid green, restricted dashed orange, shutdown dotted gray). New tokens `line-success`, `line-warning`, `line-neutral`, checked at 3:1 on the Tokens page.
+- **Remember (tested before building): `vector-effect: non-scaling-stroke` keeps a line the same width at any zoom, but it also makes dash lengths screen pixels and ignores `pathLength`.** Good for status patterns, fatal for the "batches as dashes" trick. So step 3 (`BatchTrain`) will cut the line into one sub-path per batch instead.
+- **Remember: a token can pass for text-on-color and fail as a line.** `warning` (clementine-500) works as a button background with dark text, but it's only 2.9:1 against white as a 2px line. WCAG 1.4.11 asks 3:1 for graphics, so lines get their own tokens.
+- **Remember: sizes relative to a CSS variable.** Dashes are `calc(var(--pipe-w)*3)`, so a thick and a thin dashed pipe show the same pattern. `max(var(--pipe-w),4px)` gives shutdown dots a floor.
+- Docs: https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Attribute/vector-effect

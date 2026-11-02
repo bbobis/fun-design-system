@@ -129,6 +129,14 @@
   --fds-info: var(--color-sky-800);
   --fds-on-info: var(--color-white);
 
+  /* status lines: thin strokes (maps, charts) on bg or surface, 3:1 or more in both themes.
+   * Solid `warning` (clementine-500) is only 2.9:1 on white, too faint for a 2px line. */
+  --fds-line-success: var(--color-leaf-700); /* 5.2:1 on white */
+  --fds-line-warning: var(--color-clementine-600); /* 4.3:1 on white */
+  --fds-line-neutral: var(
+    --color-gray-400
+  ); /* 4.4:1 on white, 4.2:1 on gray-900 */
+
   /* status (soft, for alerts and badges) */
   --fds-warning-soft: var(--color-clementine-50);
   --fds-on-warning-soft: var(--color-clementine-800);
@@ -176,6 +184,10 @@
   --fds-info: var(--color-sky-400);
   --fds-on-info: var(--color-gray-900);
 
+  --fds-line-success: var(--color-leaf-500); /* 8.4:1 on gray-900 */
+  --fds-line-warning: var(--color-clementine-500); /* 6.5:1 on gray-900 */
+  /* line-neutral stays gray-400 */
+
   --fds-warning-soft: var(--color-clementine-900);
   --fds-on-warning-soft: var(--color-clementine-300);
   --fds-danger-soft: var(--color-cherry-900);
@@ -222,6 +234,10 @@
   --color-on-success: var(--fds-on-success);
   --color-info: var(--fds-info);
   --color-on-info: var(--fds-on-info);
+
+  --color-line-success: var(--fds-line-success);
+  --color-line-warning: var(--fds-line-warning);
+  --color-line-neutral: var(--fds-line-neutral);
 
   --color-warning-soft: var(--fds-warning-soft);
   --color-on-warning-soft: var(--fds-on-warning-soft);
