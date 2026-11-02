@@ -44,9 +44,11 @@ example and forgets things he doesn't use, so:
 - **Ask Ben to predict occasionally.** Before a non-trivial change, ask one short
   question like "What do you think happens to focus when the menu closes?"
   Then build and confirm. Do this at most once per task.
-- **Keep a learning log.** After each task, append 3-5 bullets to
-  `docs/learning-log.md`: date, what was built, the one or two concepts Ben
-  should remember, and one link to official docs. Create the file if missing.
+- **Keep a learning log.** After each task, add a new file
+  `docs/learning-log/YYYY-MM-DD-<topic>.md` with 3-5 bullets: what was built,
+  the one or two concepts Ben should remember, and one link to official docs.
+  One file per entry, never edit another entry's file: parallel PRs then can't
+  conflict. (Entries before 2026-11-02 stay in `docs/learning-log.md`.)
 - **Respect "just build it".** If Ben says that, skip teaching for that task
   but still update the learning log.
 - Do not assume Ben knows a library's API. Link to the official docs page when

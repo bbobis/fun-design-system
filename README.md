@@ -33,5 +33,6 @@ packages/ui/            the component library (@fun-design-system/ui)
   src/styles/fonts.css  IBM Plex Sans + IBM Plex Mono (Fontsource)
   src/docs/             Storybook docs pages
   .storybook/           Storybook config
-docs/learning-log.md    what was built and learned, per task
+docs/learning-log/      what was built and learned: one file per task
+docs/learning-log.md    the older entries (up to 2026-11-02)
 ```

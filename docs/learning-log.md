@@ -2,6 +2,10 @@
 
 Short notes after each task: what was built, what to remember, one link to read.
 
+> **New entries go in [`docs/learning-log/`](learning-log/README.md), one file per
+> task.** This file keeps the entries up to 2026-11-02. Appending here made every
+> two PRs conflict on the file's last lines; one file each can't.
+
 ## 2026-10-03 — Brand, contrast and fonts
 
 - **Built:** a root `package.json` (`"private": true`, version `0.0.0`) and installed the fonts, `@fontsource-variable/ibm-plex-sans` and `@fontsource/ibm-plex-mono`. No Nx yet; `nx init` will add to this file.
