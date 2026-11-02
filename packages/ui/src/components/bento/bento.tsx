@@ -174,8 +174,14 @@ function classes(
   );
 }
 
-/** Column counts per breakpoint, so tiles can cap their span (see BentoTile). */
-const BentoColumns = createContext<number[]>(BREAKPOINTS.map(() => 1));
+/**
+ * What tiles need from their Bento: the column counts per breakpoint (to cap spans)
+ * and the variant (a tiled Bento draws the lines, so tiles drop their own borders).
+ */
+const BentoContext = createContext<{
+  cols: number[];
+  variant: 'spaced' | 'tiled';
+}>({ cols: BREAKPOINTS.map(() => 1), variant: 'spaced' });
 
 type BentoElement = 'div' | 'section' | 'ul';
 
@@ -194,6 +200,12 @@ export type BentoProps = {
    * @default 'div'
    */
   as?: BentoElement;
+  /**
+   * `spaced`: tiles apart, with `gap` between them. `tiled`: no gaps, one rounded
+   * frame with thin lines between tiles (give tiles a `surface`; `gap` is ignored).
+   * @default 'spaced'
+   */
+  variant?: 'spaced' | 'tiled';
 } & ComponentProps<'div'>;
 
 /**
@@ -215,10 +227,12 @@ export function Bento({
   gap = 'md',
   rowHeight = 'md',
   as,
+  variant = 'spaced',
   className,
   children,
   ...rest
 }: BentoProps) {
+  const tiled = variant === 'tiled';
   const cols = resolve(columns, 1).map((n) => clamp(n, 6));
   const Component = (as ?? 'div') as ElementType;
   return (
@@ -227,14 +241,20 @@ export function Bento({
       <Component
         className={cn(
           'grid list-none p-0',
-          GAPS[gap],
+          // Tiled: each tile draws a 1px ring into a 1px gap (and the 1px padding
+          // around the edge), so lines appear only around real tiles. Painting the
+          // frame in the border colour instead would leave a grey block wherever
+          // the last row isn't full.
+          tiled ? 'gap-px overflow-hidden rounded-xl p-px' : GAPS[gap],
           ROW_HEIGHTS[rowHeight],
           classes(COLUMNS, cols),
           className,
         )}
         {...rest}
       >
-        <BentoColumns.Provider value={cols}>{children}</BentoColumns.Provider>
+        <BentoContext.Provider value={{ cols, variant }}>
+          {children}
+        </BentoContext.Provider>
       </Component>
     </div>
   );
@@ -253,26 +273,61 @@ export type BentoTileProps = {
   rows?: Responsive<number>;
   /** @default 'div' (use 'li' inside `<Bento as="ul">`) */
   as?: TileElement;
+  /**
+   * A ready-made tile look, so you don't need a Card inside:
+   * - `none`: no look; put your own Card in (it should be `h-full`).
+   * - `card`: border and page background, like Card.
+   * - `muted`: a soft grey fill, for secondary tiles.
+   * - `inverse`: the featured tile, in the opposite theme (`data-inverse`: dark on
+   *   light pages, light on dark). Components inside re-theme themselves.
+   * @default 'none'
+   */
+  surface?: 'none' | 'card' | 'muted' | 'inverse';
+  /** Space inside a tile with a `surface`. @default 'md' */
+  padding?: 'sm' | 'md' | 'lg';
 } & ComponentProps<'div'>;
+
+const SURFACES = {
+  none: '',
+  card: 'rounded-lg border border-border bg-bg text-fg',
+  muted: 'rounded-lg bg-surface text-fg',
+  // data-inverse swaps the tokens; bg-bg / text-fg then read the opposite theme.
+  inverse: 'rounded-lg bg-bg text-fg',
+} as const;
+
+const PADDINGS = { sm: 'p-3', md: 'p-5', lg: 'p-8' } as const;
 
 /** One cell of a Bento. Its child should fill it (`h-full`) to line tiles up. */
 export function BentoTile({
   span,
   rows,
   as,
+  surface = 'none',
+  padding = 'md',
   className,
   ...rest
 }: BentoTileProps) {
-  const cols = useContext(BentoColumns);
+  const { cols, variant } = useContext(BentoContext);
+  const tiled = variant === 'tiled';
   const spans = resolve(span, 1).map((n, i) => clamp(n, cols[i]));
   const rowSpans = resolve(rows, 1).map((n) => clamp(n, 4));
   const Component = (as ?? 'div') as ElementType;
   return (
     <Component
+      data-inverse={surface === 'inverse' || undefined}
       className={cn(
         'min-w-0',
         classes(SPANS, spans),
         classes(ROWS, rowSpans),
+        SURFACES[surface],
+        surface !== 'none' && ['flex flex-col', PADDINGS[padding]],
+        // In a tiled Bento the frame owns the corners and the lines: no radius or
+        // border per tile, just a 1px ring that lands in the gap. A tile with no
+        // surface still needs a background, or the gap would show nothing.
+        tiled && [
+          'rounded-none border-0 shadow-[0_0_0_1px_var(--color-border)]',
+          surface === 'none' && 'bg-bg',
+        ],
         className,
       )}
       {...rest}

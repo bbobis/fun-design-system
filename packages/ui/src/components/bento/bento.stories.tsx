@@ -164,3 +164,84 @@ export const SpanCapped: Story = {
     </Bento>
   ),
 };
+
+/**
+ * `surface` on tiles: `card`, `muted` and `inverse` (the featured tile, in the
+ * opposite theme). No Card needed inside. The Button in the inverse tile re-themes
+ * itself: that's `data-inverse` (recipe rule 14).
+ */
+export const Surfaces: Story = {
+  render: () => (
+    <Bento columns={{ base: 1, md: 2, lg: 4 }}>
+      <BentoTile surface="inverse" span={{ md: 2 }} rows={2} padding="lg">
+        <Text size="sm" tone="inherit" className="opacity-80">
+          Revenue this month
+        </Text>
+        <Big>$84,210</Big>
+        <Text size="sm" tone="inherit" className="opacity-80">
+          Up 12% on October.
+        </Text>
+        <div className="mt-auto">
+          <Button intent="secondary" size="sm">
+            View report
+          </Button>
+        </div>
+      </BentoTile>
+      <BentoTile surface="card">
+        <Text size="sm" tone="muted">
+          Open invoices
+        </Text>
+        <Big>42</Big>
+      </BentoTile>
+      <BentoTile surface="card">
+        <Text size="sm" tone="muted">
+          Overdue
+        </Text>
+        <Big>7</Big>
+        <Badge tone="danger" className="self-start">
+          Needs attention
+        </Badge>
+      </BentoTile>
+      <BentoTile surface="muted" span={{ md: 2 }}>
+        <Text size="sm" tone="muted">
+          Tip
+        </Text>
+        <Text size="sm">
+          Turn on automatic reminders to get paid 9 days sooner on average.
+        </Text>
+      </BentoTile>
+    </Bento>
+  ),
+};
+
+/**
+ * `variant="tiled"`: one rounded frame, thin lines between tiles, no gaps. Five tiles
+ * in four columns: the empty spot at the end stays the page colour (each tile draws
+ * its own lines), instead of a grey block.
+ */
+export const Tiled: Story = {
+  render: () => (
+    <Bento variant="tiled" columns={{ base: 1, md: 2, lg: 4 }} rowHeight="sm">
+      <BentoTile surface="inverse" span={{ md: 2 }} rows={2} padding="lg">
+        <Text size="sm" tone="inherit" className="opacity-80">
+          Collected this year
+        </Text>
+        <Big>$1.2M</Big>
+      </BentoTile>
+      {[
+        ['Invoices sent', '1,284'],
+        ['Paid on time', '91%'],
+        ['Average days to pay', '18'],
+        ['Customers', '128'],
+        ['Disputes', '3'],
+      ].map(([label, value]) => (
+        <BentoTile key={label} surface="card">
+          <Text size="sm" tone="muted">
+            {label}
+          </Text>
+          <Big>{value}</Big>
+        </BentoTile>
+      ))}
+    </Bento>
+  ),
+};

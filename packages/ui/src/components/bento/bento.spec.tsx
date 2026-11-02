@@ -84,4 +84,58 @@ describe('Bento', () => {
     expect(grid.className).not.toMatch(/grid-flow-.*dense|order-/);
     expect(grid.textContent).toBe('firstsecond');
   });
+
+  it('surface gives a tile its own look and padding; none is the default', () => {
+    render(
+      <Bento>
+        <BentoTile data-testid="plain">a</BentoTile>
+        <BentoTile data-testid="card" surface="card" padding="sm">
+          b
+        </BentoTile>
+        <BentoTile data-testid="muted" surface="muted">
+          c
+        </BentoTile>
+      </Bento>,
+    );
+    expect(screen.getByTestId('plain').className).not.toMatch(
+      /border|bg-|p-\d/,
+    );
+    expect(screen.getByTestId('card').className).toContain('border');
+    expect(screen.getByTestId('card').className).toContain('p-3');
+    expect(screen.getByTestId('muted').className).toContain('bg-surface');
+  });
+
+  it('inverse uses data-inverse (opposite theme), not new colours', () => {
+    render(
+      <Bento>
+        <BentoTile data-testid="featured" surface="inverse">
+          x
+        </BentoTile>
+      </Bento>,
+    );
+    const tile = screen.getByTestId('featured');
+    expect(tile.hasAttribute('data-inverse')).toBe(true);
+    expect(tile.className).toContain('bg-bg');
+  });
+
+  it('the prediction: tiled draws lines per tile, so empty spots stay the page colour', () => {
+    render(
+      <Bento variant="tiled" gap="lg">
+        <BentoTile data-testid="t" surface="card">
+          x
+        </BentoTile>
+        <BentoTile data-testid="bare">y</BentoTile>
+      </Bento>,
+    );
+    const tile = screen.getByTestId('t');
+    const grid = tile.parentElement as HTMLElement;
+    expect(grid.className).toContain('gap-px');
+    expect(grid.className).not.toContain('gap-6'); // `gap` is ignored when tiled
+    expect(grid.className).not.toContain('bg-border'); // no painted frame
+    expect(tile.className).toContain('shadow-[0_0_0_1px_var(--color-border)]');
+    expect(tile.className).toContain('rounded-none');
+    expect(tile.className).not.toMatch(/(^| )border( |$)/);
+    // A tile without a surface still gets a background in a tiled Bento.
+    expect(screen.getByTestId('bare').className).toContain('bg-bg');
+  });
 });
