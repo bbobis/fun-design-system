@@ -45,6 +45,12 @@ export type TimeFieldProps = VariantProps<typeof dateFieldVariants> & {
   'aria-label'?: string;
   'aria-labelledby'?: string;
   'aria-describedby'?: string;
+  /**
+   * Show the clock icon at the end. Turn it off when the field sits right next to a
+   * DatePicker (whose 📅 already says "date and time"), or in a tight table cell.
+   * @default true
+   */
+  icon?: boolean;
   /** Classes for the outer wrapper (width, margins). */
   className?: string;
 };
@@ -83,6 +89,7 @@ export function TimeField({
   'aria-label': ariaLabel,
   'aria-labelledby': ariaLabelledBy,
   'aria-describedby': ariaDescribedBy,
+  icon = true,
   className,
 }: TimeFieldProps) {
   const field = useFieldContext();
@@ -123,14 +130,22 @@ export function TimeField({
       aria-describedby={describedBy}
       className={cn('group flex w-full flex-col', className)}
     >
-      <Group className={cn(dateFieldVariants({ size, variant }), 'pe-2.5')}>
+      <Group
+        className={cn(
+          dateFieldVariants({ size, variant }),
+          endPad[size ?? 'md'],
+        )}
+      >
         <DatePieces className="flex-1" />
-        <ClockIcon className="size-4 shrink-0 text-fg-muted" />
+        {icon && <ClockIcon className="size-4 shrink-0 text-fg-muted" />}
       </Group>
       {name && <input type="hidden" name={name} value={current ?? ''} />}
     </AriaTimeField>
   );
 }
+
+/** End padding matches each size's start padding (ps-2 / 2.5 / 3.5), so the box is even. */
+const endPad = { sm: 'pe-2', md: 'pe-2.5', lg: 'pe-3.5' } as const;
 
 function ClockIcon(props: SVGProps<SVGSVGElement>) {
   return (

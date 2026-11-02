@@ -5,7 +5,7 @@ import {
 } from 'react-aria-components';
 import { cn } from '../../utils/cn';
 import { useFieldContext } from '../field/field-context';
-import { RangeCalendarPopover } from './calendar-popover';
+import { CalendarSizeContext, RangeCalendarPopover } from './calendar-popover';
 import {
   CalendarButton,
   DatePieces,
@@ -54,6 +54,12 @@ export type DateRangePickerProps = VariantProps<typeof dateFieldVariants> & {
    * usual set; or pass your own `{ label, value: { start, end } }` list.
    */
   presets?: readonly RangePreset[];
+  /**
+   * Months shown in the calendar. `2` puts two side by side, so a range across a
+   * month boundary needs no paging; ‹ › then move two months. Narrow screens (under
+   * 40rem) still get one. @default 1
+   */
+  visibleMonths?: 1 | 2;
   /** Classes for the outer wrapper (width, margins). */
   className?: string;
 };
@@ -94,6 +100,7 @@ export function DateRangePicker({
   'aria-labelledby': ariaLabelledBy,
   'aria-describedby': ariaDescribedBy,
   presets,
+  visibleMonths = 1,
   className,
 }: DateRangePickerProps) {
   const field = useFieldContext();
@@ -142,7 +149,14 @@ export function DateRangePicker({
         <DatePieces slot="end" />
         <CalendarButton />
       </Group>
-      <RangeCalendarPopover presets={presets} min={min} max={max} />
+      <CalendarSizeContext.Provider value={size ?? 'md'}>
+        <RangeCalendarPopover
+          presets={presets}
+          min={min}
+          max={max}
+          visibleMonths={visibleMonths}
+        />
+      </CalendarSizeContext.Provider>
     </AriaDateRangePicker>
   );
 }

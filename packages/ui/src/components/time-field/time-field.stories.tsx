@@ -123,6 +123,32 @@ export const DateAndTime: Story = {
   ),
 };
 
+/**
+ * `icon={false}`: no clock. Here the time sits right after a date, so the 📅 already
+ * says what the pair is; the time field gets a little narrower.
+ */
+export const NoIcon: Story = {
+  decorators: [
+    (Story) => (
+      <div className="w-[24rem]">
+        <Story />
+      </div>
+    ),
+  ],
+  render: () => (
+    <fieldset className="flex gap-2">
+      <legend className="mb-2 text-sm font-medium">Reminder</legend>
+      <DatePicker aria-label="Reminder date" defaultValue="2026-11-20" />
+      <TimeField
+        aria-label="Reminder time"
+        defaultValue="09:00"
+        icon={false}
+        className="w-32 shrink-0"
+      />
+    </fieldset>
+  ),
+};
+
 export const Sizes: Story = {
   render: (args: TimeFieldProps) => (
     <div className="flex flex-col gap-3">

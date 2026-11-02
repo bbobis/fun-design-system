@@ -89,3 +89,36 @@ export const Sizes: Story = {
 };
 
 export const Disabled: Story = { args: { disabled: true } };
+
+/**
+ * `showToday`: a "Today" button under the calendar picks today and closes. It's
+ * disabled when today is outside `min` / `max`. Open the calendar to see it.
+ */
+export const WithToday: Story = { args: { showToday: true } };
+
+/**
+ * The calendar opens at the field's size: open each one. `sm` has 32px days (dense
+ * forms, filters), `md` 36px, `lg` 40px (touch, big forms).
+ */
+export const CalendarSizes: Story = {
+  decorators: [
+    (Story) => (
+      <div className="w-72">
+        <Story />
+      </div>
+    ),
+  ],
+  render: (args: DatePickerProps) => (
+    <div className="flex flex-col gap-3">
+      {(['sm', 'md', 'lg'] as const).map((size) => (
+        <DatePicker
+          key={size}
+          {...args}
+          size={size}
+          aria-label={`Due date ${size}`}
+          showToday
+        />
+      ))}
+    </div>
+  ),
+};
