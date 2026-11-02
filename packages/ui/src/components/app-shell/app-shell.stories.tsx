@@ -81,7 +81,7 @@ function InvoicesPage({ collapsed = false }: { collapsed?: boolean }) {
     <AppShell
       defaultSidebarCollapsed={collapsed}
       brand={
-        <a href="#" className="rounded px-1 text-base">
+        <a href="#home" className="rounded px-1 text-base">
           Acme Billing
         </a>
       }

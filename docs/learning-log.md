@@ -9,7 +9,7 @@ Short notes after each task: what was built, what to remember, one link to read.
 ## 2026-10-03 — Brand, contrast and fonts
 
 - **Built:** a root `package.json` (`"private": true`, version `0.0.0`) and installed the fonts, `@fontsource-variable/ibm-plex-sans` and `@fontsource/ibm-plex-mono`. No Nx yet; `nx init` will add to this file.
-- **Remember — contrast:** normal text needs **4.5:1** against its background (WCAG AA). Primary `yellow-500` + white = 1.7:1 ✗, + `gray-900` = 10.8:1 ✓. So yellow is a *background* color, never text on white. Warning moved to clementine so it never looks like a primary button.
+- **Remember — contrast:** normal text needs **4.5:1** against its background (WCAG AA). Primary `yellow-500` + white = 1.7:1 ✗, + `gray-900` = 10.8:1 ✓. So yellow is a _background_ color, never text on white. Warning moved to clementine so it never looks like a primary button.
 - **Remember — web fonts:** you can't install a font on users' machines. The font files ship with the code. A **variable** font holds every weight in one file, and its CSS name gets "Variable" added: `font-family: "IBM Plex Sans Variable"`. Plex Mono has no variable version, so import each weight (`@fontsource/ibm-plex-mono/400.css`).
 - **Remember — tables:** use `tabular-nums` so every digit has the same width and number columns line up.
 - **Read:** https://fontsource.org/docs/getting-started/variable
@@ -17,9 +17,9 @@ Short notes after each task: what was built, what to remember, one link to read.
 ## 2026-10-03 — Phase 1: Skeleton
 
 - **Built:** Nx 23 workspace (`ts` preset, npm workspaces) with one library, `packages/ui` (`@fun-design-system/ui`). Vite 8 build, Vitest, ESLint, Prettier, Storybook 10, Tailwind v4, and Plex fonts in `src/styles/`. All of lint, typecheck, test, build and build-storybook pass.
-- **Remember: Nx basics.** A workspace holds *projects*; each project has *targets* (build, test, lint…). Run one with `npx nx <target> <project>` (e.g. `npx nx test ui`), several with `npx nx run-many -t lint test`. Nx *infers* most targets from config files (`vite.config.mts` gives `build`/`test`, `.storybook/` gives `storybook`). See them all: `npx nx show project ui`.
+- **Remember: Nx basics.** A workspace holds _projects_; each project has _targets_ (build, test, lint…). Run one with `npx nx <target> <project>` (e.g. `npx nx test ui`), several with `npx nx run-many -t lint test`. Nx _infers_ most targets from config files (`vite.config.mts` gives `build`/`test`, `.storybook/` gives `storybook`). See them all: `npx nx show project ui`.
 - **Remember: npm workspaces.** `packages/ui` has its own `package.json`, so its dependencies (the fonts) live there, not at the root. Root holds shared dev tools. Install into one package with `npm i <pkg> -w packages/ui`.
-- **Remember: CSS layers.** Tailwind v4 puts utilities in `@layer utilities`, and any CSS *outside* a layer beats layered CSS. That's why Storybook's docs styles overrode our fonts until the content was wrapped in `<Unstyled>`.
+- **Remember: CSS layers.** Tailwind v4 puts utilities in `@layer utilities`, and any CSS _outside_ a layer beats layered CSS. That's why Storybook's docs styles overrode our fonts until the content was wrapped in `<Unstyled>`.
 - **Read:** https://nx.dev/features/run-tasks
 
 ## 2026-10-03 — Cleanup: Babel removed, editor extensions
@@ -42,7 +42,7 @@ Short notes after each task: what was built, what to remember, one link to read.
 
 - **Built:** `Button` (4 intents × 3 sizes, `disabled`, `loading`), 8 tests, 5 stories, `cn()` helper, `docs/component-recipe.md`. Dependencies added with Ben's OK: `class-variance-authority` (variants) and `tailwind-merge` (className overrides).
 - **Remember: `cva` derives the props type from the config.** `VariantProps<typeof buttonVariants>` gives `intent?: 'primary' | 'secondary' | …`. Add a variant in one place and the type follows.
-- **Remember: `type="button"` by default.** A native `<button>` inside a `<form>` defaults to `type="submit"`, so a plain "Cancel" button would submit the form. The test *"defaults to type=button, so it does not submit"* locks this in.
+- **Remember: `type="button"` by default.** A native `<button>` inside a `<form>` defaults to `type="submit"`, so a plain "Cancel" button would submit the form. The test _"defaults to type=button, so it does not submit"_ locks this in.
 - **Remember: `disabled` vs `aria-disabled`.** Native `disabled` removes the button from the tab order, so a keyboard user loses their place when a click turns into "loading". While loading we use `aria-disabled` + `aria-busy` and ignore clicks instead; focus stays put.
 - **Gotcha: `outline-none` breaks `focus-visible:outline-*` in Tailwind v4.** It sets `--tw-outline-style: none` on the element, and the focus rule reads that variable. Leave `outline-none` off; the browser's default outline only shows on keyboard focus anyway.
 - **Read:** https://cva.style/docs/getting-started/variants
@@ -57,7 +57,7 @@ Short notes after each task: what was built, what to remember, one link to read.
 
 ## 2026-10-03 — Phase 3, task 4: Text, Heading, Badge, Card
 
-- **Built:** `Text` (polymorphic `as`, size/tone/weight, `numeric` for tabular digits), `Heading` (required `level`, independent `size`), `Badge` (soft status tones), `Card` (polymorphic `as`, outline/filled, padding), and an *Examples / Invoice summary* story that uses all four. 14 new tests (42 total).
+- **Built:** `Text` (polymorphic `as`, size/tone/weight, `numeric` for tabular digits), `Heading` (required `level`, independent `size`), `Badge` (soft status tones), `Card` (polymorphic `as`, outline/filled, padding), and an _Examples / Invoice summary_ story that uses all four. 14 new tests (42 total).
 - **Remember: polymorphic components with generics.** `TextProps<T extends 'p' | 'span' | …>` = `{ as?: T } & Omit<ComponentProps<T>, 'as'>`, so the props follow the tag. Inside the function, `(as ?? 'p') as ElementType` is the one deliberate escape hatch; a `@ts-expect-error` test proves callers are still type-checked (`htmlFor` on a `<p>` fails).
 - **Remember: heading level is structure, not size.** Screen-reader users jump between headings by level. A big title under an existing `<h1>` is still an `<h2>`; set `size="2xl"` for the look. That's why `level` is required and `size` is optional.
 - **Remember: Badge text carries the meaning.** Color only reinforces "Paid" / "Overdue"; some users can't tell the tones apart. Badges aren't interactive; clickable things are Buttons.
@@ -69,10 +69,11 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Remember: virtualization = render only what's visible.** 10k rows × 20 columns would be 200,000 cells. The grid keeps ~25–34 rows (≈525 cells) in the DOM and positions them with `translateY`. Fixed row heights mean no measuring, which is the biggest single performance win.
 - **Remember: TanStack Table v9 ≠ v8 tutorials.** `useTable({ features, columns, data })`, features registered explicitly with `tableFeatures({...})`, `table.FlexRender`, generics `ColumnDef<TFeatures, TData, TValue>`. Most blog posts and AI snippets are v8 and won't compile.
 - **Remember: `memo` per row + `useDeferredValue` for search.** Rows that stay on screen keep the same props, so React skips them while scrolling. Search text updates instantly; the 10k-row filter uses the deferred value, so typing never waits.
-- **Gotcha:** TanStack sorts number/date columns *descending* on the first click by default. We set `sortDescFirst: false` so every column starts ascending, like Excel.
+- **Gotcha:** TanStack sorts number/date columns _descending_ on the first click by default. We set `sortDescFirst: false` so every column starts ascending, like Excel.
 - **Read:** https://tanstack.com/table/latest/docs/framework/react/guide/virtualization
 
 ## 2026-10-03 — Edit-mode prototype (plain HTML, before the React build)
+
 - **Built:** a clickable prototype of "Edit table → draft → Save all" to test the feel with real users before writing React. It is the spec for the editing phases.
 - **Remember: roving tabindex + re-render.** Only the active cell has `tabindex="0"`. If you re-render and throw away the focused element, focus falls to `<body>` and the keyboard goes dead. Fix: note `grid.contains(document.activeElement)` before the re-render and focus the new active cell after. In React, keys keep the DOM node alive, but a virtualized row scrolling out has the same problem (that's why `rangeExtractor` keeps the focused row mounted).
 - **Remember: the draft is a separate layer.** Server rows never change while editing; edits live in a `Map` keyed `rowId:colId`. Save sends only the diff plus each row's `version`, so Spring can answer 409 for a row someone else changed.
@@ -80,20 +81,23 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Read:** https://www.w3.org/WAI/ARIA/apg/patterns/grid/
 
 ## 2026-10-04 — PR A: DataGrid restyle (style A + bulk bar) and the Checkbox primitive
+
 - **Built:** a calm card layout for DataGrid (title, count chip, search with icon, actions slot, quiet sort icons, selected-row wash + rail, footer status), a style C bulk-action bar, and a new `Checkbox` primitive.
-- **Remember: scoped theming.** `data-inverse` re-declares the `--fds-*` variables on one element. Because our semantic tokens are `@theme inline`, `bg-secondary` resolves `var(--fds-secondary)` *at the element*, so everything inside flips, Button included, with zero component changes.
+- **Remember: scoped theming.** `data-inverse` re-declares the `--fds-*` variables on one element. Because our semantic tokens are `@theme inline`, `bg-secondary` resolves `var(--fds-secondary)` _at the element_, so everything inside flips, Button included, with zero component changes.
 - **Remember: `peer` and `group`.** `peer-checked:opacity-100` styles a sibling from the input's state (the tick); `group-hover:opacity-50` styles a child from the parent's hover (the sort icon). CSS does the state tracking, not React.
 - **Gotcha:** fading only the input (`disabled:opacity-50`) left the tick invisible in dark mode. Fade the wrapper instead: `has-[:disabled]:opacity-50`.
 - **Read:** https://tailwindcss.com/docs/hover-focus-and-other-states#styling-based-on-sibling-state
 
 ## 2026-10-04 — PR B: DataGrid edit mode, draft and Save bar
+
 - **Built:** `editing={{ onSave, getRowVersion, isRowLocked }}` on DataGrid: Edit toggle, ARIA grid mode with roving tabindex (TanStack `cellSelectionFeature`), Excel keys (arrows, Home/End, PgUp/PgDn, Tab, Enter/F2, type-to-replace, Esc), text/number/select editors, an immutable draft applied over the data, a Save bar with two-step Discard, `beforeunload` while dirty. Backend contract = types only (`ChangeSet`, `SaveResult`).
-- **Remember: focusing something that isn't rendered yet.** With virtualization, PgDn can target a row that isn't in the DOM, and `.focus()` on nothing does nothing. We store a *pending focus* key, scroll the row into range, and a layout effect focuses the cell on the first render that contains it.
+- **Remember: focusing something that isn't rendered yet.** With virtualization, PgDn can target a row that isn't in the DOM, and `.focus()` on nothing does nothing. We store a _pending focus_ key, scroll the row into range, and a layout effect focuses the cell on the first render that contains it.
 - **Remember: keep logic pure, keep React thin.** `getGridKeyAction(event, state)` is a plain function (one-line tests per key); `draft.ts` is plain functions over immutable objects. The component only wires them up.
 - **Gotcha:** jsdom has no `CSS.escape` or `scrollIntoView`; guard or avoid them, or every test crashes in a layout effect.
 - **Read:** https://www.w3.org/WAI/ARIA/apg/patterns/grid/#keyboardinteraction-settingfocusandnavigatinginsidecells
 
 ## 2026-10-04 — PR C: DataGrid Excel feel (ranges, clipboard, fill, undo)
+
 - **Built:** range selection (Shift+keys, Shift+click, mouse drag via TanStack's selection handlers, Ctrl+A), copy/cut/paste as Excel TSV (+ HTML table), paste tiling and per-column parsing ("pending" → "Pending", "$1,234.50" → 1234.5), read-only skip, Ctrl+D, Delete, Backspace, Ctrl+Z / Ctrl+Y and an Undo button.
 - **Remember: the command pattern for undo.** One user gesture = one history entry holding `{ rowId, columnId, before, after }` for every cell it touched. A 200-cell paste is one entry, so one Ctrl+Z undoes it. Undo replays `before`, redo replays `after`; a new gesture drops the redo trail.
 - **Remember: clipboard events, not the Clipboard API.** `copy` / `cut` / `paste` events are synchronous, need no permission prompt and work in every browser; `navigator.clipboard` is async and Firefox/Safari prompt for reads.
@@ -101,12 +105,14 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Read:** https://developer.mozilla.org/en-US/docs/Web/API/Element/paste_event
 
 ## 2026-10-04 — Fix: typecheck/build race on packages/ui/dist
+
 - **Fixed:** `tsc --build` (typecheck) and `vite build` both used `packages/ui/dist`. Nx runs independent targets in parallel, and vite empties `dist/` first, so after a source change typecheck could lose its own `.d.ts` files mid-run (TS6305). `tsconfig.lib.json` now writes typecheck output to `out-tsc/lib`; `dist/` belongs to `vite build` only.
 - **Remember: one output folder per task.** In Nx, two targets with no `dependsOn` between them can run at the same time. If they write the same folder, you get flaky failures that pass when each runs alone.
 - **Remember: fix the cause, not the order.** `dependsOn: ["build"]` on typecheck would also have "fixed" it, by making every typecheck wait for a full build. Separate folders keep both fast and independent.
 - **Read:** https://nx.dev/docs/concepts/task-pipeline-configuration
 
 ## 2026-10-04 — PR D: validation, save results, new rows, checkbox
+
 - **Built:** `required` / `validate` column rules with error cells (ring, corner flag, `aria-invalid` + `aria-describedby`), a red row rail, "N errors · Go to error", Save blocked by errors; server `validation` messages pinned to cells (cleared when edited); `conflict` → Use theirs / Keep mine; new rows ("Type here to add a row…", paste past the bottom) sent as `create`; checkbox editor; empty values render empty; `docs/data-grid-editing.md`. Also split `data-grid.tsx` into row / utils / icons.
 - **Remember: why "Keep mine" changes the version.** The server rejected the save because the user's `version` was stale. Keeping your values but re-sending the old version would just conflict again, so both choices adopt the server's version; "mine" then overwrites on purpose.
 - **Remember: don't disable a button you can explain.** Save stays clickable with errors and jumps to the first one. A disabled button gives no reason and can't be focused.
@@ -114,12 +120,14 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Read:** https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Reference/Attributes/aria-invalid
 
 ## 2026-10-04 — Decision: React Aria Components as the headless library
+
 - **Decided:** React Aria Components (Adobe) over Base UI and Downshift, recorded in `docs/decisions/0001-headless-library.md`. Deciding factor: it's the only one with a date picker, so the design system stays on one library.
 - **Remember: an ADR (architecture decision record)** is a short file: context, decision, options rejected, consequences. Future teammates read it instead of re-opening the debate.
 - **Remember: React Aria stops key events from bubbling by default.** A parent (like our grid's `<table>`) won't see Enter unless the handler calls `e.continuePropagation()`, or the parent listens in the capture phase.
 - **Read:** https://react-aria.adobe.com/
 
 ## 2026-10-04 — Select: the first React Aria component
+
 - **Built:** `Select` on React Aria Components (`Select` → `Button` + `SelectValue` + `Popover` + `ListBox`), with our own API (`options`, `value`, `onChange`, `size`, `invalid`), a hidden `<select>` for plain form posts, and `Field` now gives its label an id (`labelId`) so the trigger is named with `aria-labelledby`.
 - **Remember: focus restore.** When a popup closes, focus goes back to whatever had it before it opened (the trigger). React Aria's `FocusScope` does this for you, one animation frame after the popup unmounts. Hand-rolled popups often forget this, and keyboard users end up on `<body>`.
 - **Remember: wrap, don't re-export.** Apps import our `Select`, never `react-aria-components`. Our props stay simple (`string | null`), and we can change the internals later without breaking apps.
@@ -127,26 +135,30 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Read:** https://react-aria.adobe.com/Select
 
 ## 2026-10-04 — Fix: the library stopped bundling its dependencies
+
 - **Fixed:** `vite.config.mts` only kept React out of `dist/index.js`, so TanStack, cva, tailwind-merge and React Aria were copied in (477 KB → now 57 KB). Every `dependencies` / `peerDependencies` entry is now external, read from package.json. `react` and `react-dom` are now `peerDependencies`. jsdom gaps moved to `src/test-setup.ts` (Vitest `setupFiles`).
-- **Remember: a library imports, an app bundles.** A component library's build should only contain *its own* code. Its dependencies are installed and bundled once, by the app. Copies inside the library mean two React Arias (or Reacts) in one page, and context-based libraries break.
+- **Remember: a library imports, an app bundles.** A component library's build should only contain _its own_ code. Its dependencies are installed and bundled once, by the app. Copies inside the library mean two React Arias (or Reacts) in one page, and context-based libraries break.
 - **Remember: peerDependencies = "the app must provide this".** React is the classic one: there must be exactly one React in a page, the app's.
 - **Read:** https://vite.dev/guide/build.html#library-mode
 
 ## 2026-10-04 — Combobox: type to search, 10k options, server search
+
 - **Built:** `Combobox` on React Aria's `ComboBox`: browser filtering (`contains` / `startsWith`, ignores case and accents via `useFilter`), server search (`filter="none"` + `onInputChange` + `loading`), a virtualized list (`Virtualizer` + `ListLayout`, ~12 rows in the DOM for 10,000 options), Field wiring, and form posts of the option value (`formValue="key"`).
 - **Remember: `aria-activedescendant`.** In a combobox, DOM focus never leaves the input (you must be able to keep typing). The highlighted option is pointed at by id: `<input aria-activedescendant="opt-7">`, and the screen reader reads that option. Select is different: there focus really moves into the list.
-- **Remember: control the result, not the mechanics.** A first version let apps control the input text (`inputValue`). React Aria then stopped putting the picked label in the box and stopped resetting half-typed text on blur (found in the browser, not in tests). Fix: no `inputValue` prop; apps only *listen* (`onInputChange`).
+- **Remember: control the result, not the mechanics.** A first version let apps control the input text (`inputValue`). React Aria then stopped putting the picked label in the box and stopped resetting half-typed text on blur (found in the browser, not in tests). Fix: no `inputValue` prop; apps only _listen_ (`onInputChange`).
 - **Gotcha:** `defaultItems` = "React Aria filters these"; `items` = "already filtered by you". Pass the wrong one and filtering silently stops.
 - **Read:** https://react-aria.adobe.com/ComboBox
 
 ## 2026-10-04 — MultiCombobox: several picks as tags
+
 - **Built:** `MultiCombobox` on React Aria `ComboBox selectionMode="multiple"` + `TagGroup`. Picks show as tags inside the box (they wrap; the box grows), the text clears and the list stays open after each pick, Backspace in the empty input removes the last tag, and the form posts one entry per value. Shares its dropdown with `Combobox` (`combobox-parts.tsx`); both now use React Aria's `Group` as the field box.
 - **Remember: a "grid" of tags is one Tab stop.** Tab lands on the tags once; ←/→ move between them (roving `tabindex`: only the current tag has `tabindex=0`). Delete removes one, and focus moves to the next tag, or to the input when none are left — never to `<body>`.
-- **Remember: hidden collection pass.** React Aria finds a ComboBox's options by rendering its children once in a hidden tree. Other collections inside it (our TagGroup) must be wrapped in a *hideable* component (`ComboBoxValue`), or they render in that pass and crash.
+- **Remember: hidden collection pass.** React Aria finds a ComboBox's options by rendering its children once in a hidden tree. Other collections inside it (our TagGroup) must be wrapped in a _hideable_ component (`ComboBoxValue`), or they render in that pass and crash.
 - **Gotcha (tests):** while the list is open, React Aria sets `aria-hidden` on everything outside the input and list, so `getAllByRole('row')` "loses" the tags. Use `{ hidden: true }` to query them.
 - **Read:** https://react-aria.adobe.com/TagGroup
 
 ## 2026-10-04 — DatePicker: a calendar day, not a moment
+
 - **Built:** `DatePicker` on React Aria `DatePicker` (`DateInput` + `DateSegment` pieces, `Popover` → `Dialog` → `Calendar`). Value, `min`, `max` and the posted form value are ISO day strings (`'2026-10-04'`). Added `@internationalized/date` as a direct dependency (React Aria already used it; the build imports it, doesn't bundle it).
 - **Remember: a date is not a `Date`.** `new Date(2026, 9, 4)` in Tokyo is midnight local = Oct 3, 15:00 UTC, so a UTC server stores Oct 3. A calendar day has no time zone; keep it as `'YYYY-MM-DD'` from the field to the database.
 - **Remember: segments are spinbuttons.** Each piece (month, day, year) is its own `role="spinbutton"`: type digits (it jumps to the next piece when full) or ↑↓. Order follows the user's locale (US: mm/dd/yyyy). Alt+↓ opens the calendar; closing it puts focus back where you were.
@@ -154,13 +166,15 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Read:** https://react-aria.adobe.com/DatePicker
 
 ## 2026-10-11 — DataGrid popover editors: searchable list and date cells
+
 - **Built:** two new cell editor kinds on React Aria: `combobox` (searchable list, `options` or server `searchOptions` with debounce + `AbortSignal`) and `date` (ISO `'YYYY-MM-DD'` in and out, calendar on Alt+↓). A `PopoverEditorShell` routes Enter / Tab / Escape; every editor now fills a `CellEditorHandle` (`getValue()`, `focus()`). Demo invoices store dates as ISO strings. `Combobox` / `MultiCombobox` gained `selectedOptions` (labels for saved values not in the current results). The calendar popup moved to `calendar-popover.tsx`, shared by DatePicker and the grid.
 - **Remember: capture phase runs first.** A keydown travels down (capture: `onKeyDownCapture`, parents first) and then back up (bubble: `onKeyDown`, target first). React Aria stops Enter in the bubble phase, so the shell listens in capture to see it at all.
-- **Remember: read the value, not the text.** A combobox's input shows what you *searched* ("dev"), not what you *picked* ("DevOps"). The grid asks the editor's handle for the value instead of reading the input.
+- **Remember: read the value, not the text.** A combobox's input shows what you _searched_ ("dev"), not what you _picked_ ("DevOps"). The grid asks the editor's handle for the value instead of reading the input.
 - **Gotcha: React events bubble through portals.** The list and calendar are portaled to `<body>`, but their clicks still reach the cell's React `onMouseDown`. Cells now ignore events whose DOM target isn't inside them.
 - **Read:** https://react.dev/reference/react-dom/createPortal#event-bubbling-through-portals
 
 ## 2026-10-11 — Dialog and AlertDialog
+
 - **Built:** `Dialog` (title, description, scrolling body, `footer` slot, ×; Escape or a click outside closes) and `AlertDialog` (role `alertdialog`, Cancel focused first, no outside-click close, async `onConfirm` with a spinner that stays open on failure). Both on React Aria `ModalOverlay` + `Modal` + `Dialog`. New `--fds-backdrop` token for the dimmed page.
 - **Remember: a modal does three things.** Focus moves inside and is trapped there; everything behind is hidden from screen readers (`aria-hidden`) and can't be clicked or tabbed to; on close, focus goes back to the button that opened it. Without the last one, a keyboard user is dropped at the top of the page.
 - **Remember: `dialog` vs `alertdialog`.** `alertdialog` is for a question that needs an answer now. Screen readers announce it as urgent, so it should be rare: one per destructive action, not for every message.
@@ -168,6 +182,7 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Read:** https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/
 
 ## 2026-10-11 — Menu
+
 - **Built:** `Menu` (a trigger button + popup of actions) with `MenuItem` (`onAction`, `danger`, `disabled`, `description`, `shortcut`), `MenuSection` (title; `selectionMode` turns items into checkboxes or radios, e.g. "show columns") and `MenuSeparator`. On React Aria `MenuTrigger` + `Menu`. `buttonVariants` is now exported from `button.tsx` so the trigger looks exactly like a Button.
 - **Remember: a menu is for actions, not values.** "Edit / Duplicate / Delete" is a Menu; "pick a status for this form" is a Select. Screen readers announce them differently (`menu` vs `listbox`), and a menu has no "current value".
 - **Remember: a menu is not a Tab stop.** Arrows move inside; Tab leaves it, and the popup closes as soon as focus leaves. Escape closes it and puts focus back on the button.
@@ -175,31 +190,36 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Read:** https://www.w3.org/WAI/ARIA/apg/patterns/menu-button/
 
 ## 2026-10-11 — Popover
+
 - **Built:** `Popover`: a trigger button + a floating panel (filters, details, a small form) on React Aria `DialogTrigger` + `Popover` + `Dialog`. Optional `title` (names the panel; without it, the trigger's label does), `panelSize`, `placement`, optional controlled `open` / `onOpenChange`, and children-as-a-function for `close`. Menu and Popover now share one internal `TriggerButton`.
 - **Remember: modal vs. "light dismiss".** A Dialog dims the page and needs an answer. A Popover belongs to its button: the page stays visible, and Escape or any click outside closes it. While it's open, an invisible layer covers the page, so that first outside click only closes the popover: it never presses the button behind it by accident.
 - **Remember: popups nest.** A Select inside a Popover opens its own popup; React Aria keeps a stack of open overlays, so picking an option closes only the top one.
 - **Read:** https://react-aria.adobe.com/Popover
 
 ## 2026-10-11 — Tooltip
+
 - **Built:** `Tooltip` (`content`, `placement`, `delay` = 700 ms, `disabled`) on React Aria `TooltipTrigger` + `Tooltip`, wrapping any focusable element through `Focusable`, so our native `<button>` Button stays as it is (option C of A/B/C).
-- **Remember: keyboard focus shows it, mouse focus doesn't.** React Aria tracks the *interaction modality* (keyboard, pointer, or virtual). Clicking a button focuses it, but the mouse is already there, so a hint would only be in the way. Tabbing to it shows the hint, because a keyboard user has no hover.
+- **Remember: keyboard focus shows it, mouse focus doesn't.** React Aria tracks the _interaction modality_ (keyboard, pointer, or virtual). Clicking a button focuses it, but the mouse is already there, so a hint would only be in the way. Tabbing to it shows the hint, because a keyboard user has no hover.
 - **Remember: description, not name.** The tooltip is wired with `aria-describedby`: screen readers say the button's own label first ("Export, button"), then the hint. An icon button without `aria-label` has no name at all.
 - **Gotcha (tests):** jsdom here has `PointerEvent`, so hover means `pointerover` / `pointerout` with `pointerType: 'mouse'`, after one `pointerdown` so React Aria knows the mouse is in use.
 - **Read:** https://react-aria.adobe.com/Tooltip
 
 ## 2026-10-11 — Alert
+
 - **Built:** `Alert`, an inline message box (`info` / `success` / `warning` / `danger`) with `title`, details, an `actions` slot, optional `onDismiss`, and `announce`. No React Aria needed: it's plain markup plus the right role.
-- **Remember: a live region only speaks when content *changes*.** `role="alert"` (urgent, interrupts) and `role="status"` (polite, waits) make screen readers read new content. An alert that's on the page from the start should have *no* live role, or it's read twice. That's why `announce` is opt-in.
+- **Remember: a live region only speaks when content _changes_.** `role="alert"` (urgent, interrupts) and `role="status"` (polite, waits) make screen readers read new content. An alert that's on the page from the start should have _no_ live role, or it's read twice. That's why `announce` is opt-in.
 - **Remember: never color alone.** Each alert starts with a hidden word ("Warning: …"), so the tone reaches people who can't see the color or the icon.
 - **Read:** https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Reference/Roles/alert_role
 
 ## 2026-10-11 — Spinner, ProgressBar, Skeleton
+
 - **Built:** `Spinner` (indeterminate React Aria `ProgressBar`, named by `label`), `ProgressBar` (visible label, value text or `valueLabel` like "120 of 300 rows", indeterminate when there's no `value`) and `Skeleton` (`text` / `rect` / `circle` placeholders). `cssVars()` moved to `utils/` now that more than the grid uses it.
 - **Remember: a Skeleton is silent on purpose.** Gray boxes read aloud are noise. The region that's loading says `aria-busy="true"`, and one status line says "Loading invoice…". The boxes are `aria-hidden`.
 - **Remember: respect reduced motion.** `motion-reduce:` styles apply when the user turns animations down in their OS. The skeleton stops pulsing and the indeterminate bar stands still; the spinner only slows down, because a still spinner looks broken.
 - **Read:** https://developer.mozilla.org/en-US/docs/Web/CSS/@media/prefers-reduced-motion
 
 ## 2026-10-11 — Toast
+
 - **Built:** `toast.success / info / warning / danger / show / dismiss` plus `<ToastRegion />` (render once at the app root), on React Aria's `UNSTABLE_Toast`, wrapped so apps never see the unstable names. Errors and toasts with an action (Undo) stay until closed; others close after 5 s, pausing on hover or focus. `react-aria-components` is now pinned to `~1.21.1` (patch updates only).
 - **Remember: a function API for a global thing.** A toast can be triggered from anywhere, including code that isn't a component (an API error handler), so it's a module-level queue with plain functions. No hook, no context provider.
 - **Remember: timing is an accessibility rule.** WCAG 2.2.1 says people must get enough time. A message that needs reading or an action (an error, Undo) must not vanish on a timer.
@@ -207,12 +227,14 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Read:** https://react-aria.adobe.com/Toast
 
 ## 2026-10-11 — EmptyState
+
 - **Built:** `EmptyState` (`title`, required `headingLevel`, `description`, decorative `icon`, `action`, `size: default | compact`). It drops into the DataGrid's existing `emptyMessage` slot. This completes Tier 3: Alert, loading states, Toast, EmptyState.
-- **Remember: "no data yet" and "no results" are different states.** Same box, different words and a different action: *create the first one* vs. *loosen the search*. One generic "Nothing here" fails both.
+- **Remember: "no data yet" and "no results" are different states.** Same box, different words and a different action: _create the first one_ vs. _loosen the search_. One generic "Nothing here" fails both.
 - **Remember: required props for structure.** Like `Heading`, the heading level has no default. A component can't know where it sits in the page outline, and a wrong level breaks screen-reader navigation by headings.
 - **Read:** https://www.nngroup.com/articles/empty-state-interface-design/
 
 ## 2026-10-11 — NumberField and TextArea
+
 - **Built:** `NumberField` on React Aria (formats with `Intl.NumberFormat` options: currency, percent, decimals; ↑/↓ and −/+ to step; `min` / `max` / `step`; the app gets a plain `number | null`, and forms post the plain number). `TextArea`: native, styled like Input, grows with its text, with an optional "12 / 500" counter.
 - **Remember: format for people, store for machines.** The field shows `$1,234.50` in the user's locale, but the app only ever sees `1234.5`. Formatting is a display concern, like ISO dates: never send "$1,234.50" to a backend.
 - **Remember: numbers vs. number-looking codes.** A PO number or a postal code is text; a NumberField would drop its leading zeros and add commas. Use NumberField only when doing maths on the value makes sense.
@@ -220,27 +242,30 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Read:** https://react-aria.adobe.com/NumberField
 
 ## 2026-10-11 — RadioGroup and Switch
+
 - **Built:** `RadioGroup` + `Radio` (label, description, error, required, horizontal or vertical, per-radio description) and `Switch`, both on React Aria with native inputs underneath.
-- **Remember: a radio group is one Tab stop.** Tab lands on the chosen radio, arrows move *and* choose, Tab leaves. Choosing with arrows is the standard; it surprises people who expect Space.
-- **Remember: Switch vs. Checkbox.** A Switch acts *now* (like a light switch: "Email me when paid"). A Checkbox is a choice applied on submit ("I accept the terms"). Same input underneath; screen readers say "on/off" for a switch and "checked" for a checkbox.
+- **Remember: a radio group is one Tab stop.** Tab lands on the chosen radio, arrows move _and_ choose, Tab leaves. Choosing with arrows is the standard; it surprises people who expect Space.
+- **Remember: Switch vs. Checkbox.** A Switch acts _now_ (like a light switch: "Email me when paid"). A Checkbox is a choice applied on submit ("I accept the terms"). Same input underneath; screen readers say "on/off" for a switch and "checked" for a checkbox.
 - **Gotcha (tests):** jsdom's `fireEvent.click` fires on disabled inputs, which real browsers never do. Test the `disabled` attribute instead of clicking it.
 - **Read:** https://www.w3.org/WAI/ARIA/apg/patterns/radio/
 
 ## 2026-10-11 — CheckboxGroup
+
 - **Built:** `CheckboxGroup` + `CheckboxGroupItem` on React Aria (group label, description, error, required, orientation; value is `string[]`; forms post one entry per checked value). Items look exactly like `Checkbox`, which stays for single boxes. Completes Tier 2: NumberField, TextArea, RadioGroup, Switch, CheckboxGroup.
 - **Remember: checkboxes are separate Tab stops, radios are one.** Radios are one choice, so arrows move through them. Checkboxes are independent yes/no answers, so each one gets Tab and Space.
 - **Remember: two components beat one that changes meaning.** React Aria's group needs its own items, so a separate `CheckboxGroupItem` keeps `Checkbox` simple and native, instead of a Checkbox that behaves differently depending on its parent.
 - **Read:** https://react-aria.adobe.com/CheckboxGroup
 
-
 ## 2026-10-11 — Tabs
+
 - **Built:** `Tabs`, `TabList`, `Tab`, `TabPanel` on React Aria (string `value`/`defaultValue`/`onChange`, disabled tabs, `keyboardActivation` automatic or manual). Starts Tier 4 (navigation and layout).
-- **Remember: automatic vs. manual activation.** Automatic (default): ←/→ move *and* show the panel. Manual: arrows only move focus, Enter or Space shows it. Pick manual when panels are slow to load.
+- **Remember: automatic vs. manual activation.** Automatic (default): ←/→ move _and_ show the panel. Manual: arrows only move focus, Enter or Space shows it. Pick manual when panels are slow to load.
 - **Remember: tabs switch views, links change pages.** If clicking it changes the URL to a new page, it's navigation (links), not tabs.
 - **Gotcha:** React Aria calls `onSelectionChange` on mount when it picks the first tab itself. Our wrapper skips that call, so `onChange` only means "the user picked a tab".
 - **Read:** https://react-aria.adobe.com/Tabs
 
 ## 2026-10-11 — Breadcrumbs + Pagination
+
 - **Built:** `Breadcrumbs` (an `items` array, on React Aria `Breadcrumbs` + `Link`) and `Pagination` (our own: Previous, page numbers with "…" gaps, Next, built on `Button`). Both sit inside a `<nav>` landmark with `aria-current="page"` on the current item.
 - **Remember: `disabled` vs. `aria-disabled`.** A `disabled` button drops focus, so pressing Next onto the last page would throw keyboard users to the top of the page. `aria-disabled` looks and reads as disabled but keeps focus, and the click handler ignores it.
 - **Remember: keep the layout still.** Pagination always shows the same number of items (first, last, current ± siblings, gaps), so the buttons don't move under the mouse while you click through.
@@ -248,6 +273,7 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Read:** https://www.w3.org/WAI/ARIA/apg/patterns/breadcrumb/
 
 ## 2026-10-11 — AppShell + PageHeader
+
 - **Built:** `AppShell` (top bar, sidebar, `<main>`, skip link; below 1024px the sidebar becomes a React Aria modal drawer), `SideNav` / `SideNavSection` / `SideNavItem` (`aria-current="page"`), and `PageHeader` (breadcrumbs, the page's one `h1`, description, actions). Completes Tier 4.
 - **Remember: the skip link.** It's the first thing Tab reaches, hidden until focused. Enter jumps to `<main tabindex="-1">`, so keyboard users skip the whole sidebar in 2 key presses instead of 15+.
 - **Remember: landmarks are a table of contents.** `<header>`, `<nav>`, `<main>` let screen-reader users jump straight to a region. One `<main>` per page; each `<nav>` gets its own name.
@@ -255,49 +281,57 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Read:** https://www.w3.org/WAI/ARIA/apg/practices/landmark-regions/
 
 ## 2026-10-11 — Pagination page-size picker
+
 - **Built:** `pageSize`, `pageSizeOptions` and `onPageSizeChange(pageSize, page)` on `Pagination`: a "Rows per page" Select beside the page buttons (outside the `<nav>`, since it isn't navigation).
 - **Remember: keep the user's place.** Switching page size should keep the first visible row on screen: page 5 of 25s (rows 101–125) → page 3 of 50s. Jumping to page 1 is common, but it loses where they were. `pageForSize` does the math: `floor((page - 1) × oldSize / newSize) + 1`.
 - **Remember: hand the caller the answer, not the chore.** `onPageSizeChange` passes the new page too, so every app gets this right without writing the formula itself.
 - **Read:** https://react-aria.adobe.com/Select
 
 ## 2026-10-11 — Collapsing long breadcrumb trails
+
 - **Built:** `maxItems` on `Breadcrumbs`: the first item, a "…" menu with the hidden levels as links, and the last `maxItems - 1` items. `MenuItem` gained `href`, so any menu item can be a link.
 - **Remember: three ways to shorten a trail.** Link "…" to the parent (loses the levels in between), expand it in place (the trail jumps to several lines), or open a menu (one line, every level still one step away). We picked the menu.
 - **Remember: name icon-like buttons by what they do.** "…" means nothing read aloud, so the button is named "Show 3 more levels".
 - **Read:** https://react-aria.adobe.com/Menu#links
 
 ## 2026-10-11 — Collapsible sidebar
+
 - **Built:** a collapse button at the bottom of AppShell's wide sidebar (64px, icons only, labels as tooltips), with `sidebarCollapsed` / `defaultSidebarCollapsed` / `onSidebarCollapsedChange`. SideNav reads the state from context, so app nav code doesn't change.
 - **Remember: `sr-only`, not removed.** A collapsed item hides its label visually but keeps it in the page, so the link is still "Invoices, link, current page". Deleting the text would leave an unnamed link.
-- **Remember: controlled *or* uncontrolled.** `defaultX` lets the component keep the state; `x` + `onXChange` lets the app own it (e.g. to save it). We support both with `x ?? ownState`.
+- **Remember: controlled _or_ uncontrolled.** `defaultX` lets the component keep the state; `x` + `onXChange` lets the app own it (e.g. to save it). We support both with `x ?? ownState`.
 - **Remember: keep the tree stable.** The Tooltip is always rendered and only `disabled` when expanded. Adding or removing a wrapper would remount the link and drop keyboard focus.
 - **Read:** https://react.dev/learn/sharing-state-between-components#controlled-and-uncontrolled-components
 
 ## 2026-10-11 — Menu submenus
+
 - **Built:** `MenuSubmenu` ("Export as ▸ CSV / Excel / PDF") on React Aria `SubmenuTrigger`: the parent item gets `aria-haspopup="menu"` + `aria-expanded` and a ▸ chevron; the submenu opens beside it.
 - **Remember the keys:** → or Enter opens the submenu on its first item; ← or Escape closes **only** the submenu and puts focus back on its parent item; Enter on an item runs it and closes the whole menu. In right-to-left languages ← and → swap.
 - **Remember: "alpha" APIs get the same care as `UNSTABLE_` ones.** One file imports `SubmenuTrigger`, nothing in our public types mentions it, and React Aria stays patch-pinned (recipe rule 22).
 - **Read:** https://react-aria.adobe.com/Menu#submenus
 
 ## 2026-10-11 — Dialog and drawer animations
+
 - **Built:** Dialog/AlertDialog backdrop fade + panel pop (150ms in, 100ms out) and the AppShell drawer slide (mirrored in RTL), as named animations in `@theme` driven by React Aria's `data-entering` / `data-exiting`. No new dependency.
-- **Remember: React Aria waits for exit animations.** On close it keeps the dialog in the page with `data-exiting` until the animation ends, *then* removes it and returns focus to the button. (Checked in Chromium: still there right after Escape, gone and focus restored 250ms later.)
+- **Remember: React Aria waits for exit animations.** On close it keeps the dialog in the page with `data-exiting` until the animation ends, _then_ removes it and returns focus to the button. (Checked in Chromium: still there right after Escape, gone and focus restored 250ms later.)
 - **Remember: animate with `motion-safe:`, don't cancel with `motion-reduce:`.** `.x[data-entering]` (class + attribute) beats `.y` in a media query, so `motion-reduce:animate-none` silently lost and reduced-motion users still got the animation. Only a real browser caught it; jsdom doesn't run CSS animations.
 - **Read:** https://react-aria.adobe.com/Modal#animation
 
 ## 2026-10-11 — Tooltip kind="label"
+
 - **Built:** `Tooltip kind="label"` for hints that only repeat the element's own name (collapsed sidebar icons). SideNav uses it, so screen readers no longer say "Invoices" twice.
-- **Remember: how a description is computed.** `aria-describedby` is followed even to hidden elements, so `aria-hidden` on the tooltip does nothing. But inside the referenced element, `aria-hidden` *children* are skipped. Hiding the text inside the tooltip empties the description while it stays on screen.
+- **Remember: how a description is computed.** `aria-describedby` is followed even to hidden elements, so `aria-hidden` on the tooltip does nothing. But inside the referenced element, `aria-hidden` _children_ are skipped. Hiding the text inside the tooltip empties the description while it stays on screen.
 - **Remember: check names and descriptions in a real browser.** Chrome's accessibility tree (via DevTools or CDP `Accessibility.getPartialAXTree`) is the source of truth; jsdom doesn't compute it.
 - **Read:** https://www.w3.org/TR/accname-1.2/#mapping_additional_nd_description
 
 ## 2026-10-11 — Popup animations
+
 - **Built:** one shared motion for every popup: Popover, Menu + submenus, Select, Combobox, MultiCombobox, DatePicker calendar (fade + scale from 96%, 120ms in, 80ms out), and Tooltip (fade only). One class string in `utils/motion.ts`, so they can't drift apart.
 - **Remember: grow out of the trigger.** React Aria sets `--trigger-anchor-point` on each popup, the point that touches its trigger (for a start-aligned menu below a button: its top-start corner). `origin-(--trigger-anchor-point)` makes the scale start there.
 - **Remember: slow animations down to test them.** A 120ms animation is over before a script can look. Chrome DevTools (or CDP `Animation.setPlaybackRate`) can run them at 10% speed.
 - **Read:** https://react-aria.adobe.com/Popover#animation
 
 ## 2026-10-11 — Combobox autoHighlight
+
 - **Built:** opt-in `autoHighlight` on `Combobox` (and always on in the grid's combobox cell editor): as you type, the first enabled match is highlighted, so Enter picks it without ↓. ARIA calls this "list autocomplete with automatic selection".
 - **Remember: read the library's source before changing a default.** React Aria picks the highlighted option on **Tab** as well as Enter. In a grid that's what you want; in a form, "type 'ca', Tab away" would silently choose Canada. So it's opt-in.
 - **Remember: effects run child first, parent last.** React Aria clears the highlight in the ComboBox's own effect whenever the text changes, which runs after ours. A `queueMicrotask` runs after the whole batch of effects, so our highlight sticks.
@@ -305,18 +339,21 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Read:** https://www.w3.org/WAI/ARIA/apg/patterns/combobox/examples/combobox-autocomplete-list/
 
 ## 2026-10-11 — Date cell type-to-replace
-- **Built:** typing a digit on a date cell opens the editor *with* that digit in the first segment (month in en-US); typing carries on across segments. Other keys just open the editor. Completes the small follow-ups batch.
+
+- **Built:** typing a digit on a date cell opens the editor _with_ that digit in the first segment (month in en-US); typing carries on across segments. Other keys just open the editor. Completes the small follow-ups batch.
 - **Remember: "1" waits, "2" jumps.** After "1" the month could still be 10–12, so the segment waits; after "12" no month is longer, so focus moves to the day. React Aria decides this per segment.
 - **Remember: drive components through the platform's own events.** React Aria date segments read typed text from the native `beforeinput` event, so dispatching one is the same path a real key takes. Verified with a real (trusted) key press in Chromium, not only the synthetic event in jsdom.
 - **Read:** https://developer.mozilla.org/en-US/docs/Web/API/Element/beforeinput_event
 
 ## 2026-10-11 — Grid combobox: one Enter on an unchanged value
+
 - **Fixed:** Enter on a combobox (or date) cell whose value you didn't change now commits and moves down in one press, like Tab already did. Before, the first Enter only closed the list.
-- **Remember: capture vs. bubble.** The editor shell sees keys twice: in the *capture* phase (before React Aria) and the *bubble* phase (after). With the list open, Enter must reach React Aria first so it can pick the highlighted option; only afterwards, in bubble, do we check "is the list closed now?" and commit. Committing in capture would save the old value instead of the pick.
+- **Remember: capture vs. bubble.** The editor shell sees keys twice: in the _capture_ phase (before React Aria) and the _bubble_ phase (after). With the list open, Enter must reach React Aria first so it can pick the highlighted option; only afterwards, in bubble, do we check "is the list closed now?" and commit. Committing in capture would save the old value instead of the pick.
 - **Remember: prove a test catches the bug.** Run it against the old code once and watch it fail; a test that passes either way protects nothing.
 - **Read:** https://developer.mozilla.org/en-US/docs/Web/API/Event/eventPhase
 
 ## 2026-10-11 — FileUpload
+
 - **Built:** `FileUpload`: drop zone (React Aria `DropZone`: drag, and paste with Ctrl/⌘+V), "Browse files" (`FileTrigger`), `accept` / `maxSize` / `maxFiles` / `multiple`, a file list with Remove, refusals with reasons, and a live status for screen readers. It chooses files; uploading stays the app's job.
 - **Remember: three ways in, so nobody is stuck.** Drag (mouse), Browse (keyboard, touch), paste (keyboard). React Aria's DropZone also has a hidden drop button so screen-reader users can paste into it.
 - **Remember: accept the drop, then explain.** Refusing a drag only shows a "no entry" cursor with no reason. Taking the files and listing "archive.zip isn't an accepted file type" tells people what to fix.
@@ -325,19 +362,22 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Read:** https://react-aria.adobe.com/DropZone
 
 ## 2026-10-12 — ReorderableList
+
 - **Built:** `ReorderableList` (React Aria `GridList` + `useDragAndDrop`): ⠿ handle per row, a drop line, the dragged row faded in place, optional `renderEnd` (e.g. a Switch per column). Controlled only (`items` + `onReorder`); the move itself is a pure `moveItems()`.
-- **Remember the keyboard flow:** ↑↓ to a row, **→ onto its ⠿ handle**, Enter picks it up; ↑↓ then walk the *gaps* ("Insert between Status and Issued"), Enter drops, Escape cancels. React Aria announces each step. In a grid, → moves *into* a row's controls.
+- **Remember the keyboard flow:** ↑↓ to a row, **→ onto its ⠿ handle**, Enter picks it up; ↑↓ then walk the _gaps_ ("Insert between Status and Issued"), Enter drops, Escape cancels. React Aria announces each step. In a grid, → moves _into_ a row's controls.
 - **Remember: read the source, then test the real thing.** I first guessed Enter on the row; React Aria's source and a Chromium run showed the handle is the keyboard entry point when a list has one. jsdom can't run its drag manager at all, so drags are verified in Chromium.
 - **Gotcha:** `GridListItem` names a row from `textValue` and drops `aria-describedby`, so a second line has to go into the name ("Customer, Company name").
 - **Read:** https://react-aria.adobe.com/dnd
 
 ## 2026-10-12 — ReorderableList: Alt+↑/↓ shortcut
+
 - **Built:** Alt+↑/↓ on a row (or its ⠿ handle) moves it one step and announces "Moved Status to position 4 of 6" (or "Invoice is already first"). It reuses `moveItems()`. The full keyboard drag still works for long moves.
 - **Remember: `onKeyDownCapture` sees a key before the handlers below it.** `GridListItem` has no `onKeyDown` prop, so a wrapper `div` catches Alt+arrows in the capture phase and calls `stopPropagation()`. That stops React Aria's own ↓ from also moving focus.
-- **Remember: moving a focused DOM node drops focus.** Moving "Status" **down** made React move that node. The browser then blurred it to `<body>`, and React Aria put focus back (it remembers the focused key). Moving **up** made React move the *neighbour*, so focus never left. Check this in a real browser, never assume.
+- **Remember: moving a focused DOM node drops focus.** Moving "Status" **down** made React move that node. The browser then blurred it to `<body>`, and React Aria put focus back (it remembers the focused key). Moving **up** made React move the _neighbour_, so focus never left. Check this in a real browser, never assume.
 - **Read:** https://developer.mozilla.org/en-US/docs/Web/API/EventTarget/addEventListener#capture
 
 ## 2026-10-12 — FileUpload: upload progress, Retry, Cancel
+
 - **Built:** an `upload(file, { onProgress, signal })` prop. Each new file is sent right away. Its row shows a progress bar and %, then ✓, or the reason plus **Retry**. The ✕ cancels while sending. State lives in a `useUploads` hook, keyed by the `File` object itself. `ProgressBar` gained `hideLabel`.
 - **Remember: `AbortController` is how you cancel async work.** The hook makes one per upload and passes `signal` to your function (and from there to `fetch`). Cancel, removing a file and unmounting all call `abort()`. A late answer from an aborted upload is ignored (`if (signal.aborted) return`).
 - **Remember (the prediction): when the focused button disappears, focus falls to `<body>`.** Retry vanishes once the row is uploading again, so the code moves focus to the row's ✕. That button stays in every state and only its name changes. The test fails without the fix (it was checked).
@@ -345,13 +385,15 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Read:** https://developer.mozilla.org/en-US/docs/Web/API/AbortController
 
 ## 2026-10-12 — DateRangePicker
+
 - **Built:** `DateRangePicker` (React Aria `DateRangePicker` + `RangeCalendar`). Value is `{ start, end }` ISO strings, plus `min`/`max`, Field support and `startName`/`endName` for forms. The field box, date pieces and calendar button moved to `date-field-parts.tsx`; the month header and day grid are shared in `calendar-popover.tsx`, so both pickers use one copy.
-- **Remember (the prediction):** after the first click, React Aria keeps an *anchor*. The band follows the mouse (or arrow keys) as a preview, and `onChange` is **not** called until the second click. Half a range is not a value. With the keyboard, Enter on the start also moves focus one day on, so the preview shows at once (`focusNearestAvailableDate`).
+- **Remember (the prediction):** after the first click, React Aria keeps an _anchor_. The band follows the mouse (or arrow keys) as a preview, and `onChange` is **not** called until the second click. Half a range is not a value. With the keyboard, Enter on the start also moves focus one day on, so the preview shows at once (`focusNearestAvailableDate`).
 - **Remember: in React Aria, `isInvalid={false}` means "never invalid".** It switched off React Aria's own checks: a typed day outside `min`/`max`, an end before the start. Pass `true` or `undefined`, never `false`. This fixed the same bug in `DatePicker`.
 - **Gotcha (tests):** calendar day names carry extras ("Selected Range: … to …", "First available date"), so the tests find days by their number instead of their name.
 - **Read:** https://react-aria.adobe.com/DateRangePicker
 
 ## 2026-10-12 — DateRangePicker: quick picks (presets)
+
 - **Built:** a `presets` prop on `DateRangePicker`, shown as a column of buttons beside the calendar. One click sets both ends and closes the popover; the matching one is `aria-pressed`, and one reaching outside `min`/`max` is disabled. `commonRangePresets(today?)` gives the usual six: Today, Last 7/30 days, Month to date, Last month, Year to date.
 - **Remember (the prediction): ranges count both ends.** "Last 7 days" on Oct 12 is **Oct 6 – 12** (`today.subtract({ days: 6 })`), not Oct 5. Off-by-one here gives an 8-day report.
 - **Remember: let the date library do month and year maths.** `startOfMonth`, `endOfMonth` and `subtract({ months: 1 })` from `@internationalized/date` get Feb 29, Dec 31 → Jan 1 and 30-vs-31-day months right. The tests cover a leap year and a year boundary.
@@ -359,27 +401,31 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Read:** https://react-aria.adobe.com/internationalized/date/CalendarDate
 
 ## 2026-10-12 — TagGroup (chips)
+
 - **Built:** `TagGroup` (React Aria `TagGroup`), with removable chips (`onRemove`: ✕ button + Delete/Backspace) and toggle chips (`selectionMode`, ✓ when selected). It has its own label, description and error, plus `emptyText`. The chip look moved to `tag-parts.tsx`, shared with `MultiCombobox`.
-- **Remember (the prediction): React Aria moves focus for you.** After a Delete, focus goes to the next chip, or the previous one at the end. When the *last* chip goes, focus moves to the empty list itself, now a `group` still named "Active filters". Focus never falls to `<body>`, but our `outline-hidden` made that spot invisible, so the list needed its own focus ring.
+- **Remember (the prediction): React Aria moves focus for you.** After a Delete, focus goes to the next chip, or the previous one at the end. When the _last_ chip goes, focus moves to the empty list itself, now a `group` still named "Active filters". Focus never falls to `<body>`, but our `outline-hidden` made that spot invisible, so the list needed its own focus ring.
 - **Remember: never show state by color alone (WCAG 1.4.1).** Selected chips were a yellow tint only in the first screenshot; now they also get a ✓. Screen readers get `aria-selected`.
 - **Remember: a grid of chips is one Tab stop**, with ←/→ inside it. Fifty chips would otherwise be fifty Tab presses.
 - **Read:** https://react-aria.adobe.com/TagGroup
 
 ## 2026-10-12 — SegmentedControl
+
 - **Built:** `SegmentedControl` (React Aria `ToggleButtonGroup`, single mode → `radiogroup` of `radio`s). One option is always on (`disallowEmptySelection`). It supports icons, `iconOnly` (the label becomes the name and a `Tooltip kind="label"`), disabled options and sizes.
-- **Remember (the prediction): ←/→ only move focus; Space/Enter choose.** Passing over "Month" doesn't load a month of data on the way to "Quarter". That's the reason to pick this over a RadioGroup (where arrows choose as they move) for settings that trigger work. Tabs are for switching *panels*, not settings.
-- **Remember: check what the ARIA role promises.** It says `radiogroup`, so Tab should land on the *checked* radio. React Aria starts on the first, as for a toolbar, so an `onFocusCapture` sends focus that enters from outside to the chosen segment.
+- **Remember (the prediction): ←/→ only move focus; Space/Enter choose.** Passing over "Month" doesn't load a month of data on the way to "Quarter". That's the reason to pick this over a RadioGroup (where arrows choose as they move) for settings that trigger work. Tabs are for switching _panels_, not settings.
+- **Remember: check what the ARIA role promises.** It says `radiogroup`, so Tab should land on the _checked_ radio. React Aria starts on the first, as for a toolbar, so an `onFocusCapture` sends focus that enters from outside to the chosen segment.
 - **Remember: measure state contrast (WCAG 1.4.11, 3:1).** The selected pill was only 1.17:1 against the track in both themes. A `ring-border-strong` outline (3.7:1) fixed it. Also, `onChange` now fires only on a real change: React Aria reports the same segment again when it's pressed twice.
 - **Read:** https://react-aria.adobe.com/ToggleButtonGroup
 
 ## 2026-10-12 — Audit: isInvalid and where Tab lands
+
 - **Did:** checked every component for the two bug kinds found this week. Result: **no new code bugs**. I added recipe rules 24 and 25, a comment at each `isInvalid`, and a CheckboxGroup test that locks the rule in.
 - **Remember (the prediction): `required` is not shown live in `aria` mode.** A required DatePicker cleared and blurred stays un-red. React Aria shows `required` only when validation is committed, so the #48 change caused no regression.
 - **Remember: read the library's code when tests disagree.** jsdom's form submit gave mixed results. `useFormValidationState` settled it: shown error = our `isInvalid` if set, else React Aria's built-in checks. So `false` is a choice per component, not a bug pattern. It's wrong only where React Aria checks something users need (date ranges).
-- **Remember: Tab-lands-on-selected is checked in a real browser**, with the selected item *not* first. React Aria gets it right for Tabs, TagGroup, Select and Calendar. Only ToggleButtonGroup (SegmentedControl) didn't.
+- **Remember: Tab-lands-on-selected is checked in a real browser**, with the selected item _not_ first. React Aria gets it right for Tabs, TagGroup, Select and Calendar. Only ToggleButtonGroup (SegmentedControl) didn't.
 - **Read:** https://react-aria.adobe.com/forms#validation
 
 ## 2026-10-12 — Disclosure + Accordion
+
 - **Built:** `Disclosure` (one collapsible section, title = heading + button with `aria-expanded`, `headingLevel` default 3) and `Accordion` (React Aria `DisclosureGroup`: one open by default, `allowsMultiple`, controlled `expandedIds`). It slides open via React Aria's `--disclosure-panel-height`, `motion-safe` only.
 - **Remember (the prediction): Ctrl+F finds text in closed sections and opens them.** React Aria hides a closed panel with `hidden="until-found"`, not `display:none`. The browser searches it, fires `beforematch` on a match, and React Aria opens the section. Tested with a text-fragment link (`#:~:text=Credit notes`), which uses the same path. (`window.find()` doesn't: it's non-standard and fires no `beforematch`.)
 - **Remember: when two CSS rules fight, pass the fact in code.** `in-data-accordion:border-0` on each item also wiped out the group's `divide-y` dividers (both set border width). A React context (`InAccordion`) now lets the item pick its classes, so there's no specificity or ordering puzzle.
@@ -387,26 +433,30 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Read:** https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/hidden#the_hidden_until_found_state
 
 ## 2026-10-12 — Stepper
-- **Built:** `Stepper` ("Details → Billing → Review"), an `<ol>` with `aria-current="step"` on the current step. Each status is also in words ("Details, completed", "Review, not started"). `onStepClick` turns *completed* steps into buttons (never upcoming ones). There's a vertical layout with descriptions, and on phones only the current label shows.
+
+- **Built:** `Stepper` ("Details → Billing → Review"), an `<ol>` with `aria-current="step"` on the current step. Each status is also in words ("Details, completed", "Review, not started"). `onStepClick` turns _completed_ steps into buttons (never upcoming ones). There's a vertical layout with descriptions, and on phones only the current label shows.
 - **Remember: not everything needs a headless library.** React Aria has no stepper because there's no widget, just a list that marks a position. Plain semantic HTML plus one ARIA attribute is the whole accessibility story.
 - **Remember (the prediction): the list and `aria-current` do the talking.** A screen reader says "list, 4 items" … "Billing, current step, 3 of 4". The "3 of 4" comes from the `<ol>`; "current step" comes from `aria-current="step"`. Chromium's DevTools accessibility API doesn't list `aria-current` at all (not even on a link), so that part is per spec, not observed.
-- **Remember: `flex-1` vs `flex-auto`.** `flex-1` starts every item at 0 and splits *all* the space, so a step with a longer label got a shorter line. `flex-auto` starts at content size and splits only the extra space, so the lines come out equal.
+- **Remember: `flex-1` vs `flex-auto`.** `flex-1` starts every item at 0 and splits _all_ the space, so a step with a longer label got a shorter line. `flex-auto` starts at content size and splits only the extra space, so the lines come out equal.
 - **Read:** https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Reference/Attributes/aria-current
 
 ## 2026-10-12 — SearchField
+
 - **Built:** `SearchField` (React Aria `SearchField`): 🔍 + `type="search"` input + ✕. Enter → `onSubmit`, Escape or ✕ → clear (`onClear`). `loading` swaps the 🔍 for a spinner, and it works in `Field` like `Input`. The ✕ shows only with text, is named "Clear search", and isn't a Tab stop.
 - **Remember (the prediction): Escape is handled only when there's something to clear.** In a Dialog, the first Escape clears the search (focus stays), the second closes the dialog. React Aria lets Escape through when the field is empty. Verified in Chromium; a test checks the empty case reaches the parent.
-- **Gotcha (screenshots): wait for the theme.** The theme addon sets `data-theme` on `<html>` in an effect *after* the story renders, so a fast screenshot can be light in "dark". The scripts now wait for `html[data-theme=…]`. This was probably also the real cause of the light "Narrow" shot in #54, which I blamed on the viewport parameter.
+- **Gotcha (screenshots): wait for the theme.** The theme addon sets `data-theme` on `<html>` in an effect _after_ the story renders, so a fast screenshot can be light in "dark". The scripts now wait for `html[data-theme=…]`. This was probably also the real cause of the light "Narrow" shot in #54, which I blamed on the viewport parameter.
 - **Read:** https://react-aria.adobe.com/SearchField
 
 ## 2026-10-12 — Toolbar
+
 - **Built:** `Toolbar` (React Aria `Toolbar`, `role="toolbar"`) with `ToolbarGroup` (named `group`) and `ToolbarSeparator`. One Tab stop for a set of actions; ←/→ (or ↑/↓ when vertical) move between them. It holds our existing Button, Menu and icon Buttons with Tooltip.
 - **Remember (the prediction): the toolbar remembers.** Tab in → → → Tab out → Shift+Tab lands back on **"Archive"**, the last button used, not the first. That's the point: a keyboard user returning to the toolbar picks up where they left off.
-- **Remember: check what the library *actually* does.** I wrote "Home/End jump to the ends" in the JSDoc; Chromium showed React Aria's Toolbar doesn't do that, so the claim came out. Also React Aria didn't give the `<hr>` separator any orientation here (horizontal in both layouts), so the Toolbar passes its direction through a React context. Same fix as the Accordion.
+- **Remember: check what the library _actually_ does.** I wrote "Home/End jump to the ends" in the JSDoc; Chromium showed React Aria's Toolbar doesn't do that, so the claim came out. Also React Aria didn't give the `<hr>` separator any orientation here (horizontal in both layouts), so the Toolbar passes its direction through a React context. Same fix as the Accordion.
 - **Remember: don't nest arrow-key controls in a toolbar** (inputs, SegmentedControl, Slider): both would claim ←/→. And in a vertical toolbar, tooltips go to the side (`placement="end"`) so they don't cover the neighbours.
 - **Read:** https://www.w3.org/WAI/ARIA/apg/patterns/toolbar/
 
 ## 2026-10-12 — ToggleGroup
+
 - **Built:** `ToggleGroup` (React Aria `ToggleButtonGroup`, `selectionMode="multiple"`): any number of options on, including none. `value`/`onChange` use a plain `string[]` in option order. It shares its look with `SegmentedControl` through a new `segment-parts.tsx` (track, `segmentVariants`, `SegmentButton`), so the two stay in sync.
 - **Remember: "pick any" vs "pick one" changes the ARIA.** SegmentedControl is a `radiogroup` of radios (`aria-checked`, one on). ToggleGroup is buttons with `aria-pressed` (each on/off on its own). Same pills, different meaning for a screen reader.
 - **Remember (the prediction): a toolbar inside a toolbar becomes a group.** On its own, ToggleGroup is `role="toolbar"`. Inside our `Toolbar`, React Aria turns it into `role="group"` and the outer toolbar owns ←/→, so Undo → Redo → Bold → Italic… is one arrow trail with one Tab stop. So unlike SegmentedControl, it's safe in a Toolbar.
@@ -414,6 +464,7 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Read:** https://react-aria.adobe.com/ToggleButtonGroup
 
 ## 2026-10-13 — Clickable Card (CardLink)
+
 - **Built:** `CardLink`, a React Aria `Link` you put around a Card's title. Its `::after` overlay (`after:absolute after:inset-0`) stretches over the card, so a click anywhere opens the link. The Card notices it with Tailwind `has-[[data-card-link]]:` classes and adds `relative`, a hover border, and a focus ring around the whole card. No new prop is needed.
 - **Remember: the "stretched link" pattern.** The link text is just the title, so a screen reader says "INV-1042, link", not the whole card. It's a real `<a>`, so middle-click and "open in new tab" work. Wrapping the card in `<a>` would make the whole card the link name, and putting a button inside it is invalid HTML.
 - **Remember (the prediction): the overlay eats clicks.** Without a fix, clicking "Download PDF" hits the `<a>`, which opens the invoice. In Chromium, `elementFromPoint` returned `A INV-1042`. The Card gives its inner controls `relative z-10`, so they sit above the overlay: the click hits the button and the URL doesn't change.
@@ -421,28 +472,32 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Read:** https://tailwindcss.com/docs/hover-focus-and-other-states#styling-based-on-descendants
 
 ## 2026-10-13 — Card parts + RadioCard
+
 - **Built:** Card parts: `CardMedia` (edge-to-edge image, first), `CardHeader` (title, description, actions; h3 by default), `CardBody`, and `CardFooter` (divider, actions on the right). Also `RadioCard`, a card that is a radio and goes inside our existing `RadioGroup`, so it gets the label, error, required and arrow keys for free. Radio and RadioCard now share one `RadioDot`.
-- **Remember (the prediction): a label names its input with *all* its text.** React Aria's `Radio` is a `<label>` around the card, so without help the name was "Pro Up to 10 users $29 / month" (read from Chromium's accessibility tree). `aria-labelledby={titleId}` makes the name "Pro", and `aria-describedby` reads "Up to 10 users" after it. The price stays visible but isn't read with the name.
+- **Remember (the prediction): a label names its input with _all_ its text.** React Aria's `Radio` is a `<label>` around the card, so without help the name was "Pro Up to 10 users $29 / month" (read from Chromium's accessibility tree). `aria-labelledby={titleId}` makes the name "Pro", and `aria-describedby` reads "Up to 10 users" after it. The price stays visible but isn't read with the name.
 - **Remember: context again, for CardMedia.** It needs the Card's padding to cancel it out (`-mx-5 -mt-5` for `md`), so Card shares `padding` through a React context. Same trick as Accordion and Toolbar.
 - **Gotchas:**
-  - `flex-basis` sets *height* in a column, so stacked RadioCards were 12rem tall. The basis now only applies inside a horizontal group (`in-data-[orientation=horizontal]:`).
+  - `flex-basis` sets _height_ in a column, so stacked RadioCards were 12rem tall. The basis now only applies inside a horizontal group (`in-data-[orientation=horizontal]:`).
   - A grey "dark" screenshot was `transition-colors` fading after the theme switch, so the screenshot script now waits a moment first.
 - **Read:** https://react-aria.adobe.com/RadioGroup
 
 ## 2026-10-13 — Fix: Radio and CheckboxGroupItem names
+
 - **Fixed:** a `Radio` or `CheckboxGroupItem` with a `description` was named by both lines ("Net 30 What most customers get"). Now the name is the label ("Net 30"), and the description is read after it through `aria-describedby`. This is the same fix RadioCard got in #59.
-- **Remember: name vs description.** The *name* is what a screen reader says when you land on a control, and what you'd say aloud to pick it ("check Sales rep"). The *description* is extra info read after a short pause. Keep names short and put extra info in the description.
+- **Remember: name vs description.** The _name_ is what a screen reader says when you land on a control, and what you'd say aloud to pick it ("check Sales rep"). The _description_ is extra info read after a short pause. Keep names short and put extra info in the description.
 - **Remember: write the test so it fails first.** The new assertions use the exact name `'Net 30'`, not the old regex `/Net 30/`, which also matched the long name. I ran them on the old code, saw 2 failures, then applied the fix.
 - **Read:** https://www.w3.org/WAI/ARIA/apg/practices/names-and-descriptions/
 
 ## 2026-10-13 — CheckboxCard
+
 - **Built:** `CheckboxCard`, a card that works as a checkbox, for "pick any" choices like add-ons. It goes inside the existing `CheckboxGroup`. RadioCard and CheckboxCard now share internals in `card/selectable-card.tsx`: the card classes, the title/description layout, and a `useSelectableCardIds` hook that wires up `aria-labelledby` and `aria-describedby`. The checkbox square became a shared `CheckboxBox`, like `RadioDot`.
-- **Remember (the prediction): checkboxes are separate Tab stops.** 3 CheckboxCards means up to 3 Tabs (disabled ones are skipped), and the arrow keys do nothing. Radios are one Tab stop with arrows, because only one can be on, so arrowing between them *is* choosing. Checkboxes are independent, so each one gets its own stop. Chromium trail: Tab SSO → → (no move) → Tab Audit log → Space → Tab leaves.
+- **Remember (the prediction): checkboxes are separate Tab stops.** 3 CheckboxCards means up to 3 Tabs (disabled ones are skipped), and the arrow keys do nothing. Radios are one Tab stop with arrows, because only one can be on, so arrowing between them _is_ choosing. Checkboxes are independent, so each one gets its own stop. Chromium trail: Tab SSO → → (no move) → Tab Audit log → Space → Tab leaves.
 - **Remember: share internals, not APIs.** A radio and a checkbox mean different things, so they stay two public components. Only the look and the naming wiring are shared. RadioCard's 9 tests passed unchanged after the refactor.
 - **Gotcha: jsdom isn't a browser.** A `click` on label text didn't reach React Aria's Checkbox in jsdom, even for the old `CheckboxGroupItem`, but it does in Chromium. The unit test presses the checkbox itself, and the "click anywhere on the card" check lives in the Chromium script. `@testing-library/user-event` is only installed because Storybook needs it, so using it would need your OK as a new dependency.
 - **Read:** https://react-aria.adobe.com/CheckboxGroup
 
 ## 2026-10-13 — user-event
+
 - **Added:** `@testing-library/user-event` 14.6.7 as our own dev dependency. It was already installed through Storybook; now `npm ls` shows Storybook's copy as "deduped" against ours. The CheckboxCard tests use it to click the price text (a real "click anywhere on the card") and to walk the Tab trail. `component-recipe.md` says to use it for interactions from now on.
 - **Remember: `fireEvent` fires one event; `user-event` acts like a user.** `user.click` plays pointerdown → mousedown → focus → pointerup → mouseup → click, and lets the `<label>` pass it to the input. React Aria listens to the pointer part, which is why a bare `fireEvent.click` on label text didn't reach the Checkbox.
 - **Remember (the prediction): always `await` it.** Without `await`, the assertion runs before the click has happened, and the test fails with "expected … to have been called with ['audit']". It could also pass by luck, which is worse. A lint rule (`@typescript-eslint/no-floating-promises`) can catch this; it needs type-aware linting, so it's left for later.
@@ -450,31 +505,36 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Read:** https://testing-library.com/docs/user-event/intro
 
 ## 2026-10-13 — Lint: no-floating-promises
+
 - **Added:** type-aware linting for `packages/ui` (`parserOptions.projectService`) and `@typescript-eslint/no-floating-promises` as an error. No new dependency, and no Nx workspace config change. Lint now catches a missing `await user.click(...)` or an un-awaited `act(async …)`. Lint takes about 18s instead of about 8s, because ESLint now asks TypeScript for types. Nx caches the result, so unchanged runs are instant.
-- **Remember (the prediction): 67 hits, all in tests, none in components.** None were a forgotten `user-event` await. They were all `act(() => fireEvent.x(...))`. React's types give `act` two overloads: a callback that returns *nothing* → `void`; a callback that returns *a value* → `Promise`. `fireEvent.click` returns a boolean, so the arrow returned a value and picked the Promise overload.
-- **Remember: read *why* a lint rule fires before fixing it.** My first fix was a script that added `await` everywhere and made the tests `async`. That broke 3 tests (Dialog focus timing) and turned setup helpers into Promises. The real fix was to delete the wrapper: Testing Library already wraps `fireEvent` in `act`, so `act(() => fireEvent.click(x))` is just `fireEvent.click(x)`. That's 57 unwrapped calls plus 2 helpers. The code got shorter and the timing didn't change.
+- **Remember (the prediction): 67 hits, all in tests, none in components.** None were a forgotten `user-event` await. They were all `act(() => fireEvent.x(...))`. React's types give `act` two overloads: a callback that returns _nothing_ → `void`; a callback that returns _a value_ → `Promise`. `fireEvent.click` returns a boolean, so the arrow returned a value and picked the Promise overload.
+- **Remember: read _why_ a lint rule fires before fixing it.** My first fix was a script that added `await` everywhere and made the tests `async`. That broke 3 tests (Dialog focus timing) and turned setup helpers into Promises. The real fix was to delete the wrapper: Testing Library already wraps `fireEvent` in `act`, so `act(() => fireEvent.click(x))` is just `fireEvent.click(x)`. That's 57 unwrapped calls plus 2 helpers. The code got shorter and the timing didn't change.
 - **Read:** https://typescript-eslint.io/rules/no-floating-promises/
 
 ## 2026-10-13 — Drawer
+
 - **Built:** `Drawer`, a full-height panel that slides in from the side over the page, for editing a record, details or filters. Built on React Aria `ModalOverlay` + `Modal` + `Dialog`, like our Dialog. Props: `placement` (`end` by default, or `start`), `size` (`sm`/`md`/`lg`), `footer` (pinned to the bottom), and `dismissable`. The body scrolls and the header and footer stay put. On a phone, a 3rem strip of page stays visible. The title, description, ✕ and footer now live in `dialog/dialog-parts.tsx`, shared with Dialog, whose 10 tests passed unchanged.
 - **Remember (the prediction): `end` opens on the left in Arabic.** `start`/`end` mean "where reading starts/ends", not left/right, so they flip in right-to-left languages on their own: `justify-end`, `border-s`, and the slide's `--drawer-from` (`rtl:[--drawer-from:-100%]`). Chromium: LTR panel at right=1024; RTL panel at left=0, sliding in from the left. Name things by meaning, not by screen position, and RTL comes almost free.
-- **Remember: a test must be able to fail.** "`dismissable={false}`: a click outside doesn't close it" would also pass if the click never reached the overlay. So there's a matching test that the same click *does* close a default drawer.
+- **Remember: a test must be able to fail.** "`dismissable={false}`: a click outside doesn't close it" would also pass if the click never reached the overlay. So there's a matching test that the same click _does_ close a default drawer.
 - **Gotcha:** the drawer is portalled to `<body>`, so a `dir="rtl"` on a wrapper `<div>` doesn't reach it. The RTL story sets `dir` on `<html>`, which is what a real Arabic app does anyway.
 - **Read:** https://react-aria.adobe.com/Modal
 
 ## 2026-10-13 — AppShell uses Drawer
+
 - **Changed:** AppShell's phone navigation drawer is now our `Drawer` (`placement="start"`, `padding="sm"`, `header={brand}`, `closeLabel="Close navigation"`) instead of about 40 lines of hand-built `ModalOverlay`/`Modal`/`Dialog`. Drawer gained 3 small props for it: `header` (shown instead of the title; `title` still names the dialog), `closeLabel`, and `padding` (`sm`/`md`, the same names as Card's). AppShell's 10 tests passed unchanged.
 - **Remember: a refactor should be invisible, so prove it.** I built Storybook from `main` and from the branch and compared them. In Chromium both have the same dialog name, width (288px), Escape → focus back to ☰, link click closes, and growing the window to 1200px closes. In the pixel diff, the first try showed roomier padding and a taller header, which led to `padding="sm"`. The final diff is the ✕ moving a few px (it now aligns like every other dialog's ✕). The default Drawer's 6 screenshots are pixel-identical to #64.
 - **Remember: let a real second user shape the API.** Drawer's first user (its own stories) needed only `title`. AppShell needed a logo header, a specific close label and tighter spacing. Adding props when a real case asks for them keeps the API small and every prop justified.
 - **Read:** https://react-aria.adobe.com/Dialog#accessibility
 
 ## 2026-10-13 — Fix: clipped focus rings
+
 - **Fixed:** Ben noticed the AppShell brand link's focus ring was cut off on the left and right. A check across all 163 stories found 3 places, all for the same reason: a `truncate` (`overflow: hidden`) wrapper around something focusable. That's the AppShell brand (fixed in #65 with `p-1 -m-1`) and the DataGrid select-all and row checkboxes (no more `truncate` around the select column).
-- **Remember: an outline is drawn *outside* the element, and `overflow: hidden` clips it.** Our ring is 2px offset + 2px width = 4px outside. `truncate` is for text; don't wrap controls in it. If a clipping box must hold a control, give it room with `p-1 -m-1`: 4px padding, and the negative margin cancels it so nothing moves. It measured identical: the brand stayed at x=16, y=17.5. This is now recipe rule 26.
+- **Remember: an outline is drawn _outside_ the element, and `overflow: hidden` clips it.** Our ring is 2px offset + 2px width = 4px outside. `truncate` is for text; don't wrap controls in it. If a clipping box must hold a control, give it room with `p-1 -m-1`: 4px padding, and the negative margin cancels it so nothing moves. It measured identical: the brand stayed at x=16, y=17.5. This is now recipe rule 26.
 - **Remember: tools need tuning.** The first run of the check flagged every radio, checkbox and switch. React Aria keeps the real `<input>` in a 1px visually-hidden box and draws the ring on the dot or box instead. Skipping elements inside such boxes left only the real problems.
 - **Read:** https://developer.mozilla.org/en-US/docs/Web/CSS/outline
 
 ## 2026-10-13 — Bento (lunchbox layout)
+
 - **Built:** `Bento` + `BentoTile`, a layout-only grid of tiles of different sizes that reflows as space shrinks. `columns`, `span` and `rows` take a number or a mobile-first object (`{ base: 1, md: 2, lg: 4 }`; each width inherits the one before). Spans are capped at the column count through a React context, `as="ul"`/`"li"` makes a list, and tiles always stay in source order.
 - **Remember (the prediction): container queries, not screen breakpoints.** In a 42rem Drawer on a 1440px laptop, the Bento has 623px of room, so it shows 1 column. Screen breakpoints (`lg:grid-cols-4`) would look at the window and squeeze in 4 columns of 144px. `@container` on a wrapper plus `@min-[48rem]:` classes make a component respond to its own space. That's what you want for anything reusable.
 - **Remember: Tailwind reads your source as text.** `grid-cols-${n}` produces no CSS, because Tailwind never runs your code; it only finds complete class names in files. So Bento has lookup tables with every class written out (`'@min-[48rem]:grid-cols-2'`), and the code picks from them.
@@ -482,6 +542,7 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Read:** https://tailwindcss.com/docs/responsive-design#container-queries
 
 ## 2026-10-13 — Popover with varying contents
+
 - **Built:** Popover gained `description`, `closeButton` (×), a pinned `footer` (the body scrolls on its own), `trigger` (your own Button instead of `label`), `arrow` (React Aria `OverlayArrow`, turns when the panel flips), and `panelSize="auto"`. There are 5 recipe stories: a form with Apply, pick one, details, help with a link, and long content. The JSDoc explains when to use Tooltip, Popover, Menu or Dialog. The 7 existing tests are unchanged.
 - **Remember: a discriminated union with `never`.** Popover's props are `(label + button options, trigger?: never) | (trigger, label?: never …)`. Passing both, or neither, is a compile error. Side effect: Storybook's `StoryObj<typeof meta>` can't work out args from a union, so the stories use `StoryObj<typeof Popover>`.
 - **Remember (the prediction): a `<span>` trigger is reachable but not a button.** React Aria's `Pressable` gives it `tabindex="0"` and Enter/Space, so a keyboard user can open it. But it has no role, so a screen reader reads "Ben" as plain text with no hint that it opens something, and React Aria warns "child must have an interactive ARIA role". Use a Button.
@@ -489,20 +550,23 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Read:** https://react-aria.adobe.com/Popover
 
 ## 2026-10-13 — TreeView
+
 - **Built:** `TreeView`, data-driven (`nodes: TreeNode[]`) on React Aria `Tree` (`role="treegrid"`). It renders **recursively**: one `renderNode` function renders a node and, through `<Collection>`, its children. Indent comes from React Aria's `--tree-item-level` variable in a Tailwind class. `selectionMode` is `none` (rows act), `single` (works like a file browser: arrows/click select, Enter/double-click open, ✓ not color alone), or `multiple` (a checkbox per row, reusing `CheckboxBox`). Expanded and selected ids are plain `string[]`.
-- **Remember (the prediction): React Aria's tree is a treegrid.** → opens a closed folder, but a second → does *not* move into it (in a grid, → moves across cells). ↓ steps in. ← closes an open folder, or on a child jumps to the parent. Read from React Aria's `useGridListItem` source and checked in Chromium. The WAI-ARIA "tree" pattern differs on that second →. We keep React Aria's behavior and document it.
+- **Remember (the prediction): React Aria's tree is a treegrid.** → opens a closed folder, but a second → does _not_ move into it (in a grid, → moves across cells). ↓ steps in. ← closes an open folder, or on a child jumps to the parent. Read from React Aria's `useGridListItem` source and checked in Chromium. The WAI-ARIA "tree" pattern differs on that second →. We keep React Aria's behavior and document it.
 - **Remember: in toggle selection mode, Enter doesn't act.** With `selectionBehavior="toggle"` and something selected, a press toggles selection instead of running `onAction`. Single selection now uses `"replace"`: selection follows focus, and Enter/double-click act.
-- **Gotcha (Tailwind v4): `outline-hidden` + `data-focus-visible:outline-2` draws nothing.** `outline-hidden` sets `--tw-outline-style: none`, and `outline-2` only sets the width. Add `data-focus-visible:outline-solid`. The ring check only caught *clipped* rings, so it now also flags "focused but nothing visible". That found the same bug on the tag ✕ button (fixed in a separate PR).
+- **Gotcha (Tailwind v4): `outline-hidden` + `data-focus-visible:outline-2` draws nothing.** `outline-hidden` sets `--tw-outline-style: none`, and `outline-2` only sets the width. Add `data-focus-visible:outline-solid`. The ring check only caught _clipped_ rings, so it now also flags "focused but nothing visible". That found the same bug on the tag ✕ button (fixed in a separate PR).
 - **Read:** https://react-aria.adobe.com/Tree
 
 ## 2026-10-13 — Fix: focus ring on the tag ✕ button
+
 - **Built:** the ✕ "Remove" button on chips (TagGroup, MultiCombobox) now shows the focus ring. It took keyboard focus with nothing visible, which fails WCAG 2.4.7 (Focus Visible).
-- **Remember:** in Tailwind v4, `outline-hidden` sets the outline *style* to none. `data-focus-visible:outline-2` only sets the *width*, so you also need `data-focus-visible:outline-solid`. Same bug as TreeView rows: copy all three classes together (`outline-2 outline-solid outline-focus-ring`).
+- **Remember:** in Tailwind v4, `outline-hidden` sets the outline _style_ to none. `data-focus-visible:outline-2` only sets the _width_, so you also need `data-focus-visible:outline-solid`. Same bug as TreeView rows: copy all three classes together (`outline-2 outline-solid outline-focus-ring`).
 - **Remember:** a shared part (`TagRemoveButton` in `tag-parts.tsx`) means one fix covers both components. That is the payoff of sharing parts.
 - **How we found it:** the ring audit script now flags "NO RING": an element that has focus-visible but no outline, shadow or background change.
 - Docs: https://tailwindcss.com/docs/outline-style
 
 ## 2026-10-14 — Quality pass: axe-core and the ring audit on every story
+
 - **Ran:** axe-core 4.13 (WCAG 2.1 A + AA rules) on all 178 stories in light and dark, plus the focus-ring audit at 1024px and 390px. Result: 0 ring problems and 2 axe findings. axe-core was already in `node_modules` because `eslint-plugin-jsx-a11y` uses it, so no new dependency.
 - **Fixed:** a disabled MultiCombobox still had a Tab stop on its tag grid. **Remember:** a React Aria grid stays tabbable even when every row is disabled, because it keeps one Tab stop for its empty state. When a whole control is disabled, draw plain text instead of a disabled grid.
 - **Left as is (upstream):** inside a Toolbar, React Aria gives ToggleGroup `role="group"` together with `aria-orientation`. ARIA 1.2 doesn't allow that pairing. Screen readers ignore it, and we can't remove it without patching React Aria.
@@ -510,13 +574,15 @@ Short notes after each task: what was built, what to remember, one link to read.
 - Docs: https://www.w3.org/WAI/WCAG21/Understanding/contrast-minimum.html
 
 ## 2026-10-14 — Deeper quality pass: overlays opened, scroll bodies keyboard-scrollable
+
 - **Ran:** axe on every story **with its overlays open**: 114 menus, popovers and listboxes, plus 28 dialogs, drawers and app-shell navs, in light and dark. Overlays render outside `#storybook-root`, so axe has to scan the whole `document`.
 - **Fixed:** the scroll body of Popover, Dialog and Drawer is now one shared `DialogBody`. While its content overflows it gets `tabIndex=0` and a ring, so the arrow keys can scroll it (WCAG 2.1.1). A `ResizeObserver` decides; a body that fits adds no Tab stop. Chrome and Firefox already make scroll boxes focusable, but Safari doesn't.
 - **Remember (the prediction):** opening a popover focuses the **dialog itself**. After that, Tab follows the page order: ✕ → body (only while it scrolls) → the buttons inside it → footer.
-- **Remember:** check what your audit *didn't* reach. The first deep pass opened 0 dialogs, because dialog trigger buttons have no `aria-expanded`. "0 findings" from an audit that never opened anything means nothing.
+- **Remember:** check what your audit _didn't_ reach. The first deep pass opened 0 dialogs, because dialog trigger buttons have no `aria-expanded`. "0 findings" from an audit that never opened anything means nothing.
 - Docs: https://dequeuniversity.com/rules/axe/4.10/scrollable-region-focusable
 
 ## 2026-10-15 — CommandPalette (⌘K)
+
 - **Built:** `CommandPalette`: ⌘K / Ctrl+K opens a search box over a list of actions. Type to filter, use ↑/↓ to pick, press Enter to run, and it closes. It's React Aria `ModalOverlay` + `Dialog` + `Autocomplete` + `Menu`, and the items are our existing `MenuItem` / `MenuSection`. `MenuItem` gained `keywords` (extra words that find it).
 - **Remember (the prediction): virtual focus.** ↑/↓ don't move real focus. It stays in the search box so you can keep typing. The input's `aria-activedescendant` points at the highlighted item, and screen readers read that item. Once you type, the first match is highlighted, so Enter alone runs the best match.
 - **Remember: primitives vs composites.** The palette is a composite: a new container. It reuses the menu-item primitive instead of adding a `CommandItem`, so there's one look, one set of props, and one place to fix bugs.
@@ -524,6 +590,7 @@ Short notes after each task: what was built, what to remember, one link to read.
 - Docs: https://react-aria.adobe.com/Autocomplete
 
 ## 2026-10-15 — TimeField
+
 - **Built:** `TimeField`, a typed hour / minute (/ second) + AM/PM field on React Aria `TimeField`. It reuses DatePicker's `dateFieldVariants` + `DatePieces`, so "date and time" is two fields that line up. Props mirror DatePicker: `min`, `max`, `granularity`, `hourCycle`, `name`.
 - **Remember: the value is `'HH:mm'` text.** A time of day has no date and no time zone, so a JS `Date` would invent both. It's the same idea as DatePicker's `'YYYY-MM-DD'` and maps to Java's `LocalTime`. `hourCycle` only changes the display; the value is always 24-hour. For "date and time", store two values and combine them on the server, where the time zone is known.
 - **Remember (the prediction): each piece spins on its own.** ↑ on the hour at 11:30 AM gives 12:30 **AM** (00:30), not PM, because AM/PM is its own piece. Chrome's built-in time input does the same. The test pins this, and the JSDoc warns about it.
@@ -531,6 +598,7 @@ Short notes after each task: what was built, what to remember, one link to read.
 - Docs: https://react-aria.adobe.com/TimeField
 
 ## 2026-10-15 — EventCalendar (month view)
+
 - **Built:** `EventCalendar`, a month view with event chips in the day cells ("+N more") and a list of the focused day's events beside it. It's built on React Aria `Calendar`. `onMonthChange('YYYY-MM')` lets the app load one month at a time. Narrow containers show dots instead of chips (container queries).
 - **Remember: a button can't hold buttons.** Each day cell is already a button, so the chips are decoration (`aria-hidden`) and the **day list** holds the clickable events. A polite live region reads "Thursday, October 15, 5 events" as you move between days.
 - **Remember (the prediction):** ↓ from Oct 29 goes to **Nov 5**, and the calendar turns to November by itself. React Aria moves the visible month with focus. We report it through `onMonthChange`.
@@ -538,6 +606,7 @@ Short notes after each task: what was built, what to remember, one link to read.
 - Docs: https://react-aria.adobe.com/Calendar
 
 ## 2026-10-15 — EventCalendar: "New event" on a day
+
 - **Built:** `onCreateEvent(date)`. With it, the day list shows "+ New event", and **N** on a focused day does the same. The calendar only reports the day; the app opens its own form. The CreateEvents story builds that form from Dialog + Input + Switch + TimeField.
 - **Remember (the prediction): Dialog puts focus back where it was.** Press N on Oct 22, then Save or Escape, and focus lands on the Oct 22 cell, not the button. React Aria remembers the focused element when the dialog opens. A test pins this.
 - **Remember: one-letter shortcuts need limits (WCAG 2.1.4).** N only works while a day cell has focus, never with Ctrl/⌘/Alt, and never in a text field. The button carries `aria-keyshortcuts="N"` so screen readers can announce it.
@@ -545,6 +614,7 @@ Short notes after each task: what was built, what to remember, one link to read.
 - Docs: https://www.w3.org/WAI/WCAG21/Understanding/character-key-shortcuts.html
 
 ## 2026-10-15 — EventCalendar: multi-day events
+
 - **Built:** an optional `endDate` (inclusive). The event shows on every day it covers. The chip has square corners and stretches over the cell padding on the side where it continues, so it reads as one bar. The day list says "Oct 14 – 16 · Day 2 of 3". The new `groupByDay()` does the expanding and sorting, and is tested on its own.
 - **Remember (the prediction): spans go first.** Within a day the order is multi-day, then all-day, then by time, like Outlook. A span then sits near the top of every day it crosses, which helps the eye follow it.
 - **Remember: one chip per day, not one bar drawn over the grid.** React Aria renders the grid cell by cell. A single bar would need absolute positioning on top of the table, which breaks when a week wraps or the table resizes. The trade-off: a span can sit in a different row on different days.
@@ -552,42 +622,48 @@ Short notes after each task: what was built, what to remember, one link to read.
 - Docs: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/DateTimeFormat/formatRange
 
 ## 2026-10-15 — EventCalendar: week view
+
 - **Built:** `view="week"` with a Month | Week switch (our SegmentedControl) in the header. It shows 7 days × 24 hours, opens at 8 AM (`scrollToHour`), and draws timed events as blocks from `time` to the new optional `endTime` (30 minutes without one). All-day and multi-day events sit in a row on top, and a red line marks "now". The code is split into `calendar-model.ts` (shared types and grouping), `week-layout.ts` (pure layout maths, unit-tested) and `week-view.tsx`.
-- **Remember (the prediction): overlaps are laid out in *clusters*.** Team sync 10–11, Design review 10:30–11:30 and Planning 11–12 form one cluster through the middle event, so all three are ½ wide. Planning reuses Team sync's lane because it ended at 11:00. Everything in a cluster gets the same width, so columns line up.
+- **Remember (the prediction): overlaps are laid out in _clusters_.** Team sync 10–11, Design review 10:30–11:30 and Planning 11–12 form one cluster through the middle event, so all three are ½ wide. Planning reuses Team sync's lane because it ended at 11:00. Everything in a cluster gets the same width, so columns line up.
 - **Remember: runtime numbers go in CSS variables, not inline styles.** `cssVars({ '--top': '30rem', '--lanes': 2 })` plus classes `top-(--top) w-[calc(100%/var(--lanes))]`. Tailwind can't generate a class for a value only known at runtime.
 - **Remember: when there's no React Aria component, keep the semantics simple.** Week blocks are plain buttons (allowed here, because they aren't inside a day button). Each one's `aria-describedby` points at its day header, so it reads "Team sync, 10:00 – 11:00 AM … Thursday, October 15". The Tab order follows the page.
 - **Gotcha:** short events (15 minutes) need a minimum height and a one-line "title + start" layout, or they render as empty slivers. The screenshot caught this, not the tests.
 - Docs: https://tailwindcss.com/docs/adding-custom-styles#using-arbitrary-values
 
 ## 2026-10-18 — EventCalendar: drag to move and resize
+
 - **Built:** a new `onEventChange(event, { date, time, endTime })` prop for the week view. Drag a block to move it (it snaps to 15 minutes; drag sideways to change the day), or drag its bottom edge to resize it. Escape cancels mid-drag. Keyboard: ↑/↓ moves 15 minutes, ←/→ moves a day (flipped in right-to-left languages), and Shift+↑/↓ changes the end. Every change is read out in a live region, for example "Team sync moved to Friday, October 16, 10:30 – 11:30 AM". The calendar only reports the change; the app saves it. New dependency: `react-aria` pinned at exactly **3.52.1**, the same release as `react-aria-components` 1.21.1, so we never ship two copies.
-- **Remember (the prediction): snap rounds to the *nearest* 15.** Dragging 37 minutes down gives `snap(37) = 30`, so a 10:00 event lands on 10:30–11:30, not 10:45. A 38-minute drag would round up to 45. The maths is in `week-layout.ts` as pure functions (`snap`, `applyChange`), so it is unit-tested without a browser.
+- **Remember (the prediction): snap rounds to the _nearest_ 15.** Dragging 37 minutes down gives `snap(37) = 30`, so a 10:00 event lands on 10:30–11:30, not 10:45. A 38-minute drag would round up to 45. The maths is in `week-layout.ts` as pure functions (`snap`, `applyChange`), so it is unit-tested without a browser.
 - **Remember: `useMove` covers pointer and keyboard with one set of callbacks.** `onMoveStart / onMove / onMoveEnd` fire for mouse, touch, pen and arrow keys (`pointerType === 'keyboard'`). For a pointer we show a preview and commit once at the end; for a key press we commit straight away. The block stays a native `<button>`, so Tab and Enter-to-open keep working with no extra ARIA.
 - **Gotchas:** `useMove` stops the button from taking focus on pointer-down, so a keydown handler on the button never sees Escape during a drag. We listen on `window` only while dragging. A drag also ends with a click, so we swallow that click, otherwise every drag would also open the event. The block uses `touch-none` so a finger drag moves the event instead of scrolling the page.
 - Docs: https://react-spectrum.adobe.com/react-aria/useMove.html
 
 ## 2026-10-21 — EventCalendar: drag to create
+
 - **Built:** in week view, `onCreateEvent` now also fires when you drag on empty time (snapped to 15 minutes, with a dashed preview; Escape cancels) or click it (a 30-minute slot). It gets a new optional second argument, `range: { time, endTime }`, so the app's form can start with those times. The "+ New event" button and N still pass only the date. The story form now has an "Ends at" TimeField too.
-- **Remember (the prediction): it picks the *slots you touched*.** Pressing at 11:00 and dragging up to 9:40 gives **09:30–11:00**: the start rounds down to the slot the pointer is in, the end rounds up. Moving an event uses `snap` (nearest) instead, because there you're moving a whole block. Both are pure functions in `week-layout.ts` (`slotRange`, `snap`).
+- **Remember (the prediction): it picks the _slots you touched_.** Pressing at 11:00 and dragging up to 9:40 gives **09:30–11:00**: the start rounds down to the slot the pointer is in, the end rounds up. Moving an event uses `snap` (nearest) instead, because there you're moving a whole block. Both are pure functions in `week-layout.ts` (`slotRange`, `snap`).
 - **Remember: extend a callback with an optional argument rather than adding a new prop.** `(date, range?) => void` keeps one way to create, and old callers like `onCreateEvent={setCreatingOn}` keep working. It's the same rule as adding an optional parameter at the end of a Java method that's overloaded: don't break the people already calling it.
-- **Remember: plain pointer events + `setPointerCapture` when you need *where* the press was.** `useMove` only reports how far the pointer moved, but creating needs the starting minute. Pointer capture keeps the moves coming even when the pointer leaves the column. On touch we don't capture: a finger drag must still scroll the hours, and the browser sends `pointercancel` when it starts scrolling. So on touch, a tap creates and a drag scrolls.
+- **Remember: plain pointer events + `setPointerCapture` when you need _where_ the press was.** `useMove` only reports how far the pointer moved, but creating needs the starting minute. Pointer capture keeps the moves coming even when the pointer leaves the column. On touch we don't capture: a finger drag must still scroll the hours, and the browser sends `pointercancel` when it starts scrolling. So on touch, a tap creates and a drag scrolls.
 - Docs: https://developer.mozilla.org/en-US/docs/Web/API/Element/setPointerCapture
 
 ## 2026-10-29 — EventCalendar: day view
+
 - **Built:** `view="day"`. It is the week view with one wide column. The title is the full date ("Thursday, October 15, 2026"), and ‹ › step one day ("Previous day" / "Next day"). The switch now reads **Day | Week | Month**, smallest to largest, like Google and Outlook. Drag to move, drag to resize and drag to create all work with no extra code.
 - **Remember (the prediction): in day view, → does nothing.** `applyChange` takes a `lastDay` (6 in week view, 0 in day view) and clamps the day index, so an event can never move into a column that isn't on screen. ↑/↓ still move it, and the screen-reader hint only promises what works ("Up and down arrows move the event by 15 minutes"). The other option was to move the event to tomorrow and follow it there. We didn't, because the event would vanish from view and the user would lose track of it.
-- **Remember: make a component take a *count* before you copy it.** `WeekView` takes `days` (1 or 7) and nothing else changed. The grid gets its column count from a CSS variable: `cssVars({ '--days': days.length })` plus `grid-cols-[3.5rem_repeat(var(--days),minmax(0,1fr))]`. This is the same trick as `--top`: Tailwind can't build a class from a number that's only known at runtime.
-- **Gotcha fixed along the way:** the drag preview used to shift by the *raw* number of days you dragged, so dragging past Saturday showed the block outside the week. It now uses the clamped day, so what you see is what gets saved.
+- **Remember: make a component take a _count_ before you copy it.** `WeekView` takes `days` (1 or 7) and nothing else changed. The grid gets its column count from a CSS variable: `cssVars({ '--days': days.length })` plus `grid-cols-[3.5rem_repeat(var(--days),minmax(0,1fr))]`. This is the same trick as `--top`: Tailwind can't build a class from a number that's only known at runtime.
+- **Gotcha fixed along the way:** the drag preview used to shift by the _raw_ number of days you dragged, so dragging past Saturday showed the block outside the week. It now uses the clamped day, so what you see is what gets saved.
 - Docs: https://developer.mozilla.org/en-US/docs/Web/CSS/repeat
 
 ## 2026-11-01 — Slider
+
 - **Built:** `Slider` on React Aria `Slider` ([docs](https://react-spectrum.adobe.com/react-aria/Slider.html)). One component covers a single value (`defaultValue={40}`) and a range (`defaultValue={[20, 80]}`, two thumbs). It has its own `label` (like RadioGroup: a range has two inputs that one `<label for>` can't name), plus `description`, `min`/`max`/`step`, `formatOptions` ("CA$120–380", "40%"), `thumbLabels`, `hideValue`, `name`, `disabled`, and `size` sm/md. Each thumb is a native `<input type="range">`.
 - **Remember (the prediction): range thumbs can't cross.** React Aria makes the start thumb's `max` the end thumb's value (and the end thumb's `min` the start's). So dragging the left thumb past the right one stops it there: `[380, 380]` in Chromium.
 - **Remember: a generic that keeps the shape.** `Slider<T extends number | [number, number]>`: TypeScript infers `T` from `value`/`defaultValue`, so `onChange` gets back exactly what you passed in. A single slider can't be handed a pair callback (there's a `@ts-expect-error` test). This is like a Java generic method `<T> void set(T v, Consumer<T> cb)`.
 - **Remember: `onChange` vs `onChangeEnd`.** `onChange` fires on every drag step (12 times in one drag in the probe), so use it to update the screen. `onChangeEnd` fires once when you let go, so use it for slow work like fetching results or saving.
-- **Gotcha (found in Chromium, not jsdom):** React Aria decides "one number or a range" from `typeof value === 'number' || typeof defaultValue === 'number'`. A fallback `defaultValue={min}` therefore turned every *controlled* range into a single slider after the first move. The fix is to pass `defaultValue` only when uncontrolled. A test now covers a controlled range, and it fails on the old code.
+- **Gotcha (found in Chromium, not jsdom):** React Aria decides "one number or a range" from `typeof value === 'number' || typeof defaultValue === 'number'`. A fallback `defaultValue={min}` therefore turned every _controlled_ range into a single slider after the first move. The fix is to pass `defaultValue` only when uncontrolled. A test now covers a controlled range, and it fails on the old code.
 
 ## 2026-11-01 — Avatar + AvatarGroup
+
 - **Built:** `Avatar` shows a photo, or initials on a color picked from the name. It also has `status` (online/away/busy/offline dot), `shape` (circle/square), `size`, and `decorative`. `AvatarGroup` shows overlapping avatars, then "+N". Its `onOverflowPress` turns "+N" into a button with a tooltip listing the hidden names. It's plain HTML, no React Aria: an image with a name doesn't need a headless library (recipe rule 4).
 - **Remember (the prediction): a 404 photo shows the initials, and the name doesn't change.** The initials are always drawn. The `<img>` sits on top at `opacity-0` and only shows after `onLoad`, and `onError` removes it. So a broken or slow photo never shows the browser's broken-image icon or a blank box. Screen readers hear "Dana Smith" either way, because the name lives on the wrapper (`role="img"` + `aria-label`) and the photo has `alt=""`.
 - **Remember: color is never the only signal.** The status dot is `aria-hidden`, and the status goes into the name instead: "Dana Smith, busy" (WCAG 1.4.1). Same idea for "+4": its name lists who is hidden, "and 4 more: Di Ng, …".
@@ -595,60 +671,68 @@ Short notes after each task: what was built, what to remember, one link to read.
 - Docs: https://www.w3.org/WAI/tutorials/images/decorative/
 
 ## 2026-11-01 — Link + RouterProvider
+
 - **Built:** `Link` on React Aria `Link` ([docs](https://react-spectrum.adobe.com/react-aria/Link.html)). It's a real `<a>` with a required `href`. `variant` is `inline` (always underlined) or `standalone` (medium weight, underline on hover). `external` gives a new tab, `rel="noopener noreferrer"`, an ↗ icon, and hidden ", opens in a new tab". It also passes through `download` and `aria-current`. Plus our own `RouterProvider`, so apps never import React Aria's (recipe rule 17). The Breadcrumbs, Menu and SideNav docs now point to ours.
-- **Remember (the prediction): the "new tab" warning is hidden *text inside the link*, not `aria-label`.** A `<span className="sr-only">` is part of the link's name ("WAI guidelines, opens in a new tab"), and the ↗ icon is `aria-hidden`. `aria-label` would *replace* the visible text, so the spoken name drifts from what's on screen, and voice-control users who say "click WAI guidelines" can miss (WCAG 2.5.3, Label in Name).
+- **Remember (the prediction): the "new tab" warning is hidden _text inside the link_, not `aria-label`.** A `<span className="sr-only">` is part of the link's name ("WAI guidelines, opens in a new tab"), and the ↗ icon is `aria-hidden`. `aria-label` would _replace_ the visible text, so the spoken name drifts from what's on screen, and voice-control users who say "click WAI guidelines" can miss (WCAG 2.5.3, Label in Name).
 - **Gotcha:** accessible-name computation trims a leading space inside an element, so `<span> (opens…)</span>` came out as "WAI guidelines(opens…". The hidden text now starts with a comma.
 - **Remember: a required prop stops a mix-up at compile time.** `href` is required, so `<Link>Save</Link>` doesn't compile; an action is a Button. No `disabled` either: a link that goes nowhere should be plain text.
 - **Remember: Provider pattern for the router.** `RouterProvider` puts `navigate` in React context once. Every React Aria link below it calls your router for app paths, but leaves other sites, `target="_blank"` and Ctrl/⌘-clicks to the browser. It's the same idea as Spring injecting one bean everywhere instead of passing it down.
 
 ## 2026-11-01 — Breadcrumbs: styles (separators, contained, steps, icons, sizes)
+
 - **Built:** new optional props on the existing `Breadcrumbs`, with the default look unchanged:
   - `separator` (chevron / slash / arrow)
   - `variant` (`plain` / `contained` rounded bar / `steps` arrow-shaped segments)
   - `size` (sm / md)
   - per item: `icon`, and `iconOnly` (the label is hidden on screen but stays the link's name)
-- **Remember (the prediction): `clip-path` cuts off the focus ring too.** It clips *everything* the element paints outside its shape, outlines included. So the arrow shape is a separate `aria-hidden` `<span>` *behind* the link (`absolute inset-0 -z-10`, with `isolate` on the `<nav>` so `-z-10` stays inside it). The link itself is never clipped, and its ring is whole (the ring audit is clean). The RTL polygons are mirrored with `rtl:[clip-path:…]`.
-- **Remember: variants, not new components.** A different *look* for the same pattern and the same ARIA is a variant (recipe rule 2). Separate `StepBreadcrumbs` / `PillBreadcrumbs` components would copy the collapse logic, the `aria-current` handling and the router support, and then drift apart. cva `compoundVariants` handle combinations like "steps + sm = h-7".
-- **Gotcha:** two old tests used `getByText('INV-2041')` and expected the *link*. The label now sits in its own span (needed for `iconOnly`), so they found the span. The behaviour didn't change; the tests now look up the link element. Query by role where possible: it doesn't break when the markup inside the element changes.
+- **Remember (the prediction): `clip-path` cuts off the focus ring too.** It clips _everything_ the element paints outside its shape, outlines included. So the arrow shape is a separate `aria-hidden` `<span>` _behind_ the link (`absolute inset-0 -z-10`, with `isolate` on the `<nav>` so `-z-10` stays inside it). The link itself is never clipped, and its ring is whole (the ring audit is clean). The RTL polygons are mirrored with `rtl:[clip-path:…]`.
+- **Remember: variants, not new components.** A different _look_ for the same pattern and the same ARIA is a variant (recipe rule 2). Separate `StepBreadcrumbs` / `PillBreadcrumbs` components would copy the collapse logic, the `aria-current` handling and the router support, and then drift apart. cva `compoundVariants` handle combinations like "steps + sm = h-7".
+- **Gotcha:** two old tests used `getByText('INV-2041')` and expected the _link_. The label now sits in its own span (needed for `iconOnly`), so they found the span. The behaviour didn't change; the tests now look up the link element. Query by role where possible: it doesn't break when the markup inside the element changes.
 - Docs: https://developer.mozilla.org/en-US/docs/Web/CSS/clip-path
 
 ## 2026-11-01 — Tabs: styles (underline, pills, enclosed, sizes, full width, icons, counts)
+
 - **Built:** new optional props on `<Tabs>`: `variant` (`underline` default / `pills` / `enclosed`), `size` (sm / md), and `fullWidth`. On `<Tab>`: `icon` (decoration) and `count` (a pill on screen, read as "Lines, 12"). The default look is unchanged.
-- **Remember (the prediction): React context carries the look.** `<Tabs>` puts `{ variant, size, fullWidth }` in a `TabsLookContext`, and `TabList`, `Tab` and `TabPanel` read it with `useContext`. So the app sets the style once, and a row can't mix pills with underlines. This is the *compound component* pattern, the same idea as Field → Input (recipe rule 8). The context's default value is the underline look, so a Tab used on its own still works.
-- **Remember: a variant can change more than one part.** `enclosed` changes the tabs *and* the panel (it becomes the bordered box the selected tab opens into). That's why the look lives on the root and not on each Tab.
-- **Gotcha (seen in the screenshot):** the count pill turned white inside *every* selected tab, so it vanished in underline/enclosed. Now only the filled `pills` tab swaps it (`in-data-selected:bg-bg`, Tailwind v4's `in-*` = "inside an ancestor with …").
+- **Remember (the prediction): React context carries the look.** `<Tabs>` puts `{ variant, size, fullWidth }` in a `TabsLookContext`, and `TabList`, `Tab` and `TabPanel` read it with `useContext`. So the app sets the style once, and a row can't mix pills with underlines. This is the _compound component_ pattern, the same idea as Field → Input (recipe rule 8). The context's default value is the underline look, so a Tab used on its own still works.
+- **Remember: a variant can change more than one part.** `enclosed` changes the tabs _and_ the panel (it becomes the bordered box the selected tab opens into). That's why the look lives on the root and not on each Tab.
+- **Gotcha (seen in the screenshot):** the count pill turned white inside _every_ selected tab, so it vanished in underline/enclosed. Now only the filled `pills` tab swaps it (`in-data-selected:bg-bg`, Tailwind v4's `in-*` = "inside an ancestor with …").
 - Docs: https://react.dev/reference/react/useContext
 
 ## 2026-11-01 — Badge: styles (soft, solid, outline, dot, sizes, icons)
+
 - **Built:** new optional props on `Badge`: `variant` (`soft` default / `solid` / `outline`), `dot`, `size` (sm / md) and `icon`. The default look is unchanged; Chromium shows the same computed colors as before.
-- **Remember (the prediction): outline text uses the *soft-text* token (`on-*-soft`), not the strong tone color.** The `on-*-soft` tokens are already tuned to contrast with the page in both themes: dark red on white, light pink on near-black. The strong `danger` red would be fine in light mode but too dark on the dark background. axe checked all 15 combinations × 2 themes: 0 findings.
-- **Remember: CSS variables turn a matrix into a sum.** Each `tone` only *names* its colors (`[--badge-soft:var(--color-danger-soft)]` …), and each `variant` says which variable paints what (`bg-(--badge-solid) text-(--badge-on-solid)`). 5 tones + 3 variants = 8 entries, instead of 15 `compoundVariants`. Adding a tone later costs one line. The CSS variables are set by Tailwind classes, not `style`, so it fits the no-inline-styles rule.
+- **Remember (the prediction): outline text uses the _soft-text_ token (`on-*-soft`), not the strong tone color.** The `on-*-soft` tokens are already tuned to contrast with the page in both themes: dark red on white, light pink on near-black. The strong `danger` red would be fine in light mode but too dark on the dark background. axe checked all 15 combinations × 2 themes: 0 findings.
+- **Remember: CSS variables turn a matrix into a sum.** Each `tone` only _names_ its colors (`[--badge-soft:var(--color-danger-soft)]` …), and each `variant` says which variable paints what (`bg-(--badge-solid) text-(--badge-on-solid)`). 5 tones + 3 variants = 8 entries, instead of 15 `compoundVariants`. Adding a tone later costs one line. The CSS variables are set by Tailwind classes, not `style`, so it fits the no-inline-styles rule.
 - **Gotcha:** on a `solid` badge a tone-colored dot would vanish into the fill, so there it uses `bg-current` (the text color).
 - Docs: https://tailwindcss.com/docs/adding-custom-styles#using-arbitrary-properties
 
 ## 2026-11-01 — Alert: styles (soft, outline, solid, banner, compact)
+
 - **Built:** new optional props on `Alert`: `variant` (`soft` default / `outline` / `solid`), `banner` (full-bleed: square, only a bottom edge) and `size="sm"` (one compact line, actions at the end). The default look is unchanged: Chromium shows the same colors as before, in both themes.
-- **Remember (the prediction): a banner *alert* is not `role="banner"`.** `banner` is the page-header landmark (logo, site nav), and there should be one per page. A screen reader user jumping to "banner" expects the header, not a maintenance notice. Our banner keeps its meaning: an alert, with `role="status"`/`"alert"` only when `announce` is set. A test checks there's no `banner` role. Same lesson as before: **looks and roles are separate decisions.**
+- **Remember (the prediction): a banner _alert_ is not `role="banner"`.** `banner` is the page-header landmark (logo, site nav), and there should be one per page. A screen reader user jumping to "banner" expects the header, not a maintenance notice. Our banner keeps its meaning: an alert, with `role="status"`/`"alert"` only when `announce` is set. A test checks there's no `banner` role. Same lesson as before: **looks and roles are separate decisions.**
 - **Remember: the CSS-variable pattern again (practice, not new).** The tone names `--alert-soft`, `--alert-solid`, `--alert-line`…; the variant picks. Outline uses the page's own `bg-bg text-fg` and colors only the border and icon. The icon uses the soft-text token, so it keeps 3:1 against the page in both themes. Borders use `color-mix(in oklab, …)` to reproduce the old `border-info/30` inside a variable.
 - **Lint caught:** `onDismiss={() => {}}` in a story (`no-empty-function`). The story now really dismisses the alert with state, which is also a better demo.
 - Docs: https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Reference/Roles/banner_role
 
 ## 2026-11-01 — Card: elevated + horizontal
+
 - **Built:** `variant="elevated"` (page background, faint border, shadow; a clickable one lifts more on hover) and `orientation="horizontal"` (`CardMedia` down the start side, about ⅓ wide; header, body and footer stack beside it). Defaults are unchanged. CardLink, padding and the focus ring around the whole card work in every combination.
-- **Remember (the prediction): in normal flow, a tall photo would stretch the whole card.** A grid row is as tall as its tallest item, so a portrait image would make the card as tall as the photo, with empty space under the text. So in horizontal mode the media child is `absolute inset-0` inside a `relative` box: it *fills* the height that the text sets, and `object-cover` crops it. Chromium: a 2-line card is 98px tall with a 160px-tall portrait photo.
+- **Remember (the prediction): in normal flow, a tall photo would stretch the whole card.** A grid row is as tall as its tallest item, so a portrait image would make the card as tall as the photo, with empty space under the text. So in horizontal mode the media child is `absolute inset-0` inside a `relative` box: it _fills_ the height that the text sets, and `object-cover` crops it. Chromium: a 2-line card is 98px tall with a 160px-tall portrait photo.
 - **Remember: span "all rows" when you don't know how many there are.** The parts after the media land in column 2, one row each, but the media must span them all. `row-[1/span_20]` spans 20 rows; the empty ones have zero height. `[&>[data-card-media]+*]:mt-0!` removes the top gap from the first part beside the media.
 - **Remember: one context, several facts.** The context that already told `CardMedia` the padding (to bleed past it) now also carries the orientation, so it knows which edges to bleed to (`-mx -mt` vs `-ms -my`). It's the same pattern as Tabs: the parent decides and the parts read it.
-- **Why no automatic switch:** the Card can't use a container query on *itself*: a container query styles the container's children, not the container. And breakpoints differ per app, so the app picks `orientation`.
+- **Why no automatic switch:** the Card can't use a container query on _itself_: a container query styles the container's children, not the container. And breakpoints differ per app, so the app picks `orientation`.
 - Docs: https://developer.mozilla.org/en-US/docs/Web/CSS/grid-row
 
 ## 2026-11-01 — Button: styles (outline, shapes, full width, icons)
+
 - **Built:** new optional props on `Button`: `intent="outline"`, `shape` (`default` / `pill` / `square` icon-only), `fullWidth`, `startIcon` / `endIcon`. While `loading`, the spinner takes `startIcon`'s place: the label stays at the same x (40px in Chromium either way). The default look is unchanged.
-- **Remember (the prediction): you find out at *compile time*, from TypeScript.** `ButtonProps` is a **discriminated union**: `{ shape?: 'default' | 'pill' } | { shape: 'square'; 'aria-label': string }`. The value of `shape` picks which branch applies, and the square branch makes `aria-label` required. Without it you get `TS2322 … not assignable to ButtonProps`. I checked by deleting the `@ts-expect-error`: the typecheck failed. It's like a sealed interface in Java, where each implementation carries the fields it needs.
+- **Remember (the prediction): you find out at _compile time_, from TypeScript.** `ButtonProps` is a **discriminated union**: `{ shape?: 'default' | 'pill' } | { shape: 'square'; 'aria-label': string }`. The value of `shape` picks which branch applies, and the square branch makes `aria-label` required. Without it you get `TS2322 … not assignable to ButtonProps`. I checked by deleting the `@ts-expect-error`: the typecheck failed. It's like a sealed interface in Java, where each implementation carries the fields it needs.
 - **Remember: required props are the cheapest accessibility test.** A missing name on an icon-only button would otherwise be found by axe in Storybook (if someone writes a story for it), or by a screen-reader user in production. The type finds it in the editor.
 - **Remember: icons are decoration; the label is the name.** Icon slots are `aria-hidden`, sized per button size (`size-4` / `size-5`). An arrow `endIcon` should flip in RTL (`rtl:-scale-x-100`), like the story's.
 - Docs: https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions
 
 ## 2026-11-01 — Input: filled variant + adornments
+
 - **Built:** `variant="filled"` (grey fill, a strong bottom line, square bottom corners) and `startAdornment` / `endAdornment` on `Input`. Text adornments (`"$"`, `"kg"`, `"CAD"`) are linked with `aria-describedby`; elements (icons, a Show/Hide button) render as given. Clicking the box (not a control) focuses the input. The default `outline` look and every existing Field test are unchanged.
 - **Remember (the prediction): a fill alone fails WCAG 1.4.11 (non-text contrast).** A form field's edge must reach **3:1** against what's around it. A light grey `bg-surface` on white is about 1.1:1, so the field "disappears" for low-vision users. The usual fix (Material's filled field) is a strong **bottom line** in `border-strong`, the same token outline inputs use.
 - **Remember: the unit is part of the meaning.** "70" and "70 kg" are different answers. Chromium's accessibility tree shows Weight: description "kg", and Amount: "$ CAD". Icons are decoration (`aria-hidden`); buttons stay buttons.
@@ -656,41 +740,47 @@ Short notes after each task: what was built, what to remember, one link to read.
 - Docs: https://www.w3.org/WAI/WCAG22/Understanding/non-text-contrast.html
 
 ## 2026-11-01 — Select + Combobox: filled variant, shared field surface
+
 - **Built:** `field/field-surface.ts` holds `fieldSurface = { outline, filled }` (border + fill). Input, Select and Combobox all use it as their cva `variant`, so a form that mixes them matches. Select and Combobox also get a decorative `startIcon`. Defaults are unchanged; all existing Input, Select, Combobox and Field tests pass.
-- **Remember (the prediction): one file now, three yesterday.** Before, each control had its own copy of the border and fill classes. Making the filled bottom line 2px would have meant editing Input, Select and Combobox, and forgetting one would make forms mismatch. Now it's one line in `field-surface.ts`. This is how design tokens work at the *component* level: one source of truth that many components read.
-- **Remember: share the surface, not the states.** The shared object only has border and fill. Focus/invalid/disabled stay in each control, because the element that *has* the state differs: the input itself (plain Input), `has-[input:…]` on a wrapper (Input with adornments, Combobox), or `group-data-invalid` from React Aria's root (Select).
+- **Remember (the prediction): one file now, three yesterday.** Before, each control had its own copy of the border and fill classes. Making the filled bottom line 2px would have meant editing Input, Select and Combobox, and forgetting one would make forms mismatch. Now it's one line in `field-surface.ts`. This is how design tokens work at the _component_ level: one source of truth that many components read.
+- **Remember: share the surface, not the states.** The shared object only has border and fill. Focus/invalid/disabled stay in each control, because the element that _has_ the state differs: the input itself (plain Input), `has-[input:…]` on a wrapper (Input with adornments, Combobox), or `group-data-invalid` from React Aria's root (Select).
 - **Audit note:** axe flagged a disabled MultiCombobox tag's text (4.43:1). It's the same on `main` (I checked a main build), so it isn't from this PR. WCAG 1.4.3 also exempts inactive controls from text contrast. MultiCombobox isn't on the shared surface yet; it's on the follow-up list with NumberField, SearchField, Textarea and the date/time fields.
 - Docs: https://cva.style/docs/getting-started/variants
 
 ## 2026-11-01 — The whole field family on `fieldSurface`
+
 - **Built:** NumberField, SearchField, MultiCombobox, TextArea and the shared date box (DatePicker, DateRangePicker, TimeField) now take `variant` from `fieldSurface`, like Input, Select and Combobox. Every text-like field supports `filled`, and `outline` is still the default. A grep for the old copied classes in field code now returns nothing. The remaining hits are checkboxes, radios and the stepper, which aren't fields.
-- **Remember: a *contract test* guards a shared rule across components.** `field/field-surface.spec.tsx` renders all 10 fields in a `Field`, both variants, and checks that exactly one element carries the shared surface. I proved it works by removing `variant` from NumberField: the test went red. A future field that copies classes instead of using the recipe will fail it too.
+- **Remember: a _contract test_ guards a shared rule across components.** `field/field-surface.spec.tsx` renders all 10 fields in a `Field`, both variants, and checks that exactly one element carries the shared surface. I proved it works by removing `variant` from NumberField: the test went red. A future field that copies classes instead of using the recipe will fail it too.
 - **Remember: refactors that only move classes are proven by unchanged tests.** All the old tests passed untouched. The new tests only cover the new prop.
 - **Known, unchanged:** the disabled MultiCombobox tag contrast finding (4.43:1) from the last PR is still there. It's on `main`, and WCAG 1.4.3 exempts inactive controls.
 - Docs: https://martinfowler.com/bliki/ContractTest.html
 
 ## 2026-11-01 — Toast: styles (bar, soft, outline, solid, small) + region focus ring
+
 - **Built:** `<ToastRegion variant size>`: `bar` (default, today's white card + coloured bar), `soft`, `outline` and `solid` (matching Alert, using the same CSS-variable recipe), and `size="sm"`. On a coloured fill, the description, the action's underline and the × use `text-current`. Muted grey and the yellow link underline would lose contrast on those fills. The `toast.*` API and all behaviour are unchanged.
-- **Remember (the prediction): `variant` belongs on the region, not on each `toast.*()` call.** The code that *sends* a toast (an API error handler, a save button) should only say *what happened* (`tone`, `title`). The app shell decides how notifications *look*, once. It's content vs presentation, like a logger call (`log.warn(...)`) not choosing the log file format. It also means two toasts on screen can never clash in style.
-- **Fixed along the way:** F6 moves focus to the toast *region*, which had `outline-hidden`, so keyboard users saw nothing (WCAG 2.4.7). It's on `main` too; I found it while taking the keyboard screenshot. The region now shows the standard ring, and a test covers it.
+- **Remember (the prediction): `variant` belongs on the region, not on each `toast.*()` call.** The code that _sends_ a toast (an API error handler, a save button) should only say _what happened_ (`tone`, `title`). The app shell decides how notifications _look_, once. It's content vs presentation, like a logger call (`log.warn(...)`) not choosing the log file format. It also means two toasts on screen can never clash in style.
+- **Fixed along the way:** F6 moves focus to the toast _region_, which had `outline-hidden`, so keyboard users saw nothing (WCAG 2.4.7). It's on `main` too; I found it while taking the keyboard screenshot. The region now shows the standard ring, and a test covers it.
 - **Gotcha:** the region shows at most 4 toasts (`maxVisibleToasts`), so a story firing 5 hid the oldest. And a loose regex in my edit script matched the wrong `toast.info(...)` and broke the Tones story: restore with `git checkout -- <file>` and re-apply with exact text instead.
 - Docs: https://react-spectrum.adobe.com/react-aria/Toast.html
 
 ## 2026-11-01 — Checkbox / CheckboxGroup / RadioGroup / Switch: sizes, label first, descriptions
+
 - **Built:** `checkbox/choice-control.ts` holds one size table (`sm` / `md` / `lg`: box, tick, dot, switch track and thumb, label text) plus a `ChoiceStyleContext`. RadioGroup and CheckboxGroup take `size` and `labelPosition` once and their items read them. Switch and the standalone Checkbox take `size` directly. Switch also gets `labelPosition` and `description`. Defaults are unchanged (md, label at the end).
-- **Remember (the prediction): only the *visual* order changes.** `labelPosition="start"` is `flex-row-reverse` on the `<label>` that wraps both the input and its text. There's one focus stop and one name, so Tab order and what a screen reader says don't change. Moving DOM elements would only matter if label and control were separate focus stops; then a visual order that differs from the DOM order can confuse keyboard users (WCAG 1.3.2 / 2.4.3).
-- **Remember: name by the label, describe with the second line.** A `<label>` names its control with *all* its text, so the Switch's description would have become part of the name. Like Radio, the Switch now uses `aria-labelledby` (label span) + `aria-describedby` (description span). Chromium: "Email me when an invoice is paid" | "Sent to billing@acme.example".
+- **Remember (the prediction): only the _visual_ order changes.** `labelPosition="start"` is `flex-row-reverse` on the `<label>` that wraps both the input and its text. There's one focus stop and one name, so Tab order and what a screen reader says don't change. Moving DOM elements would only matter if label and control were separate focus stops; then a visual order that differs from the DOM order can confuse keyboard users (WCAG 1.3.2 / 2.4.3).
+- **Remember: name by the label, describe with the second line.** A `<label>` names its control with _all_ its text, so the Switch's description would have become part of the name. Like Radio, the Switch now uses `aria-labelledby` (label span) + `aria-describedby` (description span). Chromium: "Email me when an invoice is paid" | "Sent to billing@acme.example".
 - **Gotcha:** `ComponentProps<'input'>` already has a native `size` (a number), so adding our `size` gave the type `never`. The fix is `Omit<…, 'type' | 'size'>`, as Input already did.
 - Docs: https://www.w3.org/WAI/WCAG22/Understanding/meaningful-sequence.html
 
 ## 2026-11-01 — Dialog / AlertDialog / Drawer: sizes, placement, divided, tones, sheets
+
 - **Built:** Dialog gets `size` `xl` / `full`, `divided` (lines around a scrolling body) and `placement="top"`. AlertDialog gets `tone` (an icon in a soft circle) and `layout="center"`. Drawer gets `placement` `top` / `bottom` (a bottom sheet) and `size="full"`. One `drawer-slide` keyframe now slides on either axis through `--drawer-x` / `--drawer-y`. Defaults are unchanged.
 - **Remember (the prediction):** a centered box re-centers whenever its height changes, so its top edge (and the input you're typing in) jumps on every keystroke. `placement="top"` pins the top edge and lets the box grow downward. That's why command palettes and search dialogs sit near the top.
-- **Remember: cva `compoundVariants`** apply a class only when *several* variants match. Drawer's `size` means width on the sides and max height on top/bottom: `{ placement: ['top','bottom'], size: 'sm', className: 'max-h-[40dvh]' }`. One prop, two meanings, no `if`s in the JSX.
-- **Gotcha:** `flex-1` on items in a *column* sets their height basis to 0, which squashed the stacked buttons. Use `sm:*:flex-1` (row only); in a column the items stretch to full width anyway. `flex-col-reverse` puts Confirm on top visually, but Tab still goes Cancel → Confirm.
+- **Remember: cva `compoundVariants`** apply a class only when _several_ variants match. Drawer's `size` means width on the sides and max height on top/bottom: `{ placement: ['top','bottom'], size: 'sm', className: 'max-h-[40dvh]' }`. One prop, two meanings, no `if`s in the JSX.
+- **Gotcha:** `flex-1` on items in a _column_ sets their height basis to 0, which squashed the stacked buttons. Use `sm:*:flex-1` (row only); in a column the items stretch to full width anyway. `flex-col-reverse` puts Confirm on top visually, but Tab still goes Cancel → Confirm.
 - Docs: https://cva.style/docs/getting-started/variants#compound-variants
 
 ## 2026-11-02 — Menu / Popover: icons, density, danger focus, padding
+
 - **Built:** `MenuItem` and `MenuSubmenu` take an `icon`. `Menu` takes `menuSize` (`sm` / `md`), and every item, header and submenu reads it from a context. Danger items get a soft red row when focused. `Popover` takes `padding` (`none` / `sm` / `md`) and `divided`. Defaults are unchanged.
 - **Remember (the prediction): the icon is decoration.** The wrapper is `aria-hidden`, so a screen reader says "Delete", not "trash, Delete". When the text already says what the item does, the icon adds nothing for people who can't see it. A test checks the name and the `aria-hidden`.
 - **Remember: context reaches React Aria collection items.** `Menu` puts `MenuSizeContext.Provider` around `AriaMenu`, and the items still read it, even though React Aria renders them twice (once to build the collection, once for real). Items outside a Menu (CommandPalette) get the context default, `md`.
@@ -698,6 +788,7 @@ Short notes after each task: what was built, what to remember, one link to read.
 - Docs: https://react-spectrum.adobe.com/react-aria/Menu.html#content
 
 ## 2026-11-02 — TagGroup / SegmentedControl / ToggleGroup: tones, pills, sizes, primary, full width
+
 - **Built:** a `TagItem` can now have a `tone` (info, success, warning, danger) and an `icon`. `TagGroup` has `shape="pill"`. `SegmentedControl` and `ToggleGroup` have `size="lg"`, `shape="pill"`, `variant="primary"` and `fullWidth`, all from the shared `segment-parts.tsx`. Defaults are unchanged.
 - **Remember (the prediction): fill color alone isn't enough.** WCAG 1.4.11 asks for 3:1 contrast between a control's state and what's around it. The yellow fill on the light gray track is well under 3:1, so the `ring-border-strong` stays. It's what makes the choice visible to someone who can't see the yellow well. A test checks the ring is still there with `variant="primary"`.
 - **Remember: a tone is a set of CSS variables.** Each tone sets four variables: `--tag-bg`, `--tag-fg`, `--tag-line` and `--tag-muted`. The chip paints with them, and the ✕ reads `--tag-muted`. That keeps the ✕ dark enough on a tinted fill without a separate rule for every tone × part pair. It's the same approach as Badge and Alert.
@@ -705,6 +796,7 @@ Short notes after each task: what was built, what to remember, one link to read.
 - Docs: https://www.w3.org/WAI/WCAG22/Understanding/non-text-contrast.html
 
 ## 2026-11-02 — Fix: ToggleGroup inside Toolbar had an ARIA attribute its role doesn't allow
+
 - **Fixed:** inside a Toolbar, React Aria turns ToggleGroup's `role="toolbar"` into `role="group"` but keeps `aria-orientation`. `group` doesn't allow that attribute, so axe reported `aria-allowed-attr`. We now drop it for `group` only.
 - **Remember (the prediction): nothing is lost.** The outer toolbar still says `aria-orientation="horizontal"`, and the arrow keys are handled in JavaScript, not by the attribute. On a role that doesn't allow it, the attribute is ignored at best and confuses checkers at worst. Chromium's tree after the fix: toolbar "Editor" → group "Text style" → Bold, Italic [pressed]…
 - **Remember: React Aria's `render` prop** lets you change the final DOM props before the element is made: `render={(props) => <div {...props} />}`. Keep the same element type and pass `props` through, `ref` included, or React Aria warns. Use it for small fixes like this one, not for restyling.
@@ -712,6 +804,7 @@ Short notes after each task: what was built, what to remember, one link to read.
 - Docs: https://www.w3.org/TR/wai-aria-1.2/#group
 
 ## 2026-11-02 — Progress / Tooltip: tones, sizes, value at the end, ProgressCircle, light tooltips
+
 - **Built:**
   - ProgressBar: `tone`, `size` (`sm` / `md` / `lg`) and `valuePosition="end"`.
   - New `ProgressCircle`: a ring with sizes, tones, `showValue`, and a spinning arc when there's no value.
@@ -723,6 +816,7 @@ Short notes after each task: what was built, what to remember, one link to read.
 - Docs: https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/pathLength
 
 ## 2026-11-02 — Accordion / Disclosure / TreeView: variants, sizes, chevron at start, tree guides
+
 - **Built:**
   - Accordion and Disclosure take `variant` (`bordered`, `separated`, `flush`, `filled`), `size` (`sm`, `md`, `lg`) and `chevronPosition="start"`. Set them once on the Accordion; a section's own prop wins.
   - TreeView takes `size="sm"` and `guides`.
@@ -733,6 +827,7 @@ Short notes after each task: what was built, what to remember, one link to read.
 - Docs: https://react-spectrum.adobe.com/react-aria/Tree.html#styling
 
 ## 2026-11-02 — Pagination / Stepper: simple and compact paging, edges, sizes, dots, step icons
+
 - **Built:**
   - Pagination gets `variant` (`full`, `simple`, `compact`), `size` (`sm` / `md`) and `showEdges` (First and Last buttons).
   - Stepper gets `size` (`sm` / `md`), `variant="dots"` and an `icon` on each step.
@@ -747,6 +842,7 @@ Short notes after each task: what was built, what to remember, one link to read.
 - Docs: https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Guides/Live_regions
 
 ## 2026-11-02 — EmptyState / Skeleton: tones, boxes, sizes, alignment, wave, presets
+
 - **Built:**
   - EmptyState: `tone` (colors the icon circle), `variant` (`plain`, `bordered`, `card`), `size="large"` and `align="start"`. Boxed versions fill their space; the description stays readable at `max-w-md`.
   - Skeleton: `animation` (`pulse`, `wave`, `none`) plus two presets, `SkeletonText` (n lines, the last one shorter) and `SkeletonMedia` (avatar or thumbnail plus two lines).
@@ -757,13 +853,15 @@ Short notes after each task: what was built, what to remember, one link to read.
 - Docs: https://developer.mozilla.org/en-US/docs/Web/CSS/@media/prefers-reduced-motion
 
 ## 2026-11-02 — MessageList (new): a mailbox list on React Aria GridList
+
 - **Built:** `MessageList`, with a checkbox per row, unread rows in bold with a dot, a preview line, a `<time>`, `openId` highlighting, `density` and an empty state. It also exports pure helpers, `selectBy` (all / none / read / unread) and `markRead`, each with its own tests. This is part 1 of the Mail page.
 - **Remember (the prediction): Space ticks, Enter opens, but only while nothing is ticked.** React Aria's checkbox lists treat "something is ticked" as a selection mode. In that mode a click ticks the row, Enter waits, and Escape clears the ticks. We chose to follow React Aria rather than add our own event code. A test covers each step.
-- **Remember: the row's name *is* `textValue`.** React Aria names a GridList row from `textValue` alone, so we put in it what a screen reader should say: "Ana Ruiz, INV-1042 paid, 9:41 AM, unread". "unread" goes **last**, because typing a letter jumps by the start of that name and people type the sender's initial. Chromium's tree confirms the name.
+- **Remember: the row's name _is_ `textValue`.** React Aria names a GridList row from `textValue` alone, so we put in it what a screen reader should say: "Ana Ruiz, INV-1042 paid, 9:41 AM, unread". "unread" goes **last**, because typing a letter jumps by the start of that name and people type the sender's initial. Chromium's tree confirms the name.
 - **Remember: the open row is shown, not announced.** The open message gets a bar and a fill. The Mail page (part 2) decides how to announce it, since it owns the reading pane.
 - Docs: https://react-spectrum.adobe.com/react-aria/GridList.html#selection-behavior
 
 ## 2026-11-02 — Mail page pattern (part 2): folders, toolbar, reading pane
+
 - **Built:** `src/patterns/mail/`, a `Patterns/Mail` story built only from library parts:
   - AppShell + SideNav folders with unread badges, switched through our `RouterProvider`
   - a toolbar: page checkbox (all / some / none), a "Select by ▾" Menu, Mark as read / unread
@@ -771,11 +869,12 @@ Short notes after each task: what was built, what to remember, one link to read.
   - MessageList, plus a reading pane that becomes a phone view with a Back button
   - Pure logic in `mail-logic.ts` with its own tests. It's a pattern, not a package export: apps copy it and swap in their API.
 - **Remember: say what a bulk action did.** Marking 9 messages read only changes bold text, so a screen reader hears nothing. A `role="status"` line says "9 conversations marked as read." without moving focus.
-- **Remember: when content *replaces* where focus was, move focus yourself.** On phones the pane replaces the list. Opening a message moves focus to the pane's `h2` (`tabIndex={-1}`, reachable from code but not a Tab stop). Back focuses the grid, which returns to the row it last had. Checked in Chromium at 390px.
+- **Remember: when content _replaces_ where focus was, move focus yourself.** On phones the pane replaces the list. Opening a message moves focus to the pane's `h2` (`tabIndex={-1}`, reachable from code but not a Tab stop). Back focuses the grid, which returns to the row it last had. Checked in Chromium at 390px.
 - **Gotcha (again): a leading space in `sr-only` text is dropped from the name.** The folder badge reads "Inbox, 20 unread" because the hidden text starts with a comma, and the visible "20" is `aria-hidden`.
 - Docs: https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Reference/Roles/status_role
 
 ## 2026-11-02 — Pipeline Map step 1: data types + pure geometry
+
 - **Built:** `pipeline-model.ts` (the `PipelineNetwork` types: facilities, segments, batches, tanks) and `pipeline-geometry.ts` with `segmentPath`, `strokeWidthFor` and `batchOffsets`, plus 13 unit tests. No React yet; only the types are exported.
 - **Remember (the prediction): data order and drawing order can disagree.** Batches arrive downstream-first (oldest first), but a path's offset 0 is its `from` end. So `batches[0]` sits at the **far** end: the walk starts at 1 and moves upstream. 500/300/200 m³ → A at 0.5–1, B at 0.2–0.5, C at 0–0.2.
 - **Remember: pure functions first, components second.** Geometry with no React is tested in milliseconds with plain inputs. The components in steps 2–5 just call these and draw.
@@ -783,6 +882,7 @@ Short notes after each task: what was built, what to remember, one link to read.
 - Docs: https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Attribute/d
 
 ## 2026-11-02 — Pipeline Map step 2: PipeSegment + line-color tokens
+
 - **Built:** `PipeSegment`, one SVG pipe: width = flow ÷ max flow (2–10px), status = color **and** pattern (running solid green, restricted dashed orange, shutdown dotted gray). New tokens `line-success`, `line-warning`, `line-neutral`, checked at 3:1 on the Tokens page.
 - **Remember (tested before building): `vector-effect: non-scaling-stroke` keeps a line the same width at any zoom, but it also makes dash lengths screen pixels and ignores `pathLength`.** Good for status patterns, fatal for the "batches as dashes" trick. So step 3 (`BatchTrain`) will cut the line into one sub-path per batch instead.
 - **Remember: a token can pass for text-on-color and fail as a line.** `warning` (clementine-500) works as a button background with dark text, but it's only 2.9:1 against white as a 2px line. WCAG 1.4.11 asks 3:1 for graphics, so lines get their own tokens.
@@ -790,11 +890,12 @@ Short notes after each task: what was built, what to remember, one link to read.
 - Docs: https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Attribute/vector-effect
 
 ## 2026-11-02 — Text / Heading: status tones, truncation, display sizes, eyebrow
+
 - **Built:**
   - Text gets `tone` `success`, `warning` and `info`, backed by new `fg-success`, `fg-warning` and `fg-info` tokens (the soft-pair text shades, light and dark). It also gets `truncate` (`true` = one line, 2–5 = that many lines) and `size="xl"`.
   - Heading gets `size` `3xl` and `4xl`, `weight`, `tone`, `truncate` and `eyebrow`.
   - Defaults are unchanged.
-- **Remember (the prediction): the eyebrow goes *next to* the heading, not inside it.**
+- **Remember (the prediction): the eyebrow goes _next to_ the heading, not inside it.**
   - Inside the `<h2>`, screen-reader users jumping by heading would hear "Billing Invoices" every time.
   - Next to it, both inside an `<hgroup>`, the heading is just "Invoices" and the eyebrow is a plain paragraph before it. Chromium's tree shows `paragraph: Billing`, then `heading "Invoices" [level=2]`.
   - `uppercase` is CSS only: the source text stays "Billing", so it isn't spelled out letter by letter.
@@ -803,9 +904,10 @@ Short notes after each task: what was built, what to remember, one link to read.
 - Docs: https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/hgroup
 
 ## 2026-11-02 — PageHeader: sizes, divided, back link, meta row, section nav
+
 - **Built:** PageHeader gets `size` (`sm` / `md` / `lg`), `divided`, `back={{ href, label }}`, `meta` (a row of facts under the title) and `nav` (section links styled like underline tabs, with optional counts). Defaults are unchanged.
 - **Remember (the prediction): links that change the URL are a `<nav>`, not Tabs.**
-  - Use Tabs (`role="tablist"`) for panels that swap *in place*: arrow keys move between them and only one panel is shown.
+  - Use Tabs (`role="tablist"`) for panels that swap _in place_: arrow keys move between them and only one panel is shown.
   - Use links in a named `<nav>` for sections that are their own pages: Tab moves between them, `aria-current="page"` marks the current one, and middle-click or "open in new tab" works.
   - The look can be the same; the job decides the markup.
 - **Remember: `aria-label` must contain the visible words.** The back link shows "← Invoices" and is named "Back to Invoices". The name still contains what's on screen, so someone using voice control can say "click Invoices" (WCAG 2.5.3, label in name).
@@ -813,8 +915,9 @@ Short notes after each task: what was built, what to remember, one link to read.
 - Docs: https://www.w3.org/WAI/ARIA/apg/patterns/tabs/
 
 ## 2026-11-02 — Pipeline Map step 3: BatchTrain + product colors
+
 - **Built:** `BatchTrain`, the batches in a pipe drawn as a thin band beside it ("two tracks", Ben's pick), one piece per batch sized by its share of the linefill, 2px gaps between pieces. Geometry: `slicePolyline`, `offsetPolyline` (mitred corners), `polylineLength`, `toPathData`. Tokens: `product-1..3` from a new `viz-*` primitive group.
-- **Remember: validate a palette, don't eyeball it.** Products can sit next to *any* other product in a pipe, so every pair must be distinguishable (not just neighbours in a legend). Only 3 hues passed that, including colour-blind simulation, so slots 4–6 reuse them **with stripes** and 7+ become "other". Colour follows the product's legend position, never its position in a pipe.
+- **Remember: validate a palette, don't eyeball it.** Products can sit next to _any_ other product in a pipe, so every pair must be distinguishable (not just neighbours in a legend). Only 3 hues passed that, including colour-blind simulation, so slots 4–6 reuse them **with stripes** and 7+ become "other". Colour follows the product's legend position, never its position in a pipe.
 - **Remember: pixels vs grid units.** Points live in grid units, but "10px beside the pipe" and "2px gaps" are screen sizes. One number converts them: `unitsPerPx`. The map will compute it from its size in step 5.
 - **Gotcha (TypeScript): native props can collide with yours.** `ComponentProps<'g'>` already has `points?: string` (an SVG attribute), so my `points: Point[]` became `string & Point[]`. Fix: `Omit<ComponentProps<'g'>, 'children' | 'points'>`.
 - Docs: https://developer.mozilla.org/en-US/docs/Web/SVG/Reference/Attribute/stroke-dasharray

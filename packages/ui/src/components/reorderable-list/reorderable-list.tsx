@@ -140,7 +140,6 @@ export function ReorderableList<T extends ReorderableItem>({
   return (
     // The wrapper only listens for Alt+↑/↓ (keys bubble up from the focused row);
     // it isn't focusable or interactive itself.
-    // eslint-disable-next-line jsx-a11y/no-static-element-interactions
     <div onKeyDownCapture={onKeyDownCapture} className={className}>
       <GridList
         aria-label={ariaLabel}

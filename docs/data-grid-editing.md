@@ -8,15 +8,15 @@ backend. The grid owns the draft (unsaved edits); your app owns the network.
 ```tsx
 <DataGrid
   aria-label="Invoices"
-  data={rows}                                // update this after a successful save
-  columns={columns}                          // editable columns have meta.editor
+  data={rows} // update this after a successful save
+  columns={columns} // editable columns have meta.editor
   getRowId={(r) => r.id}
   editing={{
     onSave: async (changes) => mapToSaveResult(await api.saveBatch(changes)),
-    getRowVersion: (r) => r.version,         // optional: optimistic locking
+    getRowVersion: (r) => r.version, // optional: optimistic locking
     isRowLocked: (r) => r.status === 'Paid', // optional
-    allowAdd: true,                          // optional: "Type here to add a row…"
-    newRow: () => ({ status: 'Draft' }),     // optional: defaults for new rows
+    allowAdd: true, // optional: "Type here to add a row…"
+    newRow: () => ({ status: 'Draft' }), // optional: defaults for new rows
   }}
 />
 ```
@@ -51,14 +51,14 @@ col.accessor('customer', {                                                   // 
 }),
 ```
 
-| `meta.editor` | Accepts (typed or pasted) |
-|---|---|
-| `text` | anything |
-| `number` | `1500`, `1,500.50`, `$1,500.50` (empty = `null`) |
-| `select` | one of `options`, any case (`pending` → `Pending`) |
-| `checkbox` | Space / Enter / click toggles; paste `TRUE`, `yes`, `1`, `x` / `FALSE`, `no`, `0` |
-| `combobox` | one of `options`, any case. With `searchOptions`: any text (check it with `validate`) |
-| `date` | `'YYYY-MM-DD'` only (`2026-10-04`). `3/10/2026` is rejected, not guessed: is it March 10 or October 3? |
+| `meta.editor` | Accepts (typed or pasted)                                                                              |
+| ------------- | ------------------------------------------------------------------------------------------------------ |
+| `text`        | anything                                                                                               |
+| `number`      | `1500`, `1,500.50`, `$1,500.50` (empty = `null`)                                                       |
+| `select`      | one of `options`, any case (`pending` → `Pending`)                                                     |
+| `checkbox`    | Space / Enter / click toggles; paste `TRUE`, `yes`, `1`, `x` / `FALSE`, `no`, `0`                      |
+| `combobox`    | one of `options`, any case. With `searchOptions`: any text (check it with `validate`)                  |
+| `date`        | `'YYYY-MM-DD'` only (`2026-10-04`). `3/10/2026` is rejected, not guessed: is it March 10 or October 3? |
 
 **Dates are ISO strings, both ways.** Give the grid `'2026-10-04'` and it saves
 `'2026-10-04'`. Don't give it a JS `Date` (a moment in time: it can show a different day
@@ -81,15 +81,44 @@ The only types your backend code needs (all exported from `@fun-design-system/ui
 ```ts
 type ChangeSet = {
   operations: Array<
-    | { op: 'update'; id: string; version?: number | string; changes: Record<string, unknown> }
+    | {
+        op: 'update';
+        id: string;
+        version?: number | string;
+        changes: Record<string, unknown>;
+      }
     | { op: 'create'; tempId: string; values: Record<string, unknown> }
   >;
 };
 
 type SaveResult =
-  | { ok: true; created?: Array<{ tempId: string; id: string; version?: number | string }> }
-  | { ok: false; kind: 'validation'; rows: Record<string, { fields?: Record<string, string[]>; row?: string[] }> }
-  | { ok: false; kind: 'conflict'; rows: Array<{ id: string; version: number | string; current: Record<string, unknown>; by?: string; at?: string }> };
+  | {
+      ok: true;
+      created?: Array<{
+        tempId: string;
+        id: string;
+        version?: number | string;
+      }>;
+    }
+  | {
+      ok: false;
+      kind: 'validation';
+      rows: Record<
+        string,
+        { fields?: Record<string, string[]>; row?: string[] }
+      >;
+    }
+  | {
+      ok: false;
+      kind: 'conflict';
+      rows: Array<{
+        id: string;
+        version: number | string;
+        current: Record<string, unknown>;
+        by?: string;
+        at?: string;
+      }>;
+    };
 ```
 
 - `update` carries **only the changed fields**, plus the version the user started from.
@@ -126,7 +155,7 @@ combine the results. If it isn't atomic, consider returning `validation` for the
 that failed and reloading `data` for the ones that succeeded.
 
 **Optimistic locking.** Send `version` back to the server and have it compare the
-version *in the request* with the stored one. (In JPA, loading the entity and copying
+version _in the request_ with the stored one. (In JPA, loading the entity and copying
 fields onto it checks the freshly loaded version, not the client's: compare explicitly.)
 
 ## 4. Conflicts: Use theirs / Keep mine
@@ -141,19 +170,19 @@ Both choices adopt the new version. They last until the app passes new `data`.
 
 ## 5. Keyboard and mouse
 
-| Keys | Navigation (on a cell) | Editing (in the cell's input) |
-|---|---|---|
-| Arrows, Home/End, PgUp/PgDn | Move (Ctrl+arrow / Ctrl+Home/End: to the edge) | Caret |
-| Shift + those | Extend the range | Select text |
-| Enter / F2 | Edit, keeping the value | Commit, move down (Shift: up) |
-| A letter or digit | Edit, replacing the value | Type |
-| Tab / Shift+Tab | Move right / left; leaves the grid at the row's edge | Commit, move right / left |
-| Esc | Collapse the range | Cancel the edit |
-| Delete / Backspace | Clear the range / clear and edit | Delete text |
-| Ctrl+C / X / V | Copy / cut / paste the range (Excel TSV) | The input's own |
-| Ctrl+D | Fill down | — |
-| Ctrl+Z / Ctrl+Y | Undo / redo the last gesture | The input's own undo |
-| Ctrl+A | Select all | Select text |
+| Keys                        | Navigation (on a cell)                               | Editing (in the cell's input) |
+| --------------------------- | ---------------------------------------------------- | ----------------------------- |
+| Arrows, Home/End, PgUp/PgDn | Move (Ctrl+arrow / Ctrl+Home/End: to the edge)       | Caret                         |
+| Shift + those               | Extend the range                                     | Select text                   |
+| Enter / F2                  | Edit, keeping the value                              | Commit, move down (Shift: up) |
+| A letter or digit           | Edit, replacing the value                            | Type                          |
+| Tab / Shift+Tab             | Move right / left; leaves the grid at the row's edge | Commit, move right / left     |
+| Esc                         | Collapse the range                                   | Cancel the edit               |
+| Delete / Backspace          | Clear the range / clear and edit                     | Delete text                   |
+| Ctrl+C / X / V              | Copy / cut / paste the range (Excel TSV)             | The input's own               |
+| Ctrl+D                      | Fill down                                            | —                             |
+| Ctrl+Z / Ctrl+Y             | Undo / redo the last gesture                         | The input's own undo          |
+| Ctrl+A                      | Select all                                           | Select text                   |
 
 Mouse: click selects, drag or Shift+click selects a range, double-click edits, clicking
 elsewhere commits.
@@ -161,12 +190,12 @@ elsewhere commits.
 **Popover editors (`combobox`, `date`).** The list opens as soon as you start editing
 (the calendar opens with Alt+↓ or its button). While a popup is open it owns the keys:
 
-| Key | Popup open | Popup closed |
-|---|---|---|
-| Enter | Pick the highlighted option (or day), commit, move down | Commit, move down |
-| Tab | Pick the highlighted option, commit, move right | Commit, move right |
-| Esc | Close the popup only (you're still editing) | Cancel the edit |
-| Click an option / day | Commit, stay on the cell | — |
+| Key                   | Popup open                                              | Popup closed       |
+| --------------------- | ------------------------------------------------------- | ------------------ |
+| Enter                 | Pick the highlighted option (or day), commit, move down | Commit, move down  |
+| Tab                   | Pick the highlighted option, commit, move right         | Commit, move right |
+| Esc                   | Close the popup only (you're still editing)             | Cancel the edit    |
+| Click an option / day | Commit, stay on the cell                                | —                  |
 
 Type-to-replace in a combobox cell makes the typed letter the search text, and the first
 match is highlighted, so Enter (or Tab) picks it. In a date cell, a typed digit goes into

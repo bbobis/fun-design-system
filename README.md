@@ -16,14 +16,14 @@ npx nx storybook ui      # component workshop at http://localhost:6006
 
 ## Commands
 
-| What | Command |
-|---|---|
-| Storybook | `npx nx storybook ui` |
-| Unit tests | `npx nx test ui` |
-| Lint | `npx nx lint ui` |
-| Typecheck | `npx nx typecheck ui` |
-| Build the library | `npx nx build ui` |
-| Run everything | `npx nx run-many -t lint typecheck test build build-storybook` |
+| What              | Command                                                        |
+| ----------------- | -------------------------------------------------------------- |
+| Storybook         | `npx nx storybook ui`                                          |
+| Unit tests        | `npx nx test ui`                                               |
+| Lint              | `npx nx lint ui`                                               |
+| Typecheck         | `npx nx typecheck ui`                                          |
+| Build the library | `npx nx build ui`                                              |
+| Run everything    | `npx nx run-many -t lint typecheck test build build-storybook` |
 
 ## Layout
 

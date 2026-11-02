@@ -18,8 +18,8 @@ src/index.ts          export * from './components/<name>'
 1. **Semantic tokens only.** `bg-primary`, `text-fg`, `border-border-strong`. Never a raw scale
    (`bg-yellow-500`) in a component. If a component needs a color that has no token, add the
    token in `tokens.css` first.
-2. **Variants with `cva`, classes merged with `cn()`.** Variants are *how it looks* (`intent`,
-   `size`); states are *what's happening* (`disabled`, `loading`, `aria-invalid`). States are
+2. **Variants with `cva`, classes merged with `cn()`.** Variants are _how it looks_ (`intent`,
+   `size`); states are _what's happening_ (`disabled`, `loading`, `aria-invalid`). States are
    plain props or ARIA attributes, not cva variants.
 3. **Props = native element props + variants + a few extras.**
    `ComponentProps<'button'> & VariantProps<typeof buttonVariants> & { loading?: boolean }`.
@@ -28,7 +28,7 @@ src/index.ts          export * from './components/<name>'
 4. **Native element first.** A `<button>` gets Enter, Space, focus and form behavior for free.
    Reach for a headless library only when the native element can't do the job (Dialog, Menu).
 5. **Focus is visible and keyboard-only:** `focus-visible:outline-2 focus-visible:outline-offset-2
-   focus-visible:outline-focus-ring`. Don't add `outline-none` (it breaks the focus rule in
+focus-visible:outline-focus-ring`. Don't add `outline-none` (it breaks the focus rule in
    Tailwind v4).
 6. **Safe defaults.** `type="button"` on buttons. A disabled-looking "busy" state uses
    `aria-disabled` + `aria-busy`, not `disabled`, so focus doesn't jump.
@@ -49,7 +49,7 @@ src/index.ts          export * from './components/<name>'
     tags, a generic `T`, and `Omit<ComponentProps<T>, 'as'>`, so `<Text as="span">` gets span
     props and a span ref. Inside, cast once: `const Component = (as ?? 'p') as ElementType;`
     (TS can't prove `rest` fits every tag). Add a `@ts-expect-error` test so the public type
-    stays strict. Don't make *interactive* components polymorphic; a Button is a `<button>`.
+    stays strict. Don't make _interactive_ components polymorphic; a Button is a `<button>`.
 12. **Structure ≠ looks.** `Heading` takes a required `level` (the tag) and an optional `size`
     (the look). Pick the level from the page outline, never from the visual size.
 
@@ -80,16 +80,16 @@ src/index.ts          export * from './components/<name>'
       our strings; `invalid` → `isInvalid`).
     - Style state from React Aria's `data-*` attributes (`data-focused`,
       `data-selected`, `data-disabled`, `group-data-invalid:`), not from render props,
-      unless the *content* changes (a check icon for the selected option).
+      unless the _content_ changes (a check icon for the selected option).
     - React Aria positions popovers itself (it sets `top`/`left`); we size them with its
       CSS variables, e.g. `w-(--trigger-width)`. Our code stays Tailwind-only.
     - Field wiring: `aria-labelledby` = the Field's `labelId` for controls `htmlFor`
       can't name; `aria-describedby` merges the Field's ids with the caller's.
-    - Control the *value*, not the internal mechanics. Combobox controls the selected
+    - Control the _value_, not the internal mechanics. Combobox controls the selected
       key but leaves the input text to React Aria: controlled text switches off its
       "show the picked label / reset on blur" logic. Apps listen with `onInputChange`.
     - Inside a React Aria `ComboBox`/`Select`, anything that is itself a collection
-      (TagGroup, a second ListBox) must sit in a *hideable* wrapper such as
+      (TagGroup, a second ListBox) must sit in a _hideable_ wrapper such as
       `ComboBoxValue`. React Aria builds the option list by rendering the children in a
       hidden pass; a bare TagGroup gets rendered there too and crashes.
     - The field box is React Aria's `Group`: the dropdown then anchors to, and is as
@@ -123,7 +123,7 @@ src/index.ts          export * from './components/<name>'
       description: wire `aria-describedby` yourself.
     - A question (`AlertDialog`) never closes on an outside click, and focus starts on
       the safe button (Cancel).
-20. **Triggers React Aria must own (Menu).** When the trigger *is* part of the pattern
+20. **Triggers React Aria must own (Menu).** When the trigger _is_ part of the pattern
     (a menu button needs `aria-expanded` and ↓-to-open), our component renders the
     trigger itself, as a React Aria `Button` styled with `buttonVariants`. Apps pass
     `label` / `intent` / `size`, never a button element. (A Dialog is different: any
@@ -134,7 +134,7 @@ src/index.ts          export * from './components/<name>'
       Menu and Popover. Their props extend `TriggerButtonProps`.
     - Content that must close its own popup (an Apply button) gets `close` from
       children-as-a-function: `{({ close }) => …}`. No ref, no extra state.
-21. **Behavior that attaches to *your* element (Tooltip).** When an overlay doesn't
+21. **Behavior that attaches to _your_ element (Tooltip).** When an overlay doesn't
     own its trigger, wrap the app's element with React Aria's `Focusable` (re-exported
     by `react-aria-components`) instead of changing our Button. The child only has to
     pass props and `ref` to a DOM element.
@@ -147,11 +147,11 @@ src/index.ts          export * from './components/<name>'
     to patch updates (`~`). An upgrade is a PR whose tests prove the wrapper still works.
 23. **Group controls carry their own label (RadioGroup, CheckboxGroup).** A
     group is named by a legend-like label over all its choices, not by `<label for>`
-    on one control, so it can't sit inside `Field`. It takes the *same* prop names as
+    on one control, so it can't sit inside `Field`. It takes the _same_ prop names as
     Field (`label`, `description`, `error`, `required`, `disabled`), so the API feels
     the same.
 24. **`isInvalid`: `false` switches React Aria's own checks off.** React Aria shows our
-    `isInvalid` if it's set, and its *built-in* checks only if it's `undefined`
+    `isInvalid` if it's set, and its _built-in_ checks only if it's `undefined`
     (`useFormValidationState`). So pick per component:
     - It has checks users need (DatePicker/DateRangePicker: a typed day outside
       `min`/`max`, an end before the start) → `isInvalid={invalid || field?.invalid || undefined}`.
@@ -159,15 +159,15 @@ src/index.ts          export * from './components/<name>'
       RadioGroup, CheckboxGroup) or it clamps instead (NumberField) → `?? false` is
       right: the app owns required messages (it passes `error`), so React Aria's default
       "Please select an item" never shows.
-    Audited 2026-10-12: only the date pickers needed `undefined`.
+      Audited 2026-10-12: only the date pickers needed `undefined`.
 25. **The ARIA role decides where Tab lands.** A `radiogroup`, a selectable `grid`
-    (TagGroup), `tablist` and a calendar all promise that Tab lands on the *chosen*
+    (TagGroup), `tablist` and a calendar all promise that Tab lands on the _chosen_
     item, not the first. React Aria does this for Tabs, TagGroup, Select, Calendar,
     but not for `ToggleButtonGroup` (toolbar behaviour), which needs an
     `onFocusCapture` redirect (SegmentedControl). Check it in Chromium for every new
-    composite: Tab in with the chosen item *not* first, and read `document.activeElement`.
+    composite: Tab in with the chosen item _not_ first, and read `document.activeElement`.
     Audited 2026-10-12: only SegmentedControl needed a fix.
-26. **Focus rings need room.** Our ring is an `outline` drawn *outside* the element
+26. **Focus rings need room.** Our ring is an `outline` drawn _outside_ the element
     (2px offset + 2px width = 4px). Any ancestor with `overflow: hidden`, including
     `truncate` and `overflow-auto` scroll areas, cuts it off. Don't wrap a focusable
     element in `truncate` (that's for text). When a clipping box must hold one, give it
@@ -196,7 +196,7 @@ src/index.ts          export * from './components/<name>'
   is still needed for things Testing Library doesn't wrap. Lint
   (`@typescript-eslint/no-floating-promises`) fails on any Promise that isn't awaited,
   such as `user.click(...)` without `await`, or `act(() => fireEvent.click(x))`. The
-  arrow *returns* the boolean from `fireEvent`, so `act` picks its Promise overload.
+  arrow _returns_ the boolean from `fireEvent`, so `act` picks its Promise overload.
 - jsdom gaps every real browser fills (e.g. `CSS.escape`, used by React Aria) go in
   `src/test-setup.ts`, which Vitest runs before every spec. Not in individual specs.
 - React Aria components: focus is
