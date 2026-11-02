@@ -1,0 +1,8 @@
+## 2026-11-02 — Pipeline Map step 5: the PipelineMap composite
+
+- **Built:** `PipelineMap` (fills its container, works out its viewBox from facility positions, measures its own width) with layer parts `PipelineMapSegments` and `PipelineMapFacilities`, shared through React context. Selection: click or Enter/Space (React Aria `usePress`), Escape clears; controlled (`selectedId` + `onSelect`) or uncontrolled. `BatchTrain` gained `insetPx` so batches stop short of the markers.
+- **Remember (the prediction): a wider map has *fewer* grid units per pixel.** `unitsPerPx = span / (width − 2 × padding)`: 12 units over 232px of room is 0.052; over 952px it's 0.013. Every px size is multiplied by it, so the 10px gap between pipe and batches comes out as 10px on screen at both widths — only distances between facilities grow.
+- **Remember: solve the circular dependency once, on paper.** Padding is in px, the viewBox in units, and the conversion depends on the viewBox width (which includes the padding). Writing it as one equation gave a closed form, so there's no measure → re-render → measure loop.
+- **Remember: filled vs hollow.** In dark mode the focus colour *is* the selection yellow, so colour can't tell them apart. Selection is a filled halo; focus is a hollow ring (focus colour with a page-coloured gap inside). A test pins it.
+- **Remember: controlled vs uncontrolled.** `selectedId !== undefined` means the parent owns the state; otherwise the map keeps its own. `onSelect` fires either way, so a parent can refuse a change (a test does).
+- Docs: https://react-spectrum.adobe.com/react-aria/usePress.html

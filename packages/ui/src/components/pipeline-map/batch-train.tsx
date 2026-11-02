@@ -68,6 +68,12 @@ export type BatchTrainProps = Omit<
    */
   offsetPx?: number;
   /**
+   * Leave this many px empty at both ends of the band, so it stops short of the
+   * facility markers instead of running under them. The batches still fill what's left.
+   * @default 0
+   */
+  insetPx?: number;
+  /**
    * What a screen reader says for the whole train, e.g. "3 batches: B-1042 SYN
    * 5,000 m³, …". Without it the train is decorative (`aria-hidden`).
    */
@@ -91,11 +97,16 @@ export function BatchTrain({
   products,
   unitsPerPx,
   offsetPx = 10,
+  insetPx = 0,
   label,
   className,
   ...props
 }: BatchTrainProps) {
-  const track = offsetPolyline(points, offsetPx * unitsPerPx);
+  const offsetTrack = offsetPolyline(points, offsetPx * unitsPerPx);
+  const fullLength = polylineLength(offsetTrack);
+  const inset = fullLength > 0 ? (insetPx * unitsPerPx) / fullLength : 0;
+  // Too short to inset? Draw nothing rather than a band pointing backwards.
+  const track = inset < 0.5 ? slicePolyline(offsetTrack, inset, 1 - inset) : [];
   const length = polylineLength(track);
   // Half a gap off each inner end, as a fraction of the track's length.
   const halfGap = length > 0 ? (GAP_PX * unitsPerPx) / 2 / length : 0;

@@ -82,6 +82,18 @@ describe('BatchTrain', () => {
     expect(c?.striped).toBe(true); // …plus stripes
   });
 
+  it('insetPx leaves a gap at both ends, and the batches fill the rest', () => {
+    const { container } = renderTrain({ insetPx: 10 }); // 10px × 0.1 = 1 unit each end
+    const [a, , c] = pieces(container);
+    expect(a?.d?.endsWith('L 9 0')).toBe(true); // was 10
+    expect(c?.d?.startsWith('M 1 0')).toBe(true); // was 0
+  });
+
+  it('draws nothing when the inset would swallow the whole pipe', () => {
+    const { container } = renderTrain({ insetPx: 60 }); // 6 units each end of a 10-unit pipe
+    expect(container.querySelectorAll('[data-batch]')).toHaveLength(0);
+  });
+
   it('keeps pixel sizes whatever the scale', () => {
     const { container } = renderTrain();
     for (const path of container.querySelectorAll('path')) {
