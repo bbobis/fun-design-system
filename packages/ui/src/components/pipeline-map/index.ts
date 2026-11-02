@@ -49,6 +49,13 @@ export {
   type ArrowKey,
 } from './pipeline-navigation';
 export {
+  batchMatches,
+  filterSummary,
+  isFilterActive,
+  segmentMatches,
+  type MapFilter,
+} from './pipeline-filter';
+export {
   traceNetwork,
   traceRole,
   traceSummary,

@@ -15,6 +15,13 @@ import { Tooltip } from '../tooltip/tooltip';
 import { BatchTrain } from './batch-train';
 import { FacilityNode, facilityLabel } from './facility-node';
 import { PipeSegment } from './pipe-segment';
+import {
+  batchMatches,
+  filterSummary,
+  isFilterActive,
+  segmentMatches,
+  type MapFilter,
+} from './pipeline-filter';
 import { isArrowKey, nextInDirection } from './pipeline-navigation';
 import {
   traceNetwork,
@@ -207,6 +214,8 @@ type MapContextValue = {
   select: (id: string | null) => void;
   /** The current trace, or `null`. Items outside it are dimmed. */
   trace: Trace | null;
+  /** The legend filter. Pipes and batches that don't match are dimmed. */
+  filter: MapFilter | undefined;
   /** The one item that is in the tab order (roving tabindex). */
   tabStopId: string | null;
   /** Remember the item the user moved to, so Tab comes back to it. */
@@ -244,7 +253,9 @@ function useWidth(ref: React.RefObject<Element | null>): number {
 
 export type PipelineMapProps = Omit<
   ComponentProps<'svg'>,
-  'children' | 'onSelect' | 'viewBox'
+  // `filter` is also a native SVG attribute (a string naming an SVG filter effect):
+  // ours replaces it, so TypeScript doesn't merge the two into `string & MapFilter`.
+  'children' | 'onSelect' | 'viewBox' | 'filter'
 > & {
   /** Facilities and segments to draw. Positions are hand-placed grid units. */
   network: PipelineNetwork;
@@ -268,6 +279,13 @@ export type PipelineMapProps = Omit<
   defaultTracedId?: string | null;
   /** Called when the user starts a trace (`T` on an item) or clears it (`T` again, or Escape). */
   onTraceChange?: (id: string | null) => void;
+  /**
+   * Brings some products and pipe statuses forward; everything else fades (never
+   * hidden). Usually set by `MapLegend`'s toggles: keep the filter in page state and
+   * pass it to both. Combines with a trace: an item stays bright only if it is in the
+   * trace **and** matches the filter.
+   */
+  filter?: MapFilter;
   /**
    * The layers to draw, in paint order. Defaults to pipes, then facilities on top.
    * SVG has no z-index: what comes later covers what came before.
@@ -304,6 +322,7 @@ export function PipelineMap({
   tracedId: tracedProp,
   defaultTracedId = null,
   onTraceChange,
+  filter,
   children,
   className,
   onKeyDown,
@@ -360,6 +379,18 @@ export function PipelineMap({
     // Keyed on the origin only: a new trace speaks, a data refresh doesn't.
   }, [trace?.origin]);
 
+  // Announce filter changes too: the legend says "SYN, pressed", this says what it did.
+  const filterKey = JSON.stringify(filter ?? {});
+  const firstFilter = useRef(true);
+  useEffect(() => {
+    if (firstFilter.current) {
+      firstFilter.current = false;
+      return;
+    }
+    setAnnouncement(filterSummary(network, filter));
+    // Keyed on the filter's contents, not its object identity (a new {} each render).
+  }, [filterKey]);
+
   // Roving tabindex: exactly one item has tabIndex 0. It's the last item the user
   // moved to; before that, the selection; before that, the first facility.
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -390,6 +421,7 @@ export function PipelineMap({
         selectedId,
         select,
         trace,
+        filter,
         tabStopId,
         setActiveId,
       }}
@@ -455,11 +487,17 @@ function SegmentItem({
     selectedId,
     select,
     trace,
+    filter,
     tabStopId,
     setActiveId,
   } = useMap('PipelineMapSegments');
   const selected = selectedId === segment.id;
   const role = trace ? traceRole(trace, segment.id) : null;
+  const filtering = isFilterActive(filter);
+  // Bright only if in the trace (when there is one) AND matching the filter (when on).
+  const dimmed =
+    (trace !== null && role === null) ||
+    (filtering && !segmentMatches(segment, filter));
   const label = segmentLabel(segment, facilitiesById);
   const ref = useRef<SVGGElement>(null);
   const { pressProps } = usePress({ ref, onPress: () => select(segment.id) });
@@ -485,7 +523,7 @@ function SegmentItem({
         data-segment-id={segment.id}
         data-selected={selected || undefined}
         data-trace={role ?? undefined}
-        data-dimmed={(trace && !role) || undefined}
+        data-dimmed={dimmed || undefined}
         className={cn('group cursor-pointer outline-hidden', DIMMED)}
       >
         {/* A wide invisible stroke: an easier target than a 2px line. */}
@@ -539,6 +577,11 @@ function SegmentItem({
           products={products}
           unitsPerPx={unitsPerPx}
           insetPx={TRAIN_INSET_PX}
+          // A bright pipe can still carry other products: fade just those batches.
+          // (A dimmed pipe is already faded as a whole; fading twice would vanish.)
+          isDimmed={
+            filtering && !dimmed ? (b) => !batchMatches(b, filter) : undefined
+          }
         />
       </g>
     </Tooltip>

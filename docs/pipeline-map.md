@@ -231,7 +231,39 @@ const [tracedId, setTracedId] = useState<string | null>(null);
 - Need the sets yourself (for a table filter, say)? `traceNetwork(network, id)` returns
   `{ origin, upstream, downstream }`.
 
-## 6. Keyboard and screen readers
+## 6. Legend filters
+
+Pass a filter to both the legend and the map, and the legend's Products and Pipe
+status rows become toggle buttons.
+
+```tsx
+const [filter, setFilter] = useState<MapFilter>({});
+
+<PipelineMap aria-label="Mainline" network={network} products={products} filter={filter} />
+<MapLegend products={products} filter={filter} onFilterChange={setFilter} />
+```
+
+| Filter                                         | Bright                                    | Faded                                                |
+| ---------------------------------------------- | ----------------------------------------- | ---------------------------------------------------- |
+| `{ products: ['SYN'] }`                        | pipes carrying SYN, and their SYN batches | other pipes; other products' batches in bright pipes |
+| `{ statuses: ['restricted', 'shutdown'] }`     | pipes in either status                    | running pipes                                        |
+| `{ products: ['SYN'], statuses: ['running'] }` | pipes matching **both**                   | everything else                                      |
+
+- **Fades, never hides.** The network keeps its shape, and faded items can still be
+  focused, selected and traced.
+- **Facilities aren't filtered.** Only pipes and batches are.
+- **With a trace**, an item stays bright only if it is in the trace **and** matches the
+  filter.
+- **"Other"** toggles every product past the sixth. A product missing from `products`
+  can't be filtered on: add it to the list.
+- **Empty list = no filter** (`{ products: [] }` shows everything).
+- **Keyboard:** each group is one Tab stop; ↑/↓ move, Space toggles. "Clear filters"
+  appears while a filter is on. The map announces the result ("Filter on: 2 of 5 pipes
+  match.").
+- **Escape on the map doesn't clear a filter.** The legend owns it, so the user clears
+  it where they set it.
+
+## 7. Keyboard and screen readers
 
 | Key           | Does                                                                                   |
 | ------------- | -------------------------------------------------------------------------------------- |

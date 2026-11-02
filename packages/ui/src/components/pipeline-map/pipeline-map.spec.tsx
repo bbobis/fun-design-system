@@ -11,6 +11,7 @@ import {
   segmentLabel,
 } from './pipeline-map';
 import { DEMO_NETWORK, DEMO_PRODUCTS } from './pipeline-map.fixtures';
+import type { MapFilter } from './pipeline-filter';
 import type { PipelineNetwork } from './pipeline-model';
 
 const renderMap = (
@@ -467,6 +468,66 @@ describe('PipelineMap', () => {
       expect(e?.getAttribute('class')).toContain(
         'data-dimmed:not-focus-visible:opacity-25',
       );
+    });
+  });
+
+  describe('legend filter', () => {
+    const dimmedSegments = (container: HTMLElement) =>
+      [...container.querySelectorAll('[data-segment-id][data-dimmed]')]
+        .map((el) => el.getAttribute('data-segment-id'))
+        .sort();
+
+    it('fades pipes that do not match, and other products inside matching pipes', () => {
+      const { container } = renderMap({ filter: { products: ['SYN'] } });
+      expect(dimmedSegments(container)).toEqual(['B-E', 'C-D', 'C-F']);
+      // A-B carries SYN and DIL: the pipe stays bright, its DIL batch fades.
+      const ab = container.querySelector('[data-segment-id="A-B"]');
+      expect(
+        ab?.querySelector('[data-batch="B-1042"]')?.hasAttribute('data-dimmed'),
+      ).toBe(true);
+      expect(
+        ab?.querySelector('[data-batch="B-1041"]')?.hasAttribute('data-dimmed'),
+      ).toBe(false);
+      // Facilities aren't filtered.
+      expect(
+        container.querySelector('[data-facility-id][data-dimmed]'),
+      ).toBeNull();
+    });
+
+    it('a dimmed pipe does not fade its batches a second time', () => {
+      const { container } = renderMap({ filter: { products: ['SYN'] } });
+      const cd = container.querySelector('[data-segment-id="C-D"]');
+      expect(cd?.querySelector('[data-batch][data-dimmed]')).toBeNull();
+    });
+
+    it('combines with a trace: bright only if in the trace AND matching', () => {
+      const { container } = renderMap({
+        tracedId: 'C',
+        filter: { statuses: ['running'] },
+      });
+      // Trace from C leaves out B-E; "running" leaves out B-C (restricted) and B-E.
+      expect(dimmedSegments(container)).toEqual(['B-C', 'B-E']);
+    });
+
+    it('announces what a filter change did', () => {
+      const { rerender } = renderMap();
+      const live = () =>
+        document.querySelector('[aria-live="polite"]')?.textContent;
+      expect(live()).toBe('');
+      const map = (filter: MapFilter) => (
+        <PipelineMap
+          network={DEMO_NETWORK}
+          products={DEMO_PRODUCTS}
+          aria-label="Demo network"
+          filter={filter}
+        />
+      );
+      rerender(map({ statuses: ['restricted', 'shutdown'] }));
+      expect(live()).toBe('Filter on: 2 of 5 pipes match.');
+      rerender(map({ statuses: ['restricted', 'shutdown'] })); // same contents: silent
+      expect(live()).toBe('Filter on: 2 of 5 pipes match.');
+      rerender(map({}));
+      expect(live()).toBe('Filter off.');
     });
   });
 });

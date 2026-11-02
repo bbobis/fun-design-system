@@ -1,5 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
+import { useState } from 'react';
 import { MapLegend } from './map-legend';
+import type { MapFilter } from './pipeline-filter';
 import { DEMO_PRODUCTS } from './pipeline-map.fixtures';
 
 const meta = {
@@ -29,5 +31,22 @@ export const ManyProducts: Story = {
   args: {
     products: ['SYN', 'DIL', 'SWT', 'CON', 'HVY', 'LSB', 'XTRA', 'YTRA'],
     productNames: undefined,
+  },
+};
+
+/**
+ * With `filter` + `onFilterChange`, Products and Pipe status become toggle buttons.
+ * Tab into a group, ↑/↓ to move, Space to toggle. "Clear filters" appears while one is on.
+ */
+export const AsFilters: Story = {
+  render: (args) => {
+    function Example() {
+      const [filter, setFilter] = useState<MapFilter>({
+        products: ['DIL'],
+        statuses: ['restricted'],
+      });
+      return <MapLegend {...args} filter={filter} onFilterChange={setFilter} />;
+    }
+    return <Example />;
   },
 };
