@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { useState } from 'react';
+import { useState, type SVGProps } from 'react';
 import { AlertDialog } from '../dialog';
 import {
   Menu,
@@ -172,6 +172,99 @@ export const WithSubmenu: Story = {
         </MenuSubmenu>
         <MenuSeparator />
         <MenuItem intent="danger">Delete</MenuItem>
+      </Menu>
+    </div>
+  ),
+};
+
+/** Story-only icons (16×16 strokes). Apps bring their own icon set. */
+function Svg({ d, ...props }: SVGProps<SVGSVGElement> & { d: string }) {
+  return (
+    <svg
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+    >
+      <path d={d} />
+    </svg>
+  );
+}
+const icons = {
+  edit: <Svg d="M10.5 2.5l3 3-8 8h-3v-3z" />,
+  copy: <Svg d="M5.5 5.5h8v8h-8zM2.5 10.5v-8h8" />,
+  send: <Svg d="M14 2 7 9M14 2l-4.5 12-2.5-5-5-2.5z" />,
+  download: <Svg d="M8 2.5v8M4.5 7 8 10.5 11.5 7M2.5 13.5h11" />,
+  archive: <Svg d="M2.5 3.5h11v3h-11zM3.5 6.5v7h9v-7M6.5 9h3" />,
+  trash: <Svg d="M2.5 4.5h11M6 4.5v-2h4v2M4 4.5l.5 9h7l.5-9" />,
+};
+
+/**
+ * `icon` on items: a small leading icon, hidden from screen readers (the text says
+ * it all). The danger item turns soft red when focused: press ↓ to Delete and see.
+ */
+export const WithIcons: Story = {
+  render: () => (
+    <Menu label="Actions" intent="secondary">
+      <MenuItem icon={icons.edit} shortcut="E">
+        Edit
+      </MenuItem>
+      <MenuItem icon={icons.copy} shortcut="Ctrl+D">
+        Duplicate
+      </MenuItem>
+      <MenuItem icon={icons.send}>Send reminder</MenuItem>
+      <MenuSubmenu label="Export as" icon={icons.download}>
+        <MenuItem>CSV</MenuItem>
+        <MenuItem>Excel</MenuItem>
+        <MenuItem>PDF</MenuItem>
+      </MenuSubmenu>
+      <MenuSeparator />
+      <MenuItem icon={icons.archive} disabled>
+        Archive
+      </MenuItem>
+      <MenuItem icon={icons.trash} intent="danger" shortcut="Del">
+        Delete
+      </MenuItem>
+    </Menu>
+  ),
+};
+
+/**
+ * `menuSize="sm"`: tighter rows for dense screens, like row actions in a data grid.
+ * Every item, header and submenu inside follows it.
+ */
+export const Dense: Story = {
+  render: () => (
+    <div className="flex w-96 items-center justify-between rounded-md border border-border px-3 py-1 text-xs">
+      <span>INV-10042 · Northwind Traders</span>
+      <Menu
+        label={<span aria-hidden="true">⋯</span>}
+        aria-label="Actions for INV-10042"
+        intent="ghost"
+        size="sm"
+        chevron={false}
+        placement="bottom end"
+        menuSize="sm"
+      >
+        <MenuSection title="Invoice">
+          <MenuItem icon={icons.edit}>Edit</MenuItem>
+          <MenuItem
+            icon={icons.send}
+            description="To billing@northwind.example"
+          >
+            Send reminder
+          </MenuItem>
+          <MenuItem icon={icons.download} shortcut="Ctrl+P">
+            Download PDF
+          </MenuItem>
+        </MenuSection>
+        <MenuSeparator />
+        <MenuItem icon={icons.trash} intent="danger">
+          Void
+        </MenuItem>
       </Menu>
     </div>
   ),

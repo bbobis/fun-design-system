@@ -6,6 +6,7 @@ import { Radio, RadioGroup } from '../radio-group';
 import { Field } from '../field';
 import { Input } from '../input';
 import { Select, type SelectOption } from '../select';
+import { Switch } from '../switch';
 import { Popover } from './popover';
 
 const meta: Meta<typeof Popover> = {
@@ -333,6 +334,75 @@ export const RecipeLongContent: Story = {
           </li>
         ))}
       </ol>
+    </Popover>
+  ),
+};
+
+const notifications = [
+  { who: 'Ana Ruiz', what: 'paid INV-10042', when: '2 min ago' },
+  { who: 'Northwind Traders', what: 'viewed INV-10039', when: '1 h ago' },
+  { who: 'Sam Lee', what: 'commented on INV-10031', when: 'Yesterday' },
+  { who: 'Initech', what: 'disputed INV-10027', when: 'Oct 29' },
+];
+
+/**
+ * `padding="none"` + `divided`: the rows run edge to edge and bring their own padding;
+ * the line shows where the header ends. Each row is a button whose focus ring sits
+ * inside it (`-outline-offset-2`), so the scrolling body doesn't clip it.
+ */
+export const EdgeToEdge: Story = {
+  render: () => (
+    <Popover
+      label="Notifications"
+      intent="secondary"
+      title="Notifications"
+      padding="none"
+      divided
+      closeButton
+      footer={({ close }) => (
+        <Button intent="ghost" size="sm" onClick={close}>
+          Mark all as read
+        </Button>
+      )}
+    >
+      {({ close }) => (
+        <ul className="divide-y divide-border">
+          {notifications.map((n) => (
+            <li key={n.what}>
+              <button
+                type="button"
+                onClick={close}
+                className="flex w-full flex-col items-start px-4 py-2.5 text-start outline-hidden hover:bg-surface focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus-ring"
+              >
+                <span>
+                  <span className="font-medium">{n.who}</span> {n.what}
+                </span>
+                <span className="text-xs text-fg-muted">{n.when}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Popover>
+  ),
+};
+
+/** `padding="sm"`: a small panel of quick settings. Less air, same structure. */
+export const Compact: Story = {
+  render: () => (
+    <Popover
+      label="Display"
+      intent="secondary"
+      title="Display"
+      padding="sm"
+      panelSize="sm"
+    >
+      <div className="flex flex-col gap-2">
+        <Switch size="sm">Show totals row</Switch>
+        <Switch size="sm" defaultChecked>
+          Wrap long text
+        </Switch>
+      </div>
     </Popover>
   ),
 };

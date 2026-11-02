@@ -685,3 +685,10 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Remember: cva `compoundVariants`** apply a class only when *several* variants match. Drawer's `size` means width on the sides and max height on top/bottom: `{ placement: ['top','bottom'], size: 'sm', className: 'max-h-[40dvh]' }`. One prop, two meanings, no `if`s in the JSX.
 - **Gotcha:** `flex-1` on items in a *column* sets their height basis to 0, which squashed the stacked buttons. Use `sm:*:flex-1` (row only); in a column the items stretch to full width anyway. `flex-col-reverse` puts Confirm on top visually, but Tab still goes Cancel → Confirm.
 - Docs: https://cva.style/docs/getting-started/variants#compound-variants
+
+## 2026-11-02 — Menu / Popover: icons, density, danger focus, padding
+- **Built:** `MenuItem` and `MenuSubmenu` take an `icon`. `Menu` takes `menuSize` (`sm` / `md`), and every item, header and submenu reads it from a context. Danger items get a soft red row when focused. `Popover` takes `padding` (`none` / `sm` / `md`) and `divided`. Defaults are unchanged.
+- **Remember (the prediction): the icon is decoration.** The wrapper is `aria-hidden`, so a screen reader says "Delete", not "trash, Delete". When the text already says what the item does, the icon adds nothing for people who can't see it. A test checks the name and the `aria-hidden`.
+- **Remember: context reaches React Aria collection items.** `Menu` puts `MenuSizeContext.Provider` around `AriaMenu`, and the items still read it, even though React Aria renders them twice (once to build the collection, once for real). Items outside a Menu (CommandPalette) get the context default, `md`.
+- **Remember: `padding="none"` moves the job of the focus ring.** The body scrolls, so it clips anything outside it. Rows inside must draw their ring inward (`focus-visible:-outline-offset-2`).
+- Docs: https://react-spectrum.adobe.com/react-aria/Menu.html#content

@@ -1,4 +1,9 @@
-import type { ReactNode, SVGProps } from 'react';
+import {
+  createContext,
+  useContext,
+  type ReactNode,
+  type SVGProps,
+} from 'react';
 import {
   Header,
   Keyboard,
@@ -23,9 +28,82 @@ import {
 } from '../button/trigger-button';
 import { popoverMotion } from '../../utils/motion';
 
+/** Row density. `sm` for dense screens (data-grid row actions, toolbars). */
+export type MenuSize = 'sm' | 'md';
+
+/*
+ * Menu sets the size once; every item, header, submenu and separator inside reads it
+ * from context (the same idea as RadioGroup's size). The default ('md') is what an
+ * item gets with no Menu around it, e.g. inside CommandPalette.
+ */
+const MenuSizeContext = createContext<MenuSize>('md');
+
+const sizes = {
+  md: {
+    panel: 'min-w-44',
+    item: 'gap-2 px-2 py-1.5 text-sm',
+    icon: '*:size-4',
+    header: 'px-2 pt-1.5 pb-1 text-xs',
+  },
+  sm: {
+    panel: 'min-w-36',
+    item: 'gap-1.5 px-1.5 py-1 text-xs',
+    icon: '*:size-3.5',
+    header: 'px-1.5 pt-1 pb-0.5 text-[0.6875rem]',
+  },
+} as const;
+
+/** Classes shared by MenuItem and the item that opens a submenu. */
+const itemClass = (size: MenuSize, intent: 'default' | 'danger' = 'default') =>
+  cn(
+    'flex cursor-default items-center rounded outline-hidden',
+    sizes[size].item,
+    'data-focused:bg-surface',
+    // Danger: red text, and a soft red row when focused (not gray), so it's clear
+    // *before* Enter that this one destroys something.
+    intent === 'danger' &&
+      'text-fg-danger data-focused:bg-danger-soft data-focused:text-on-danger-soft',
+    'data-disabled:cursor-not-allowed data-disabled:opacity-50',
+  );
+
+/**
+ * The leading icon. aria-hidden: the label already says what the item does, so a
+ * screen reader reads "Delete", not "trash, Delete". Muted, except on danger items,
+ * where it takes the red text color.
+ */
+function ItemIcon({
+  icon,
+  size,
+  danger,
+}: {
+  icon: ReactNode;
+  size: MenuSize;
+  danger?: boolean;
+}) {
+  return (
+    <span
+      aria-hidden="true"
+      data-menu-icon=""
+      className={cn(
+        'flex shrink-0 items-center justify-center',
+        sizes[size].icon,
+        danger ? 'text-current' : 'text-fg-muted',
+      )}
+    >
+      {icon}
+    </span>
+  );
+}
+
 export type MenuProps = TriggerButtonProps & {
   /** Where the menu opens, relative to the trigger. Flips if there's no room. @default 'bottom start' */
   placement?: TriggerPlacement;
+  /**
+   * Row density for every item inside: `md` for most menus, `sm` for dense screens
+   * (row actions in a data grid). Not the trigger's size: that's `size`.
+   * @default 'md'
+   */
+  menuSize?: MenuSize;
   /** `MenuItem`, `MenuSection` and `MenuSeparator` elements. */
   children: ReactNode;
 };
@@ -49,6 +127,7 @@ export type MenuProps = TriggerButtonProps & {
  */
 export function Menu({
   placement = 'bottom start',
+  menuSize = 'md',
   children,
   ...trigger
 }: MenuProps) {
@@ -59,13 +138,16 @@ export function Menu({
         placement={placement}
         offset={4}
         className={cn(
-          'min-w-44 rounded-md border border-border bg-bg p-1 text-fg shadow-lg outline-hidden',
+          'rounded-md border border-border bg-bg p-1 text-fg shadow-lg outline-hidden',
+          sizes[menuSize].panel,
           popoverMotion,
         )}
       >
-        <AriaMenu className="max-h-[inherit] overflow-auto outline-hidden">
-          {children}
-        </AriaMenu>
+        <MenuSizeContext.Provider value={menuSize}>
+          <AriaMenu className="max-h-[inherit] overflow-auto outline-hidden">
+            {children}
+          </AriaMenu>
+        </MenuSizeContext.Provider>
       </Popover>
     </MenuTrigger>
   );
@@ -83,8 +165,17 @@ export type MenuItemProps = {
    * router through our `RouterProvider`, like our other links.
    */
   href?: string;
-  /** `danger` for destructive actions (Delete). Red text, not a red background. */
+  /**
+   * `danger` for destructive actions (Delete): red text, and a soft red row when
+   * focused.
+   */
   intent?: 'default' | 'danger';
+  /**
+   * A small icon before the text (an SVG; sized for you). Decorative: hidden from
+   * screen readers, so the text must say it all. If one item in a group has an icon,
+   * give them all one, or the text won't line up.
+   */
+  icon?: ReactNode;
   /** Second line in smaller text ("Only the selected rows"). */
   description?: string;
   /** A keyboard shortcut to show on the right ("Ctrl+D"). Display only: it doesn't bind the key. */
@@ -111,7 +202,9 @@ export function MenuItem({
   shortcut,
   keywords,
   disabled,
+  icon,
 }: MenuItemProps) {
+  const size = useContext(MenuSizeContext);
   return (
     <AriaMenuItem
       id={id ?? children}
@@ -123,12 +216,7 @@ export function MenuItem({
       onAction={onAction}
       href={href}
       isDisabled={disabled}
-      className={cn(
-        'flex cursor-default items-center gap-2 rounded px-2 py-1.5 text-sm outline-hidden',
-        'data-focused:bg-surface',
-        intent === 'danger' && 'text-fg-danger',
-        'data-disabled:cursor-not-allowed data-disabled:opacity-50',
-      )}
+      className={itemClass(size, intent)}
     >
       {({ selectionMode, isSelected }) => (
         <>
@@ -143,18 +231,32 @@ export function MenuItem({
                 ))}
             </span>
           )}
+          {icon && (
+            <ItemIcon icon={icon} size={size} danger={intent === 'danger'} />
+          )}
           <span className="flex min-w-0 flex-1 flex-col">
             <Text slot="label" className="truncate">
               {children}
             </Text>
             {description && (
-              <Text slot="description" className="text-xs text-fg-muted">
+              <Text
+                slot="description"
+                className={cn(
+                  'text-fg-muted',
+                  size === 'sm' ? 'text-[0.6875rem]' : 'text-xs',
+                )}
+              >
                 {description}
               </Text>
             )}
           </span>
           {shortcut && (
-            <Keyboard className="ms-4 font-mono text-xs text-fg-muted">
+            <Keyboard
+              className={cn(
+                'ms-4 font-mono text-fg-muted',
+                size === 'sm' ? 'text-[0.6875rem]' : 'text-xs',
+              )}
+            >
               {shortcut}
             </Keyboard>
           )}
@@ -189,6 +291,7 @@ export function MenuSection({
   onSelectionChange,
   children,
 }: MenuSectionProps) {
+  const size = useContext(MenuSizeContext);
   return (
     <AriaMenuSection
       selectionMode={selectionMode}
@@ -206,7 +309,7 @@ export function MenuSection({
       className="[&:not(:first-child)]:mt-1"
     >
       {title && (
-        <Header className="px-2 pt-1.5 pb-1 text-xs font-medium text-fg-muted">
+        <Header className={cn('font-medium text-fg-muted', sizes[size].header)}>
           {title}
         </Header>
       )}
@@ -221,6 +324,8 @@ export type MenuSubmenuProps = {
   /** `MenuItem`s (and sections or separators) inside the submenu. */
   children: ReactNode;
   disabled?: boolean;
+  /** A small decorative icon before the label, like MenuItem's. */
+  icon?: ReactNode;
 };
 
 /**
@@ -240,7 +345,13 @@ export type MenuSubmenuProps = {
  *   <MenuItem onAction={exportPdf}>PDF</MenuItem>
  * </MenuSubmenu>
  */
-export function MenuSubmenu({ label, children, disabled }: MenuSubmenuProps) {
+export function MenuSubmenu({
+  label,
+  children,
+  disabled,
+  icon,
+}: MenuSubmenuProps) {
+  const size = useContext(MenuSizeContext);
   return (
     <SubmenuTrigger>
       {/* First child: the item that opens it. React Aria adds aria-haspopup and
@@ -249,12 +360,9 @@ export function MenuSubmenu({ label, children, disabled }: MenuSubmenuProps) {
         id={label}
         textValue={label}
         isDisabled={disabled}
-        className={cn(
-          'flex cursor-default items-center gap-2 rounded px-2 py-1.5 text-sm outline-hidden',
-          'data-focused:bg-surface data-open:bg-surface',
-          'data-disabled:cursor-not-allowed data-disabled:opacity-50',
-        )}
+        className={cn(itemClass(size), 'data-open:bg-surface')}
       >
+        {icon && <ItemIcon icon={icon} size={size} />}
         <span className="min-w-0 flex-1 truncate">{label}</span>
         <ChevronIcon className="size-4 text-fg-muted rtl:-scale-x-100" />
       </AriaMenuItem>
@@ -263,7 +371,8 @@ export function MenuSubmenu({ label, children, disabled }: MenuSubmenuProps) {
       <Popover
         offset={-4}
         className={cn(
-          'min-w-40 rounded-md border border-border bg-bg p-1 text-fg shadow-lg outline-hidden',
+          'rounded-md border border-border bg-bg p-1 text-fg shadow-lg outline-hidden',
+          size === 'sm' ? 'min-w-32' : 'min-w-40',
           popoverMotion,
         )}
       >
