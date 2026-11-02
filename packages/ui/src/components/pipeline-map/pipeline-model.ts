@@ -95,3 +95,14 @@ export interface PipelineNetwork {
   facilities: Facility[];
   segments: Segment[];
 }
+
+/**
+ * The network at one moment, for `PipelineTimeline`. Keep facility, segment and batch
+ * ids the same across snapshots: that's how selection, a trace and a followed batch
+ * carry over from one moment to the next.
+ */
+export interface PipelineSnapshot {
+  /** When, as an ISO 8601 date-time ("2026-11-02T06:00:00Z"). */
+  at: string;
+  network: PipelineNetwork;
+}
