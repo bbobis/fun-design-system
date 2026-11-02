@@ -1,5 +1,5 @@
 import { cva } from 'class-variance-authority';
-import type { ReactNode, SVGProps } from 'react';
+import type { ReactNode } from 'react';
 import {
   Button as AriaButton,
   Text,
@@ -12,6 +12,7 @@ import {
   UNSTABLE_ToastRegion as AriaToastRegion,
 } from 'react-aria-components';
 import { cn } from '../../utils/cn';
+import { statusIcons, XIcon } from '../alert/status-icons';
 
 export type ToastTone = 'neutral' | 'success' | 'info' | 'warning' | 'danger';
 
@@ -99,12 +100,12 @@ const toneColors = cva('', {
       neutral:
         '[--toast-soft:var(--color-surface)] [--toast-on-soft:var(--color-fg)] [--toast-solid:var(--color-fg)] [--toast-on-solid:var(--color-bg)] [--toast-strong:var(--color-border-strong)]',
       success:
-        '[--toast-soft:var(--color-success-soft)] [--toast-on-soft:var(--color-on-success-soft)] [--toast-solid:var(--color-success)] [--toast-on-solid:var(--color-on-success)] [--toast-strong:var(--color-success)]',
-      info: '[--toast-soft:var(--color-info-soft)] [--toast-on-soft:var(--color-on-info-soft)] [--toast-solid:var(--color-info)] [--toast-on-solid:var(--color-on-info)] [--toast-strong:var(--color-info)]',
+        '[--toast-soft:var(--color-success-soft)] [--toast-on-soft:var(--color-on-success-soft)] [--toast-solid:var(--color-success)] [--toast-on-solid:var(--color-on-success)] [--toast-strong:var(--color-success)] [--toast-icon:var(--color-on-success-soft)]',
+      info: '[--toast-soft:var(--color-info-soft)] [--toast-on-soft:var(--color-on-info-soft)] [--toast-solid:var(--color-info)] [--toast-on-solid:var(--color-on-info)] [--toast-strong:var(--color-info)] [--toast-icon:var(--color-on-info-soft)]',
       warning:
-        '[--toast-soft:var(--color-warning-soft)] [--toast-on-soft:var(--color-on-warning-soft)] [--toast-solid:var(--color-warning)] [--toast-on-solid:var(--color-on-warning)] [--toast-strong:var(--color-warning)]',
+        '[--toast-soft:var(--color-warning-soft)] [--toast-on-soft:var(--color-on-warning-soft)] [--toast-solid:var(--color-warning)] [--toast-on-solid:var(--color-on-warning)] [--toast-strong:var(--color-warning)] [--toast-icon:var(--color-on-warning-soft)]',
       danger:
-        '[--toast-soft:var(--color-danger-soft)] [--toast-on-soft:var(--color-on-danger-soft)] [--toast-solid:var(--color-danger)] [--toast-on-solid:var(--color-on-danger)] [--toast-strong:var(--color-danger)]',
+        '[--toast-soft:var(--color-danger-soft)] [--toast-on-soft:var(--color-on-danger-soft)] [--toast-solid:var(--color-danger)] [--toast-on-solid:var(--color-on-danger)] [--toast-strong:var(--color-danger)] [--toast-icon:var(--color-on-danger-soft)]',
     },
   },
 });
@@ -140,6 +141,28 @@ const toneWord: Record<ToastTone, string | null> = {
   danger: 'Error',
 };
 
+export type ToastPlacement =
+  | 'top-start'
+  | 'top-center'
+  | 'top-end'
+  | 'bottom-start'
+  | 'bottom-center'
+  | 'bottom-end';
+
+/**
+ * Where the stack sits. `start`/`end` are logical (left/right in English, swapped in
+ * right-to-left languages). The newest toast is always nearest the screen edge:
+ * React Aria lists newest first, so the bottom stacks use `flex-col-reverse`.
+ */
+const placementClass: Record<ToastPlacement, string> = {
+  'top-start': 'top-4 start-4 flex-col',
+  'top-center': 'top-4 left-1/2 -translate-x-1/2 flex-col',
+  'top-end': 'top-4 end-4 flex-col',
+  'bottom-start': 'bottom-4 start-4 flex-col-reverse',
+  'bottom-center': 'bottom-4 left-1/2 -translate-x-1/2 flex-col-reverse',
+  'bottom-end': 'bottom-4 end-4 flex-col-reverse',
+};
+
 export type ToastRegionProps = {
   /**
    * How every toast looks. Set once here, not per toast: the code that *sends* a toast
@@ -152,7 +175,17 @@ export type ToastRegionProps = {
   variant?: ToastVariant;
   /** `sm`: tighter padding and smaller text, for dense apps. @default 'md' */
   size?: 'sm' | 'md';
-  /** Classes for the region (e.g. a different corner). Default: bottom-right. */
+  /**
+   * Where toasts appear. Top for apps with a busy bottom edge (chat inputs, a sticky
+   * action bar); center for mobile-like layouts. @default 'bottom-end'
+   */
+  placement?: ToastPlacement;
+  /**
+   * Show the tone's icon (the same ones as Alert) before the title. Neutral toasts
+   * get a bell. @default false
+   */
+  icons?: boolean;
+  /** Extra classes for the region. */
   className?: string;
 };
 
@@ -169,6 +202,8 @@ export type ToastRegionProps = {
 export function ToastRegion({
   variant = 'bar',
   size = 'md',
+  placement = 'bottom-end',
+  icons = false,
   className,
 }: ToastRegionProps) {
   // On a coloured fill, grey text and the yellow link underline lose contrast, so the
@@ -178,7 +213,8 @@ export function ToastRegion({
     <AriaToastRegion
       queue={queue}
       className={cn(
-        'fixed end-4 bottom-4 z-50 flex w-[min(24rem,calc(100vw-2rem))] flex-col-reverse gap-2',
+        'fixed z-50 flex w-[min(24rem,calc(100vw-2rem))] gap-2',
+        placementClass[placement],
         // F6 focuses the region itself: show where focus went (WCAG 2.4.7).
         'rounded-lg outline-hidden data-focus-visible:outline-2 data-focus-visible:outline-offset-4 data-focus-visible:outline-solid data-focus-visible:outline-focus-ring',
         className,
@@ -187,6 +223,7 @@ export function ToastRegion({
       {({ toast: item }) => {
         const tone = item.content.tone ?? 'neutral';
         const word = toneWord[tone];
+        const Icon = statusIcons[tone];
         return (
           <AriaToast
             toast={item}
@@ -204,6 +241,18 @@ export function ToastRegion({
                   tone === 'neutral'
                     ? 'bg-border-strong'
                     : 'bg-(--toast-strong)',
+                )}
+              />
+            )}
+            {icons && (
+              <Icon
+                className={cn(
+                  'size-4 shrink-0',
+                  size === 'md' ? 'mt-0.5' : 'mt-px',
+                  // On the page's background, the tone's readable colour; on a
+                  // coloured fill, the toast's own text colour.
+                  !onColour && tone !== 'neutral' && 'text-(--toast-icon)',
+                  !onColour && tone === 'neutral' && 'text-fg-muted',
                 )}
               />
             )}
@@ -273,21 +322,5 @@ function ToastAction({
     >
       {children}
     </AriaButton>
-  );
-}
-
-function XIcon(props: SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      aria-hidden="true"
-      viewBox="0 0 16 16"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.75}
-      strokeLinecap="round"
-      {...props}
-    >
-      <path d="m4.5 4.5 7 7m0-7-7 7" />
-    </svg>
   );
 }

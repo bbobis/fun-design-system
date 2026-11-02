@@ -63,9 +63,10 @@ describe('Alert', () => {
     const box = () => container.firstElementChild as HTMLElement;
     expect(box().className).toContain('bg-bg');
     expect(box().className).toContain('border-(--alert-strong-line)');
-    expect(box().querySelector('svg')?.getAttribute('class')).toContain(
-      'text-(--alert-icon)',
-    );
+    // The colour is on the icon's wrapper, so a custom `icon` gets it too.
+    expect(
+      box().querySelector('svg')?.parentElement?.getAttribute('class'),
+    ).toContain('text-(--alert-icon)');
     rerender(<Alert tone="danger" variant="solid" title="Payment failed" />);
     expect(box().className).toContain('bg-(--alert-solid)');
     expect(box().className).toContain('text-(--alert-on-solid)');
