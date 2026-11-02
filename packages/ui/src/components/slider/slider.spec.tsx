@@ -242,3 +242,26 @@ describe('Slider', () => {
     expect((container.firstChild as HTMLElement).className).toContain('w-64');
   });
 });
+
+describe('getValueLabel', () => {
+  const times = ['06:00', '07:00', '08:00'];
+  it('puts each value into words: next to the label and on the thumb', async () => {
+    const user = userEvent.setup();
+    render(
+      <Slider
+        label="Snapshot time"
+        min={0}
+        max={2}
+        defaultValue={0}
+        getValueLabel={(i) => times[i] ?? ''}
+      />,
+    );
+    const thumb = screen.getByRole('slider', { name: 'Snapshot time' });
+    expect(thumb.getAttribute('aria-valuetext')).toBe('06:00');
+    expect(screen.getByText('06:00')).toBeTruthy(); // the visible output
+    await user.click(thumb);
+    await user.keyboard('{ArrowRight}');
+    expect(thumb.getAttribute('aria-valuetext')).toBe('07:00');
+    expect(screen.getByText('07:00')).toBeTruthy();
+  });
+});

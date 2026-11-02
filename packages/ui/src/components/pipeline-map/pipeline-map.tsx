@@ -230,6 +230,8 @@ type MapContextValue = {
   filter: MapFilter | undefined;
   /** The followed batch, or `null`. Pipes without it, and every other batch, are dimmed. */
   followed: BatchLocation | null;
+  /** A batch is followed but no pipe holds it now (delivered, or not pumped yet). */
+  followMissing: boolean;
   /** Follows a batch by name (`null` stops). */
   follow: (name: string | null) => void;
   /** The one item that is in the tab order (roving tabindex). */
@@ -486,16 +488,31 @@ export function PipelineMap({
     // Keyed on the origin only: a new trace speaks, a data refresh doesn't.
   }, [trace?.origin]);
 
-  // Announce following. The ref remembers the last name, to say what stopped.
-  const lastFollowed = useRef<string | null>(followedName);
+  // Announce following. The ref remembers the last name (to say what stopped) and
+  // whether it was in the pipes (the data can change under it: the time slider).
+  const found = followed !== null;
+  const lastFollow = useRef({ name: followedName, found });
   useEffect(() => {
-    const previous = lastFollowed.current;
-    lastFollowed.current = followedName;
-    if (previous === followedName) return; // first render, or no change
-    setAnnouncement(
-      followed ? batchSummary(followed) : `Stopped following ${previous}.`,
-    );
-  }, [followedName]);
+    const previous = lastFollow.current;
+    lastFollow.current = { name: followedName, found };
+    if (previous.name === followedName && previous.found === found) return;
+    if (followedName === null) {
+      setAnnouncement(`Stopped following ${previous.name}.`);
+    } else if (previous.name === followedName) {
+      // Same batch, new data: it left the network, or came back.
+      setAnnouncement(
+        found
+          ? `${followedName} is back in the pipes.`
+          : `${followedName} isn't in the pipes at this time.`,
+      );
+    } else {
+      setAnnouncement(
+        followed
+          ? batchSummary(followed)
+          : `${followedName} isn't in the pipes at this time.`,
+      );
+    }
+  }, [followedName, found]);
 
   // Announce filter changes too: the legend says "SYN, pressed", this says what it did.
   const filterKey = JSON.stringify(filter ?? {});
@@ -590,6 +607,7 @@ export function PipelineMap({
         trace,
         filter,
         followed,
+        followMissing: followedName !== null && !found,
         follow,
         tabStopId,
         openMenu,
@@ -748,6 +766,7 @@ function SegmentItem({
     trace,
     filter,
     followed,
+    followMissing,
     follow,
     tabStopId,
     onItemFocus,
@@ -763,7 +782,10 @@ function SegmentItem({
   const dimmed =
     (trace !== null && role === null) ||
     (filtering && !segmentMatches(segment, filter)) ||
-    (followed !== null && !holdsFollowed);
+    (followed !== null && !holdsFollowed) ||
+    // Following a batch no pipe holds: nothing is "the batch", so every pipe fades
+    // (the follow is kept: drag the timeline back and it lights up again).
+    followMissing;
   /** Inside a bright pipe: fade batches that miss the filter or aren't followed. */
   const batchDimmed = (b: Batch) =>
     (filtering && !batchMatches(b, filter)) ||

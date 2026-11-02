@@ -8,11 +8,16 @@ import {
 } from './pipeline-map';
 import { PipelineMapDetails } from './pipeline-map-details';
 import { PipelineMapSearch } from './pipeline-map-search';
+import { PipelineTimeline } from './pipeline-timeline';
 import { Button } from '../button/button';
 import { MapLegend } from './map-legend';
 import { PipelineMapTable } from './pipeline-map-table';
 import type { MapFilter } from './pipeline-filter';
-import { DEMO_NETWORK, DEMO_PRODUCTS } from './pipeline-map.fixtures';
+import {
+  DEMO_NETWORK,
+  DEMO_PRODUCTS,
+  DEMO_TIMELINE,
+} from './pipeline-map.fixtures';
 
 const meta = {
   title: 'Pipeline Map/PipelineMap',
@@ -327,6 +332,57 @@ export const WithContextMenu: Story = {
             onFollowBatch={setBatch}
             className="rounded-lg border border-border p-4 focus-visible:outline-2 focus-visible:outline-focus-ring"
           />
+        </div>
+      );
+    }
+    return <Example />;
+  },
+};
+
+/**
+ * **Time slider.** Five made-up hourly snapshots, following batch B-1041 (SYN). Drag
+ * the slider, or focus it and use ←/→: it straddles Station B at 06:00, fills B-C at
+ * 08:00, enters C-D at 09:00, and is delivered to Tank Farm D by 10:00 (the follow
+ * stays on, every pipe fades, and a screen reader hears it). Tank T-1 rises as it lands.
+ *
+ * The page keeps the index and gives the map `snapshots[index].network`. Ids stay the
+ * same across snapshots, so selection, trace and follow carry over.
+ */
+export const TimeSlider: Story = {
+  render: (args) => {
+    function Example() {
+      const [index, setIndex] = useState(0);
+      const [batch, setBatch] = useState<string | null>('B-1041');
+      const [selectedId, setSelectedId] = useState<string | null>('D');
+      const network =
+        (DEMO_TIMELINE[index] ?? DEMO_TIMELINE[0])?.network ?? DEMO_NETWORK;
+      return (
+        <div className="flex flex-col gap-6">
+          <PipelineTimeline
+            snapshots={DEMO_TIMELINE}
+            index={index}
+            onIndexChange={setIndex}
+            timeZone="UTC"
+            className="max-w-md"
+          />
+          <div className="grid gap-6 lg:grid-cols-[1fr_18rem]">
+            <PipelineMap
+              {...args}
+              network={network}
+              followedBatch={batch}
+              onFollowBatchChange={setBatch}
+              selectedId={selectedId}
+              onSelect={setSelectedId}
+            />
+            <PipelineMapDetails
+              network={network}
+              selectedId={selectedId}
+              onSelect={setSelectedId}
+              followedBatch={batch}
+              onFollowBatch={setBatch}
+              className="rounded-lg border border-border p-4"
+            />
+          </div>
         </div>
       );
     }

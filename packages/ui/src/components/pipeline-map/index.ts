@@ -4,6 +4,7 @@ export type {
   FacilityKind,
   LabelPlacement,
   PipelineNetwork,
+  PipelineSnapshot,
   Point,
   Segment,
   SegmentStatus,
@@ -86,3 +87,7 @@ export {
   connectedPipes,
   type PipelineMapDetailsProps,
 } from './pipeline-map-details';
+export {
+  PipelineTimeline,
+  type PipelineTimelineProps,
+} from './pipeline-timeline';

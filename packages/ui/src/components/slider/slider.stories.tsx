@@ -167,3 +167,18 @@ export const Keyboard: Story = {
     />
   ),
 };
+
+/**
+ * Steps that aren't numbers: `getValueLabel` turns 0–4 into times, shown next to the
+ * label and read out on the thumb ("08:00", not "2").
+ */
+export const ValueLabels: Story = {
+  args: {
+    label: 'Snapshot time',
+    min: 0,
+    max: 4,
+    defaultValue: 2,
+    getValueLabel: (i: number) =>
+      ['06:00', '07:00', '08:00', '09:00', '10:00'][i] ?? '',
+  },
+};

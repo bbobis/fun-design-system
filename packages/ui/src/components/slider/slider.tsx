@@ -1,10 +1,11 @@
 import { cva, type VariantProps } from 'class-variance-authority';
-import { useId, type ReactNode } from 'react';
+import { useContext, useId, type ReactNode } from 'react';
 import {
   Label,
   Slider as AriaSlider,
   SliderFill,
   SliderOutput,
+  SliderStateContext,
   SliderThumb,
   SliderTrack,
   Text,
@@ -74,6 +75,12 @@ export type SliderProps<T extends SliderValue = number> = VariantProps<
    */
   formatOptions?: Intl.NumberFormatOptions;
   /**
+   * Words for a value, when a number isn't what the steps mean: `(i) => times[i]`
+   * turns 0, 1, 2 into "06:00", "07:00", "08:00". Shown next to the label and read
+   * out on the thumb (`aria-valuetext`). Wins over `formatOptions`.
+   */
+  getValueLabel?: (value: number) => string;
+  /**
    * Range only: names for the two thumbs, read out with the label
    * ("Minimum Price"). @default ['Minimum', 'Maximum']
    */
@@ -85,6 +92,32 @@ export type SliderProps<T extends SliderValue = number> = VariantProps<
   disabled?: boolean;
   className?: string;
 };
+
+/**
+ * Swaps how values are put into words, for everything inside (the output and the
+ * thumbs). React Aria's slider only formats numbers (`Intl.NumberFormat`), and its
+ * thumbs read their `aria-valuetext` from the slider's state, which we can reach
+ * through React Aria's own `SliderStateContext`.
+ *
+ * We replace the one method on that same object instead of providing a copy: React
+ * Aria keeps internal data in a WeakMap keyed by this exact state object, so a copy is
+ * rejected ("Unknown slider state"). The state is rebuilt on every render, so the
+ * change never outlives the render that made it.
+ */
+function ValueLabels({
+  getValueLabel,
+  children,
+}: {
+  getValueLabel?: (value: number) => string;
+  children: ReactNode;
+}) {
+  const state = useContext(SliderStateContext);
+  if (getValueLabel && state) {
+    state.getThumbValueLabel = (i: number) =>
+      getValueLabel(state.values[i] ?? 0);
+  }
+  return <>{children}</>;
+}
 
 /**
  * Pick a number, or a range of numbers, by dragging along a track. Good when the exact
@@ -109,6 +142,7 @@ export function Slider<T extends SliderValue = number>({
   max = 100,
   step = 1,
   formatOptions,
+  getValueLabel,
   thumbLabels = ['Minimum', 'Maximum'],
   hideValue = false,
   name,
@@ -140,42 +174,47 @@ export function Slider<T extends SliderValue = number>({
       isDisabled={disabled}
       className={cn('group flex w-full flex-col gap-2', className)}
     >
-      <div className="flex items-baseline justify-between gap-3">
-        <Label className="text-sm font-medium text-fg group-data-disabled:text-fg-muted">
-          {label}
-        </Label>
-        {!hideValue && (
-          // "40" or "20 – 80", formatted by React Aria.
-          <SliderOutput className="text-sm text-fg-muted tabular-nums" />
-        )}
-      </div>
-      {/* py: the thumbs are taller than the track; this keeps them inside the box. */}
-      <SliderTrack
-        className={cn('flex items-center', size === 'sm' ? 'py-1.5' : 'py-2')}
-      >
-        <div className={trackVariants({ size })}>
-          <SliderFill className="rounded-full bg-primary group-data-disabled:bg-fg-muted" />
-          {(isRange ? [0, 1] : [0]).map((index) => (
-            <SliderThumb
-              key={index}
-              index={index}
-              name={name}
-              aria-label={isRange ? thumbLabels[index] : undefined}
-              aria-describedby={description ? descriptionId : undefined}
-              className={thumbVariants({ size })}
-            />
-          ))}
+      <ValueLabels getValueLabel={getValueLabel}>
+        <div className="flex items-baseline justify-between gap-3">
+          <Label className="text-sm font-medium text-fg group-data-disabled:text-fg-muted">
+            {label}
+          </Label>
+          {!hideValue && (
+            // "40" or "20 – 80", formatted by React Aria.
+            <SliderOutput className="text-sm text-fg-muted tabular-nums">
+              {getValueLabel &&
+                (({ state }) => state.values.map(getValueLabel).join(' – '))}
+            </SliderOutput>
+          )}
         </div>
-      </SliderTrack>
-      {description && (
-        <Text
-          id={descriptionId}
-          slot="description"
-          className="text-sm text-fg-muted"
+        {/* py: the thumbs are taller than the track; this keeps them inside the box. */}
+        <SliderTrack
+          className={cn('flex items-center', size === 'sm' ? 'py-1.5' : 'py-2')}
         >
-          {description}
-        </Text>
-      )}
+          <div className={trackVariants({ size })}>
+            <SliderFill className="rounded-full bg-primary group-data-disabled:bg-fg-muted" />
+            {(isRange ? [0, 1] : [0]).map((index) => (
+              <SliderThumb
+                key={index}
+                index={index}
+                name={name}
+                aria-label={isRange ? thumbLabels[index] : undefined}
+                aria-describedby={description ? descriptionId : undefined}
+                className={thumbVariants({ size })}
+              />
+            ))}
+          </div>
+        </SliderTrack>
+        {description && (
+          <Text
+            id={descriptionId}
+            slot="description"
+            className="text-sm text-fg-muted"
+          >
+            {description}
+          </Text>
+        )}
+      </ValueLabels>
     </AriaSlider>
   );
 }

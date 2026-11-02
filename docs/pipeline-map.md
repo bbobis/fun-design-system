@@ -374,7 +374,36 @@ Turn on a right-click / Shift+F10 / Menu-key menu on every facility and pipe:
   would be undone. The map runs your `onAction` once the menu has closed.
 - A right-click opens the menu at the pointer; the keyboard opens it under the item.
 
-## 11. Keyboard and screen readers
+## 11. Time slider
+
+Step the map through real snapshots. Each snapshot is a whole `PipelineNetwork` at one
+moment, with no tweening and no simulation.
+
+```tsx
+const snapshots: PipelineSnapshot[] = [
+  { at: '2026-11-02T06:00:00Z', network: atSix },
+  { at: '2026-11-02T07:00:00Z', network: atSeven },
+  // …
+];
+const [index, setIndex] = useState(snapshots.length - 1); // start at "now"
+
+<PipelineTimeline snapshots={snapshots} index={index} onIndexChange={setIndex} />
+<PipelineMap network={snapshots[index].network} … followedBatch={batch} … />
+```
+
+- **Keep ids and batch names the same across snapshots.** Selection, a trace and a
+  followed batch are ids, so they carry over and you can watch one batch move down the
+  line.
+- **A followed batch that isn't in a snapshot** (not pumped yet, or delivered) stays
+  followed. Every pipe fades, and screen readers hear "B-1041 isn't in the pipes at
+  this time." Step back and it returns: "B-1041 is back in the pipes."
+- **Times** default to the viewer's locale and time zone ("6:00 AM", "06:00"). Pass
+  `timeZone` (for example the pipeline's control-room zone) or your own `formatTime`.
+- The slider reads out the time, not the index, and its description gives the range
+  ("5 snapshots, 6:00 AM to 10:00 AM"). ←/→ step, Home/End jump.
+- Fewer than two snapshots: the slider is disabled.
+
+## 12. Keyboard and screen readers
 
 | Key              | Does                                                                                        |
 | ---------------- | ------------------------------------------------------------------------------------------- |
