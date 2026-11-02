@@ -78,6 +78,17 @@ export function ToggleGroup({
       }
       isDisabled={disabled}
       className={cn(segmentTrack({ shape, fullWidth }), className)}
+      // Inside a Toolbar, React Aria switches the role from `toolbar` to `group` but
+      // keeps aria-orientation, which `group` doesn't allow (axe: aria-allowed-attr).
+      // `render` lets us adjust the props before the <div> is made: drop it there.
+      // The toolbar around it still says its direction, and the arrow keys don't
+      // depend on the attribute (React Aria handles them in JavaScript).
+      render={({ 'aria-orientation': orientation, ...props }) => (
+        <div
+          {...props}
+          aria-orientation={props.role === 'group' ? undefined : orientation}
+        />
+      )}
     >
       {options.map((option) => (
         <SegmentButton
