@@ -120,4 +120,33 @@ describe('ToggleGroup', () => {
     press('ArrowRight');
     expect(document.activeElement).toBe(button('Sent'));
   });
+
+  // React Aria keeps aria-orientation when it switches the role to `group`, but
+  // `group` doesn't allow it (axe: aria-allowed-attr). The toolbar around it already
+  // says the direction, so the inner group drops it.
+  it('inside a Toolbar: the group has no aria-orientation (not allowed on group)', () => {
+    render(
+      <Toolbar aria-label="Editor">
+        <Button>Undo</Button>
+        <ToggleGroup aria-label="Show" options={statuses} />
+      </Toolbar>,
+    );
+    const group = screen.getByRole('group', { name: 'Show' });
+    expect(group.hasAttribute('aria-orientation')).toBe(false);
+    // The toolbar itself keeps it.
+    expect(
+      screen
+        .getByRole('toolbar', { name: 'Editor' })
+        .getAttribute('aria-orientation'),
+    ).toBe('horizontal');
+  });
+
+  it('standalone: keeps aria-orientation (allowed on toolbar)', () => {
+    render(<ToggleGroup aria-label="Show" options={statuses} />);
+    expect(
+      screen
+        .getByRole('toolbar', { name: 'Show' })
+        .getAttribute('aria-orientation'),
+    ).toBe('horizontal');
+  });
 });

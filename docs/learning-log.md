@@ -699,3 +699,10 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Remember: a tone is a set of CSS variables.** Each tone sets four variables: `--tag-bg`, `--tag-fg`, `--tag-line` and `--tag-muted`. The chip paints with them, and the ✕ reads `--tag-muted`. That keeps the ✕ dark enough on a tinted fill without a separate rule for every tone × part pair. It's the same approach as Badge and Alert.
 - **Found, not fixed (already on main):** axe flags `aria-orientation` on the ToggleGroup in the Toolbar story (`aria-allowed-attr`). React Aria sets it on a role that doesn't allow it. That's a separate follow-up.
 - Docs: https://www.w3.org/WAI/WCAG22/Understanding/non-text-contrast.html
+
+## 2026-11-02 — Fix: ToggleGroup inside Toolbar had an ARIA attribute its role doesn't allow
+- **Fixed:** inside a Toolbar, React Aria turns ToggleGroup's `role="toolbar"` into `role="group"` but keeps `aria-orientation`. `group` doesn't allow that attribute, so axe reported `aria-allowed-attr`. We now drop it for `group` only.
+- **Remember (the prediction): nothing is lost.** The outer toolbar still says `aria-orientation="horizontal"`, and the arrow keys are handled in JavaScript, not by the attribute. On a role that doesn't allow it, the attribute is ignored at best and confuses checkers at worst. Chromium's tree after the fix: toolbar "Editor" → group "Text style" → Bold, Italic [pressed]…
+- **Remember: React Aria's `render` prop** lets you change the final DOM props before the element is made: `render={(props) => <div {...props} />}`. Keep the same element type and pass `props` through, `ref` included, or React Aria warns. Use it for small fixes like this one, not for restyling.
+- **Habit:** write the test first and watch it fail on the old code. This one went red on `main` and green with the fix.
+- Docs: https://www.w3.org/TR/wai-aria-1.2/#group
