@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { cn } from '../../utils/cn';
 import { CheckIcon } from '../combobox/combobox-parts';
 
@@ -8,6 +9,11 @@ export type StepperStep = {
   label: string;
   /** A second line under the label (vertical layout only). */
   description?: string;
+  /**
+   * An icon in the circle instead of the step number (not in `dots`). Done steps
+   * still show the ✓. Decorative: the label names the step.
+   */
+  icon?: ReactNode;
 };
 
 export type StepperProps = {
@@ -27,6 +33,14 @@ export type StepperProps = {
    * shows); `vertical` for a side column, with descriptions. @default 'horizontal'
    */
   orientation?: 'horizontal' | 'vertical';
+  /** `sm`: smaller circles and text, for a dialog or a card. @default 'md' */
+  size?: 'sm' | 'md';
+  /**
+   * `circles`: numbered circles (✓ when done). `dots`: small dots, no numbers, for a
+   * compact header. Same list, labels and status words either way.
+   * @default 'circles'
+   */
+  variant?: 'circles' | 'dots';
   className?: string;
 };
 
@@ -51,6 +65,8 @@ export function Stepper({
   'aria-label': ariaLabel = 'Progress',
   onStepClick,
   orientation = 'horizontal',
+  size = 'md',
+  variant = 'circles',
   className,
 }: StepperProps) {
   const currentIndex = steps.findIndex((s) => s.id === current);
@@ -77,7 +93,13 @@ export function Stepper({
 
         const content = (
           <>
-            <Marker status={status} number={index + 1} />
+            <Marker
+              status={status}
+              number={index + 1}
+              icon={step.icon}
+              size={size}
+              variant={variant}
+            />
             <span
               className={cn(
                 'flex min-w-0 flex-col',
@@ -88,7 +110,7 @@ export function Stepper({
             >
               <span
                 className={cn(
-                  'text-sm',
+                  size === 'sm' ? 'text-xs' : 'text-sm',
                   status === 'current'
                     ? 'font-semibold text-fg'
                     : status === 'complete'
@@ -106,7 +128,12 @@ export function Stepper({
                 )}
               </span>
               {vertical && step.description && (
-                <span className="text-sm text-fg-muted">
+                <span
+                  className={cn(
+                    'text-fg-muted',
+                    size === 'sm' ? 'text-xs' : 'text-sm',
+                  )}
+                >
                   {step.description}
                 </span>
               )}
@@ -131,7 +158,7 @@ export function Stepper({
                 type="button"
                 onClick={() => onStepClick?.(step.id)}
                 className={cn(
-                  stepRow(vertical),
+                  stepRow(vertical, size),
                   'cursor-pointer rounded-md text-start outline-hidden hover:bg-surface',
                   'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-solid focus-visible:outline-focus-ring',
                 )}
@@ -139,10 +166,15 @@ export function Stepper({
                 {content}
               </button>
             ) : (
-              <span className={stepRow(vertical)}>{content}</span>
+              <span className={stepRow(vertical, size)}>{content}</span>
             )}
             {!last && (
-              <Connector vertical={vertical} done={status === 'complete'} />
+              <Connector
+                vertical={vertical}
+                done={status === 'complete'}
+                // The line runs down the middle of the marker column.
+                offset={markerOffset[size]}
+              />
             )}
           </li>
         );
@@ -151,28 +183,96 @@ export function Stepper({
   );
 }
 
-const stepRow = (vertical: boolean) =>
-  cn('flex shrink-0 gap-2 p-1', vertical ? 'items-start' : 'items-center');
+const stepRow = (vertical: boolean, size: 'sm' | 'md') =>
+  cn(
+    'flex shrink-0 p-1',
+    size === 'sm' ? 'gap-1.5' : 'gap-2',
+    vertical ? 'items-start' : 'items-center',
+  );
 
-/** The circle: ✓ when done, the step number otherwise. */
-function Marker({ status, number }: { status: Status; number: number }) {
+/**
+ * Vertical connector's start margin: the row's 4px padding + half the marker − half
+ * the 2px line. 28px marker → 17px, 20px → 13px. Dots sit in a marker-sized slot (so
+ * labels line up in both variants), so the same numbers work for them.
+ */
+const markerOffset = { md: 'ms-[17px]', sm: 'ms-[13px]' } as const;
+
+/**
+ * The marker. circles: ✓ when done, the icon or number otherwise. dots: a small dot
+ * (filled when done, ringed when current) in a circle-sized slot, so labels line up.
+ */
+function Marker({
+  status,
+  number,
+  icon,
+  size,
+  variant,
+}: {
+  status: Status;
+  number: number;
+  icon?: ReactNode;
+  size: 'sm' | 'md';
+  variant: 'circles' | 'dots';
+}) {
+  const slot = size === 'sm' ? 'size-5' : 'size-7';
+  if (variant === 'dots') {
+    return (
+      <span
+        aria-hidden="true"
+        data-marker="dot"
+        className={cn('flex shrink-0 items-center justify-center', slot)}
+      >
+        <span
+          className={cn(
+            'rounded-full',
+            size === 'sm' ? 'size-2' : 'size-2.5',
+            status === 'complete' && 'bg-primary',
+            // Current: a ring around a filled dot, so it differs from "done" by
+            // shape, not only by color.
+            status === 'current' &&
+              'bg-primary ring-2 ring-primary ring-offset-2 ring-offset-bg',
+            status === 'upcoming' && 'bg-border-strong',
+          )}
+        />
+      </span>
+    );
+  }
   return (
     <span
       aria-hidden="true"
+      data-marker="circle"
       className={cn(
-        'flex size-7 shrink-0 items-center justify-center rounded-full border-2 text-xs font-semibold tabular-nums',
+        'flex shrink-0 items-center justify-center rounded-full border-2 font-semibold tabular-nums',
+        slot,
+        size === 'sm' ? 'text-[0.625rem]' : 'text-xs',
         status === 'complete' && 'border-primary bg-primary text-on-primary',
         status === 'current' && 'border-primary bg-bg text-fg',
         status === 'upcoming' && 'border-border-strong bg-bg text-fg-muted',
       )}
     >
-      {status === 'complete' ? <CheckIcon className="size-4" /> : number}
+      {status === 'complete' ? (
+        <CheckIcon className={size === 'sm' ? 'size-3' : 'size-4'} />
+      ) : icon ? (
+        <span className={cn('flex', size === 'sm' ? '*:size-3' : '*:size-3.5')}>
+          {icon}
+        </span>
+      ) : (
+        number
+      )}
     </span>
   );
 }
 
 /** The line to the next step: solid when this step is done. Decorative. */
-function Connector({ vertical, done }: { vertical: boolean; done: boolean }) {
+function Connector({
+  vertical,
+  done,
+  offset,
+}: {
+  vertical: boolean;
+  done: boolean;
+  offset: string;
+}) {
   return (
     <span
       aria-hidden="true"
@@ -180,7 +280,7 @@ function Connector({ vertical, done }: { vertical: boolean; done: boolean }) {
         'rounded-full',
         done ? 'bg-primary' : 'bg-border-strong',
         vertical
-          ? 'ms-[17px] my-1 min-h-4 w-0.5'
+          ? cn(offset, 'my-1 min-h-4 w-0.5')
           : 'mx-1 h-0.5 min-w-3 flex-1 sm:mx-2 sm:min-w-4',
       )}
     />

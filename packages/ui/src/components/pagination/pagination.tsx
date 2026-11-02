@@ -1,4 +1,4 @@
-import { useId } from 'react';
+import { useId, type ReactNode } from 'react';
 import { Button } from '../button';
 import { Select } from '../select';
 import { cn } from '../../utils/cn';
@@ -37,6 +37,21 @@ export type PaginationProps = {
    * Set both: `setPageSize(size); setPage(page);`
    */
   onPageSizeChange?: (pageSize: number, page: number) => void;
+  /**
+   * - `full`: Previous, page numbers, Next.
+   * - `simple`: Previous, "Page 3 of 12", Next. For when jumping to a page number
+   *   isn't needed.
+   * - `compact`: icon-only ‹ › around "3 / 12", for a table footer or a card.
+   *
+   * Without page numbers, the "Page 3 of 12" text is a polite live region: focus
+   * stays on Next, so that's how a screen reader hears the page changed.
+   * @default 'full'
+   */
+  variant?: 'full' | 'simple' | 'compact';
+  /** Button size. @default 'sm' */
+  size?: 'sm' | 'md';
+  /** Add First and Last buttons (« ») at the ends. @default false */
+  showEdges?: boolean;
   className?: string;
 };
 
@@ -115,6 +130,9 @@ export function Pagination({
   pageSize,
   pageSizeOptions = [10, 25, 50, 100],
   onPageSizeChange,
+  variant = 'full',
+  size = 'sm',
+  showEdges = false,
   className,
 }: PaginationProps) {
   const sizeLabelId = useId();
@@ -150,58 +168,129 @@ export function Pagination({
     if (to !== current) onChange(to);
   };
 
+  const iconOnly = variant === 'compact';
+  const square = size === 'sm' ? 'min-w-8' : 'min-w-10';
+
+  /**
+   * One arrow button. At the first or last page it stays focusable but
+   * `aria-disabled` (see the component's docs). Icon-only ones need a name.
+   */
+  const step = (
+    to: number,
+    disabled: boolean,
+    label: string,
+    icon: ReactNode,
+    text?: string,
+  ) => (
+    <li>
+      {text && !iconOnly ? (
+        <Button
+          intent="ghost"
+          size={size}
+          aria-disabled={disabled || undefined}
+          onClick={() => !disabled && go(to)}
+          className="px-2"
+        >
+          {/* Previous: icon then text; Next: text then icon. */}
+          {to < current ? (
+            <>
+              {icon}
+              {text}
+            </>
+          ) : (
+            <>
+              {text}
+              {icon}
+            </>
+          )}
+        </Button>
+      ) : (
+        <Button
+          intent="ghost"
+          size={size}
+          shape="square"
+          aria-label={label}
+          aria-disabled={disabled || undefined}
+          onClick={() => !disabled && go(to)}
+        >
+          {icon}
+        </Button>
+      )}
+    </li>
+  );
+
+  const prevIcon = <ChevronIcon className="size-4 rotate-180 rtl:rotate-0" />;
+  const nextIcon = <ChevronIcon className="size-4 rtl:rotate-180" />;
+  const firstIcon = (
+    <DoubleChevronIcon className="size-4 rotate-180 rtl:rotate-0" />
+  );
+  const lastIcon = <DoubleChevronIcon className="size-4 rtl:rotate-180" />;
+
   const nav = (
     <nav aria-label={ariaLabel} className={picker ? undefined : className}>
       <ul className="flex flex-wrap items-center gap-1">
-        <li>
-          <Button
-            intent="ghost"
-            size="sm"
-            aria-disabled={atStart || undefined}
-            onClick={() => !atStart && go(current - 1)}
-            className="px-2"
-          >
-            <ChevronIcon className="size-4 rotate-180 rtl:rotate-0" />
-            Previous
-          </Button>
-        </li>
-        {pageItems(current, pageCount, siblings).map((item, i) =>
-          item === 'gap' ? (
-            // Purely visual; the page buttons around it already say which pages exist.
-            <li
-              key={`gap-${i}`}
-              aria-hidden="true"
-              className="flex w-8 justify-center text-fg-muted"
-            >
-              …
-            </li>
-          ) : (
-            <li key={item}>
-              <Button
-                intent={item === current ? 'primary' : 'ghost'}
-                size="sm"
-                aria-label={`Page ${item}`}
-                aria-current={item === current ? 'page' : undefined}
-                onClick={() => go(item)}
-                className="min-w-8 px-2 tabular-nums"
+        {showEdges && step(1, atStart, 'First page', firstIcon)}
+        {step(current - 1, atStart, 'Previous page', prevIcon, 'Previous')}
+        {variant === 'full' ? (
+          pageItems(current, pageCount, siblings).map((item, i) =>
+            item === 'gap' ? (
+              // Purely visual; the page buttons around it already say which pages exist.
+              <li
+                key={`gap-${i}`}
+                aria-hidden="true"
+                className={cn(
+                  'flex justify-center text-fg-muted',
+                  size === 'sm' ? 'w-8' : 'w-10',
+                )}
               >
-                {item}
-              </Button>
-            </li>
-          ),
+                …
+              </li>
+            ) : (
+              <li key={item}>
+                <Button
+                  intent={item === current ? 'primary' : 'ghost'}
+                  size={size}
+                  aria-label={`Page ${item}`}
+                  aria-current={item === current ? 'page' : undefined}
+                  onClick={() => go(item)}
+                  className={cn('px-2 tabular-nums', square)}
+                >
+                  {item}
+                </Button>
+              </li>
+            ),
+          )
+        ) : (
+          <li>
+            {/* A polite live region: after Next, focus stays on Next, so this is
+                how a screen reader hears "Page 4 of 12". It exists from the first
+                render (a live region added later isn't announced). */}
+            <span
+              aria-live="polite"
+              aria-atomic="true"
+              data-page-status=""
+              className={cn(
+                'block px-2 text-fg tabular-nums',
+                size === 'sm' ? 'text-sm' : 'text-base',
+              )}
+            >
+              {iconOnly ? (
+                <>
+                  <span aria-hidden="true">
+                    {current} / {pageCount}
+                  </span>
+                  <span className="sr-only">
+                    Page {current} of {pageCount}
+                  </span>
+                </>
+              ) : (
+                `Page ${current} of ${pageCount}`
+              )}
+            </span>
+          </li>
         )}
-        <li>
-          <Button
-            intent="ghost"
-            size="sm"
-            aria-disabled={atEnd || undefined}
-            onClick={() => !atEnd && go(current + 1)}
-            className="px-2"
-          >
-            Next
-            <ChevronIcon className="size-4 rtl:rotate-180" />
-          </Button>
-        </li>
+        {step(current + 1, atEnd, 'Next page', nextIcon, 'Next')}
+        {showEdges && step(pageCount, atEnd, 'Last page', lastIcon)}
       </ul>
     </nav>
   );
@@ -234,6 +323,23 @@ function ChevronIcon({ className }: { className?: string }) {
       className={className}
     >
       <path d="m6 3.5 4.5 4.5L6 12.5" />
+    </svg>
+  );
+}
+
+function DoubleChevronIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+    >
+      <path d="m3.5 3.5 4.5 4.5-4.5 4.5M8.5 3.5 13 8l-4.5 4.5" />
     </svg>
   );
 }

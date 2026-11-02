@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { useState } from 'react';
+import { useState, type SVGProps } from 'react';
 import { Button } from '../button';
 import { Stepper, type StepperStep } from './stepper';
 
@@ -91,4 +91,77 @@ export const Narrow: Story = {
       </div>
     ),
   ],
+};
+
+/** `size="sm"`: smaller circles and text, for a dialog or a card. */
+export const Small: Story = {
+  render: () => (
+    <div className="flex flex-col gap-8">
+      <Stepper steps={steps} current="billing" size="sm" />
+      <Stepper steps={steps} current="lines" size="sm" orientation="vertical" />
+    </div>
+  ),
+};
+
+/**
+ * `variant="dots"`: small dots, no numbers. The current dot has a ring, so it
+ * differs from the done ones by shape, not only color. Screen readers hear the same
+ * list, labels and status words as with circles.
+ */
+export const Dots: Story = {
+  render: () => (
+    <div className="flex flex-col gap-8">
+      <Stepper steps={steps} current="billing" variant="dots" />
+      <Stepper
+        steps={steps}
+        current="billing"
+        variant="dots"
+        orientation="vertical"
+      />
+    </div>
+  ),
+};
+
+/** Story-only icons (16×16 strokes). Apps bring their own. */
+function Svg({ d, ...props }: SVGProps<SVGSVGElement> & { d: string }) {
+  return (
+    <svg
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.75}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+    >
+      <path d={d} />
+    </svg>
+  );
+}
+
+/** `icon` per step: an icon instead of the number. Done steps still show the ✓. */
+export const WithIcons: Story = {
+  args: {
+    current: 'billing',
+    steps: [
+      {
+        id: 'details',
+        label: 'Details',
+        icon: (
+          <Svg d="M8 8a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Zm-5 5.5c0-2.5 2.2-4 5-4s5 1.5 5 4" />
+        ),
+      },
+      {
+        id: 'lines',
+        label: 'Line items',
+        icon: <Svg d="M3 4h10M3 8h10M3 12h6" />,
+      },
+      {
+        id: 'billing',
+        label: 'Billing',
+        icon: <Svg d="M2 4.5h12v7H2zM2 7h12" />,
+      },
+      { id: 'review', label: 'Review', icon: <Svg d="M14 2 7 9M14 2l-4.5 12-2.5-5-5-2.5z" /> },
+    ],
+  },
 };
