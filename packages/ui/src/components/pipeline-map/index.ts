@@ -30,3 +30,12 @@ export {
   tankGaugeWidth,
   type TankGaugeProps,
 } from './tank-gauge';
+export {
+  PipelineMap,
+  PipelineMapFacilities,
+  PipelineMapSegments,
+  mapLayout,
+  networkBounds,
+  segmentLabel,
+  type PipelineMapProps,
+} from './pipeline-map';
