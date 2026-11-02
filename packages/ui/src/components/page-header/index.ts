@@ -1,1 +1,5 @@
-export { PageHeader, type PageHeaderProps } from './page-header';
+export {
+  PageHeader,
+  type PageHeaderNavItem,
+  type PageHeaderProps,
+} from './page-header';

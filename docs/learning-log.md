@@ -797,6 +797,17 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Remember: truncation is only visual.** `truncate` / `line-clamp-*` hide overflow, but screen readers and copy-paste still get the whole text. When the hidden part matters, offer it another way, e.g. a tooltip or a details view.
 - **Remember: Tailwind only sees class names written out in full.** `line-clamp-${n}` built at runtime would never be generated, so `truncateClass` lists `line-clamp-2` … `line-clamp-5`.
 - Docs: https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/hgroup
+
+## 2026-11-02 — PageHeader: sizes, divided, back link, meta row, section nav
+- **Built:** PageHeader gets `size` (`sm` / `md` / `lg`), `divided`, `back={{ href, label }}`, `meta` (a row of facts under the title) and `nav` (section links styled like underline tabs, with optional counts). Defaults are unchanged.
+- **Remember (the prediction): links that change the URL are a `<nav>`, not Tabs.**
+  - Use Tabs (`role="tablist"`) for panels that swap *in place*: arrow keys move between them and only one panel is shown.
+  - Use links in a named `<nav>` for sections that are their own pages: Tab moves between them, `aria-current="page"` marks the current one, and middle-click or "open in new tab" works.
+  - The look can be the same; the job decides the markup.
+- **Remember: `aria-label` must contain the visible words.** The back link shows "← Invoices" and is named "Back to Invoices". The name still contains what's on screen, so someone using voice control can say "click Invoices" (WCAG 2.5.3, label in name).
+- **Lint:** `nav!.map` (a non-null assertion) added a warning. A `nav ?? []` local is clearer and keeps lint at the same 12 warnings.
+- Docs: https://www.w3.org/WAI/ARIA/apg/patterns/tabs/
+
 ## 2026-11-02 — Pipeline Map step 3: BatchTrain + product colors
 - **Built:** `BatchTrain`, the batches in a pipe drawn as a thin band beside it ("two tracks", Ben's pick), one piece per batch sized by its share of the linefill, 2px gaps between pieces. Geometry: `slicePolyline`, `offsetPolyline` (mitred corners), `polylineLength`, `toPathData`. Tokens: `product-1..3` from a new `viz-*` primitive group.
 - **Remember: validate a palette, don't eyeball it.** Products can sit next to *any* other product in a pipe, so every pair must be distinguishable (not just neighbours in a legend). Only 3 hues passed that, including colour-blind simulation, so slots 4–6 reuse them **with stripes** and 7+ become "other". Colour follows the product's legend position, never its position in a pipe.
