@@ -9,11 +9,16 @@ const textVariants = cva('font-sans', {
       sm: 'text-sm',
       md: 'text-base',
       lg: 'text-lg',
+      xl: 'text-xl',
     },
     tone: {
       default: 'text-fg',
       muted: 'text-fg-muted',
+      // Status text: say the status in words too ("Overdue"), not only by color.
       danger: 'text-fg-danger',
+      success: 'text-fg-success',
+      warning: 'text-fg-warning',
+      info: 'text-fg-info',
       // Inherit the parent's color, e.g. inside a Badge or a Button.
       inherit: 'text-inherit',
     },
@@ -25,6 +30,24 @@ const textVariants = cva('font-sans', {
   },
   defaultVariants: { size: 'md', tone: 'default', weight: 'regular' },
 });
+
+export type Truncate = boolean | 2 | 3 | 4 | 5;
+
+/**
+ * Classes for `truncate`. Line clamps are listed out (not built from the number) so
+ * Tailwind can find them in the source. Shared with Heading.
+ */
+export const truncateClass = (truncate: Truncate | undefined) =>
+  truncate === true
+    ? 'truncate'
+    : truncate
+      ? {
+          2: 'line-clamp-2',
+          3: 'line-clamp-3',
+          4: 'line-clamp-4',
+          5: 'line-clamp-5',
+        }[truncate]
+      : undefined;
 
 /** Tags Text may render as. Kept small on purpose: Text is for running text, not layout. */
 type TextElement = 'p' | 'span' | 'div' | 'strong' | 'em' | 'small';
@@ -42,6 +65,13 @@ export type TextProps<T extends TextElement = 'p'> = {
    * @default false
    */
   numeric?: boolean;
+  /**
+   * Cut long text: `true` keeps one line and ends it with "…"; a number (2–5) keeps
+   * that many lines. Only the look is cut: screen readers and copy-paste get the
+   * full text. Give it a width (it's a block, or a flex child with `min-w-0`).
+   * @default false
+   */
+  truncate?: Truncate;
 } & Omit<ComponentProps<T>, 'as'> &
   VariantProps<typeof textVariants>;
 
@@ -56,6 +86,7 @@ export function Text<T extends TextElement = 'p'>({
   tone,
   weight,
   numeric = false,
+  truncate,
   className,
   ...rest
 }: TextProps<T>) {
@@ -67,6 +98,7 @@ export function Text<T extends TextElement = 'p'>({
       className={cn(
         textVariants({ size, tone, weight }),
         numeric && 'tabular-nums',
+        truncateClass(truncate),
         className,
       )}
       {...rest}

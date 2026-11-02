@@ -1,1 +1,1 @@
-export { Text, type TextProps } from './text';
+export { Text, type TextProps, type Truncate } from './text';
