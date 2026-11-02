@@ -25,9 +25,35 @@ type Story = StoryObj<typeof meta>;
 /**
  * Six made-up facilities, five pipes: a restricted line, a shut-down branch, an
  * elbow, a tank farm with a high tank and an emergency at Terminal E.
- * Click a pipe or facility (or Tab to it and press Enter) to select; Escape clears.
+ * Click a pipe or facility to select it; Escape clears. Hover for details.
  */
 export const Playground: Story = {};
+
+/**
+ * Keyboard: Tab once into the map (Terminal A), then arrows walk the network:
+ * facility → the pipe leaving that way → the facility at its end. Home/End jump to the
+ * first/last facility, Enter selects, Escape clears, Tab leaves the map. The focused
+ * item's tooltip shows its batches or tank levels.
+ */
+export const Keyboard: Story = {
+  render: (args) => (
+    <div className="flex flex-col gap-3 text-sm text-fg">
+      <button
+        type="button"
+        className="self-start rounded-md border border-border px-3 py-1"
+      >
+        Before the map
+      </button>
+      <PipelineMap {...args} />
+      <button
+        type="button"
+        className="self-start rounded-md border border-border px-3 py-1"
+      >
+        After the map
+      </button>
+    </div>
+  ),
+};
 
 /** Controlled: the app owns the selection and can show details for it. */
 export const ControlledSelection: Story = {

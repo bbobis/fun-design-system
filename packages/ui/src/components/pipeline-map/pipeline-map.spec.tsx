@@ -195,4 +195,106 @@ describe('PipelineMap', () => {
     );
     spy.mockRestore();
   });
+
+  describe('keyboard (roving tabindex)', () => {
+    const renderWithButtons = (props = {}) =>
+      render(
+        <>
+          <button type="button">Before</button>
+          <PipelineMap
+            network={DEMO_NETWORK}
+            products={DEMO_PRODUCTS}
+            aria-label="Demo network"
+            {...props}
+          />
+          <button type="button">After</button>
+        </>,
+      );
+    const item = (name: RegExp) => screen.getByRole('button', { name });
+
+    it('is one Tab stop: in at the first facility, the next Tab leaves the map', async () => {
+      const user = userEvent.setup();
+      renderWithButtons();
+      const inTabOrder = screen
+        .getAllByRole('button')
+        .filter((b) => b.getAttribute('tabindex') === '0' && b.closest('svg'));
+      expect(inTabOrder).toHaveLength(1);
+      await user.tab(); // Before
+      await user.tab();
+      expect(document.activeElement).toBe(item(/^Terminal A, terminal/));
+      await user.tab();
+      expect(document.activeElement).toBe(
+        screen.getByRole('button', { name: 'After' }),
+      );
+    });
+
+    it('arrows walk the network: facility → pipe → facility', async () => {
+      const user = userEvent.setup();
+      renderWithButtons();
+      await user.tab();
+      await user.tab(); // Terminal A
+      await user.keyboard('{ArrowRight}');
+      expect(document.activeElement).toBe(item(/^Terminal A to Station B/));
+      await user.keyboard('{ArrowRight}');
+      expect(document.activeElement).toBe(item(/^Station B, pump station/));
+      await user.keyboard('{ArrowDown}');
+      expect(document.activeElement).toBe(item(/^Station B to Terminal E/));
+      await user.keyboard('{ArrowLeft}'); // nothing that way: stays
+      expect(document.activeElement).toBe(item(/^Station B to Terminal E/));
+    });
+
+    it('Home and End jump to the first and last facility', async () => {
+      const user = userEvent.setup();
+      renderWithButtons();
+      await user.tab();
+      await user.tab();
+      await user.keyboard('{End}');
+      expect(document.activeElement).toBe(item(/^Refinery F/));
+      await user.keyboard('{Home}');
+      expect(document.activeElement).toBe(item(/^Terminal A, terminal/));
+    });
+
+    it('Tab comes back to where you left off', async () => {
+      const user = userEvent.setup();
+      renderWithButtons();
+      await user.tab();
+      await user.tab();
+      await user.keyboard('{ArrowRight}{ArrowRight}'); // Station B
+      await user.tab(); // out to After
+      await user.tab({ shift: true }); // back in
+      expect(document.activeElement).toBe(item(/^Station B, pump station/));
+    });
+
+    it('starts at the selected item when there is one', () => {
+      renderWithButtons({ defaultSelectedId: 'C' });
+      expect(item(/^Station C, pump station/).getAttribute('tabindex')).toBe(
+        '0',
+      );
+      expect(item(/^Terminal A, terminal/).getAttribute('tabindex')).toBe('-1');
+    });
+  });
+
+  describe('tooltips', () => {
+    it('focusing a pipe shows its batches, and they describe it for screen readers', async () => {
+      const user = userEvent.setup();
+      renderMap();
+      await user.tab(); // Terminal A
+      await user.keyboard('{ArrowRight}'); // A-B
+      const tip = await screen.findByRole('tooltip');
+      expect(tip.textContent).toContain('B-1041 · SYN · 52,000 m³');
+      const pipe = screen.getByRole('button', {
+        name: /^Terminal A to Station B/,
+      });
+      expect(pipe.getAttribute('aria-describedby')).toBe(tip.id);
+    });
+
+    it('a facility tooltip lists each tank level', async () => {
+      const user = userEvent.setup();
+      renderMap({ defaultSelectedId: 'D' });
+      await user.tab(); // Tank Farm D (selected = tab stop)
+      const tip = await screen.findByRole('tooltip');
+      expect(tip.textContent).toContain('T-3 · 96% · 48,000 of 50,000 m³');
+      expect(tip.textContent).toContain('Tank T-3 above 95%');
+    });
+  });
 });

@@ -10,9 +10,12 @@ import {
 } from 'react';
 import { usePress } from 'react-aria';
 import { cn } from '../../utils/cn';
+import { Tooltip } from '../tooltip/tooltip';
 import { BatchTrain } from './batch-train';
 import { FacilityNode } from './facility-node';
 import { PipeSegment } from './pipe-segment';
+import { isArrowKey, nextInDirection } from './pipeline-navigation';
+import { tankFill } from './tank-gauge';
 import { segmentPoints, strokeWidthFor, toPathData } from './pipeline-geometry';
 import type {
   Facility,
@@ -83,6 +86,51 @@ export function segmentLabel(
   return `${from} to ${to}, ${segment.status}, ${numberFormat.format(segment.flowRate)} m³/h, ${count} ${count === 1 ? 'batch' : 'batches'}`;
 }
 
+/** Tooltip body for a pipe: route, status and flow, then its batches (downstream first). */
+function SegmentDetails({
+  segment,
+  facilitiesById,
+}: {
+  segment: Segment;
+  facilitiesById: ReadonlyMap<string, Facility>;
+}) {
+  const from = facilitiesById.get(segment.from)?.label ?? segment.from;
+  const to = facilitiesById.get(segment.to)?.label ?? segment.to;
+  return (
+    <span className="flex flex-col gap-1">
+      <span className="font-semibold">
+        {from} → {to}
+      </span>
+      <span className="tabular-nums">
+        {segment.status}, {numberFormat.format(segment.flowRate)} of{' '}
+        {numberFormat.format(segment.maxFlowRate)} m³/h
+      </span>
+      {segment.batches.map((b) => (
+        <span key={b.name} className="tabular-nums">
+          {b.name} · {b.product} · {numberFormat.format(b.volume)} m³
+        </span>
+      ))}
+    </span>
+  );
+}
+
+/** Tooltip body for a facility: alert first, then each tank's level. */
+function FacilityDetails({ facility }: { facility: Facility }) {
+  return (
+    <span className="flex flex-col gap-1">
+      <span className="font-semibold">{facility.label}</span>
+      {facility.alert && <span>{facility.alert.message}</span>}
+      {facility.tanks?.map((t) => (
+        <span key={t.id} className="tabular-nums">
+          {t.label} · {Math.round(tankFill(t) * 100)}% ·{' '}
+          {numberFormat.format(t.volume)} of {numberFormat.format(t.capacity)}{' '}
+          m³
+        </span>
+      ))}
+    </span>
+  );
+}
+
 /* ---------- Context ---------- */
 
 type MapContextValue = {
@@ -92,6 +140,10 @@ type MapContextValue = {
   unitsPerPx: number;
   selectedId: string | null;
   select: (id: string | null) => void;
+  /** The one item that is in the tab order (roving tabindex). */
+  tabStopId: string | null;
+  /** Remember the item the user moved to, so Tab comes back to it. */
+  setActiveId: (id: string) => void;
 };
 
 const MapContext = createContext<MapContextValue | null>(null);
@@ -151,7 +203,13 @@ export type PipelineMapProps = Omit<
  * It fills its container's width and keeps markers, line widths and gaps the same
  * size in pixels at any width (it measures itself to convert px to grid units).
  *
- * Click a pipe or facility, or press Enter/Space on it, to select it. Escape clears.
+ * Keyboard: the map is **one Tab stop**. Arrow keys move along the network (facility →
+ * the pipe leaving that way → the facility at its end), Home/End jump to the first and
+ * last facility, Enter/Space select, Escape clears. Click works too. Hovering or
+ * focusing an item shows its details (batches, tank levels) in a tooltip, which is
+ * also its screen-reader description.
+ *
+ * Facility and segment ids must be unique across both lists.
  */
 export function PipelineMap({
   network,
@@ -183,6 +241,26 @@ export function PipelineMap({
     onSelect?.(id);
   };
 
+  // Roving tabindex: exactly one item has tabIndex 0. It's the last item the user
+  // moved to; before that, the selection; before that, the first facility.
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const exists = (id: string | null): id is string =>
+    id !== null &&
+    (facilitiesById.has(id) || network.segments.some((s) => s.id === id));
+  const tabStopId = exists(activeId)
+    ? activeId
+    : exists(selectedId)
+      ? selectedId
+      : (network.facilities[0]?.id ?? null);
+
+  /** Moves DOM focus to an item; its onFocus then makes it the tab stop. */
+  const focusItem = (id: string | null) => {
+    if (!id) return;
+    svgRef.current
+      ?.querySelector<SVGGElement>(`[data-map-item="${CSS.escape(id)}"]`)
+      ?.focus();
+  };
+
   return (
     <MapContext.Provider
       value={{
@@ -192,6 +270,8 @@ export function PipelineMap({
         unitsPerPx,
         selectedId,
         select,
+        tabStopId,
+        setActiveId,
       }}
     >
       <svg
@@ -202,7 +282,18 @@ export function PipelineMap({
         className={cn('block h-auto w-full bg-bg', className)}
         onKeyDown={(e) => {
           onKeyDown?.(e);
-          if (e.key === 'Escape' && selectedId !== null) select(null);
+          const from = (e.target as Element).closest('[data-map-item]');
+          const currentId = from?.getAttribute('data-map-item') ?? null;
+          if (isArrowKey(e.key) && currentId) {
+            e.preventDefault(); // don't scroll the page
+            focusItem(nextInDirection(currentId, e.key, network));
+          } else if (e.key === 'Home' || e.key === 'End') {
+            e.preventDefault();
+            const list = network.facilities;
+            focusItem((e.key === 'Home' ? list[0] : list.at(-1))?.id ?? null);
+          } else if (e.key === 'Escape' && selectedId !== null) {
+            select(null);
+          }
         }}
       >
         {children ?? (
@@ -228,79 +319,95 @@ function SegmentItem({
   segment: Segment;
   points: Point[];
 }) {
-  const { facilitiesById, products, unitsPerPx, selectedId, select } = useMap(
-    'PipelineMapSegments',
-  );
+  const {
+    facilitiesById,
+    products,
+    unitsPerPx,
+    selectedId,
+    select,
+    tabStopId,
+    setActiveId,
+  } = useMap('PipelineMapSegments');
   const selected = selectedId === segment.id;
   const ref = useRef<SVGGElement>(null);
   const { pressProps } = usePress({ ref, onPress: () => select(segment.id) });
   const d = toPathData(points);
   const pipeWidth = strokeWidthFor(segment.flowRate, segment.maxFlowRate);
   return (
-    <g
-      ref={ref}
-      {...pressProps}
-      role="button"
-      tabIndex={0}
-      aria-label={segmentLabel(segment, facilitiesById)}
-      aria-pressed={selected}
-      data-segment-id={segment.id}
-      data-selected={selected || undefined}
-      className="group cursor-pointer outline-hidden"
+    <Tooltip
+      content={
+        <SegmentDetails segment={segment} facilitiesById={facilitiesById} />
+      }
+      size="md"
+      delay={400}
     >
-      {/* A wide invisible stroke: an easier target than a 2px line. */}
-      <path
-        d={d}
-        fill="none"
-        vectorEffect="non-scaling-stroke"
-        className="stroke-transparent [pointer-events:stroke] [stroke-width:20px]"
-      />
-      {/* Focused: a hollow ring (focus color, then a page-colored gap inside it).
+      <g
+        ref={ref}
+        {...pressProps}
+        role="button"
+        tabIndex={tabStopId === segment.id ? 0 : -1}
+        onFocus={() => setActiveId(segment.id)}
+        data-map-item={segment.id}
+        aria-label={segmentLabel(segment, facilitiesById)}
+        aria-pressed={selected}
+        data-segment-id={segment.id}
+        data-selected={selected || undefined}
+        className="group cursor-pointer outline-hidden"
+      >
+        {/* A wide invisible stroke: an easier target than a 2px line. */}
+        <path
+          d={d}
+          fill="none"
+          vectorEffect="non-scaling-stroke"
+          className="stroke-transparent [pointer-events:stroke] [stroke-width:20px]"
+        />
+        {/* Focused: a hollow ring (focus color, then a page-colored gap inside it).
           Selected: a filled primary halo. Filled vs hollow keeps them apart even
           where both are yellow (dark theme). */}
-      <g
-        className="opacity-0 group-focus-visible:opacity-100"
-        data-focus-ring=""
-      >
-        <path
+        <g
+          className="opacity-0 group-focus-visible:opacity-100"
+          data-focus-ring=""
+        >
+          <path
+            d={d}
+            fill="none"
+            vectorEffect="non-scaling-stroke"
+            strokeWidth={pipeWidth + 18}
+            className="stroke-focus-ring [stroke-linecap:round] [stroke-linejoin:round]"
+          />
+          <path
+            d={d}
+            fill="none"
+            vectorEffect="non-scaling-stroke"
+            strokeWidth={pipeWidth + 14}
+            className="stroke-bg [stroke-linecap:round] [stroke-linejoin:round]"
+          />
+        </g>
+        {selected && (
+          <path
+            d={d}
+            fill="none"
+            vectorEffect="non-scaling-stroke"
+            strokeWidth={pipeWidth + 8}
+            data-selection-halo=""
+            className="stroke-primary [stroke-linecap:round] [stroke-linejoin:round]"
+          />
+        )}
+        <PipeSegment
           d={d}
-          fill="none"
-          vectorEffect="non-scaling-stroke"
-          strokeWidth={pipeWidth + 18}
-          className="stroke-focus-ring [stroke-linecap:round] [stroke-linejoin:round]"
+          status={segment.status}
+          flowRate={segment.flowRate}
+          maxFlowRate={segment.maxFlowRate}
         />
-        <path
-          d={d}
-          fill="none"
-          vectorEffect="non-scaling-stroke"
-          strokeWidth={pipeWidth + 14}
-          className="stroke-bg [stroke-linecap:round] [stroke-linejoin:round]"
+        <BatchTrain
+          points={points}
+          batches={segment.batches}
+          products={products}
+          unitsPerPx={unitsPerPx}
+          insetPx={TRAIN_INSET_PX}
         />
       </g>
-      {selected && (
-        <path
-          d={d}
-          fill="none"
-          vectorEffect="non-scaling-stroke"
-          strokeWidth={pipeWidth + 8}
-          data-selection-halo=""
-          className="stroke-primary [stroke-linecap:round] [stroke-linejoin:round]"
-        />
-      )}
-      <PipeSegment
-        d={d}
-        status={segment.status}
-        flowRate={segment.flowRate}
-        maxFlowRate={segment.maxFlowRate}
-      />
-      <BatchTrain
-        points={points}
-        batches={segment.batches}
-        products={products}
-        unitsPerPx={unitsPerPx}
-        insetPx={TRAIN_INSET_PX}
-      />
-    </g>
+    </Tooltip>
   );
 }
 
@@ -320,27 +427,37 @@ export function PipelineMapSegments() {
 }
 
 function FacilityItem({ facility }: { facility: Facility }) {
-  const { unitsPerPx, selectedId, select } = useMap('PipelineMapFacilities');
+  const { unitsPerPx, selectedId, select, tabStopId, setActiveId } = useMap(
+    'PipelineMapFacilities',
+  );
   const selected = selectedId === facility.id;
   const ref = useRef<SVGGElement>(null);
   const { pressProps } = usePress({ ref, onPress: () => select(facility.id) });
   return (
-    <FacilityNode
-      ref={ref}
-      {...pressProps}
-      role="button"
-      tabIndex={0}
-      aria-pressed={selected}
-      data-facility-id={facility.id}
-      className="cursor-pointer"
-      position={facility.position}
-      unitsPerPx={unitsPerPx}
-      label={facility.label}
-      kind={facility.kind}
-      alert={facility.alert}
-      tanks={facility.tanks}
-      selected={selected}
-    />
+    <Tooltip
+      content={<FacilityDetails facility={facility} />}
+      size="md"
+      delay={400}
+    >
+      <FacilityNode
+        ref={ref}
+        {...pressProps}
+        role="button"
+        tabIndex={tabStopId === facility.id ? 0 : -1}
+        onFocus={() => setActiveId(facility.id)}
+        data-map-item={facility.id}
+        aria-pressed={selected}
+        data-facility-id={facility.id}
+        className="cursor-pointer"
+        position={facility.position}
+        unitsPerPx={unitsPerPx}
+        label={facility.label}
+        kind={facility.kind}
+        alert={facility.alert}
+        tanks={facility.tanks}
+        selected={selected}
+      />
+    </Tooltip>
   );
 }
 
