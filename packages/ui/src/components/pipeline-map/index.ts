@@ -48,6 +48,13 @@ export {
   nextInDirection,
   type ArrowKey,
 } from './pipeline-navigation';
+export {
+  traceNetwork,
+  traceRole,
+  traceSummary,
+  type Trace,
+  type TraceRole,
+} from './pipeline-trace';
 export { FacilityKindMarker } from './facility-node';
 export { MapLegend, type MapLegendProps } from './map-legend';
 export {

@@ -1,0 +1,8 @@
+## 2026-11-02 — Pipeline Map interactive #1: trace the flow
+
+- **Built:** a pure `traceNetwork(network, id)` that returns `{ origin, upstream, downstream }` id sets. The map now has `tracedId` / `defaultTracedId` / `onTraceChange`, and `T` starts or stops a trace on the focused item. Items outside the trace fade (`data-dimmed`, opacity 25%), and a polite live region announces the trace. Escape clears the tooltip, then the trace, then the selection.
+- **Remember: a trace is a breadth-first search (BFS).** Start from one facility, follow every pipe leaving it (downstream) or arriving at it (upstream), and queue what you reach. A `seen` set stops it from looping forever on a ring of pipes. It's the same idea as walking a `parent → children` tree in Java, except a graph can loop, so you need `seen`.
+- **Remember: the second piece of state uses the same controlled/uncontrolled pattern.** `const traced = prop !== undefined ? prop : own`. With `tracedId` passed, the app owns the state (a "Trace selected" button can drive it); without it, the map does. Passing `null` means "no trace". Leaving the prop out means "you decide".
+- **Remember: fade with opacity, not color, and never fade the focus ring.** `data-dimmed:not-focus-visible:opacity-25` puts a dimmed item back to full strength while it has keyboard focus.
+- **Gotcha:** passing `aria-label={undefined}` through `{...props}` *erases* a name the child set before the spread. Only pass the key when you have a value: `{...(role && { 'aria-label': … })}`.
+- Docs: https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Reference/Attributes/aria-live

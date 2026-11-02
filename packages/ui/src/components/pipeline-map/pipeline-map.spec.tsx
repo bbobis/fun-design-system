@@ -350,4 +350,122 @@ describe('PipelineMap', () => {
       expect(tip.textContent).toContain('Tank T-3 above 95%');
     });
   });
+
+  describe('trace the flow', () => {
+    const dimmed = (container: HTMLElement) =>
+      [...container.querySelectorAll('[data-dimmed]')]
+        .map((el) => el.getAttribute('data-map-item'))
+        .sort();
+
+    it('T traces through the focused item: outside the trace is dimmed', async () => {
+      const user = userEvent.setup();
+      const onTraceChange = vi.fn();
+      const { container } = renderMap({ onTraceChange });
+      expect(dimmed(container)).toEqual([]);
+
+      await user.tab(); // Terminal A
+      await user.keyboard('{ArrowRight}{ArrowRight}{ArrowRight}{ArrowRight}'); // → C
+      await user.keyboard('t');
+
+      expect(onTraceChange).toHaveBeenCalledWith('C');
+      // B feeds E too, but nothing going to E reaches C: only that branch fades.
+      expect(dimmed(container)).toEqual(['B-E', 'E']);
+      const c = container.querySelector('[data-map-item="C"]');
+      expect(c?.getAttribute('data-trace')).toBe('origin');
+    });
+
+    it('says where each item sits, and announces the trace', async () => {
+      const user = userEvent.setup();
+      renderMap({ defaultTracedId: 'C' });
+      expect(
+        screen.getByRole('button', {
+          name: /^Station B, pump station, upstream$/,
+        }),
+      ).toBeTruthy();
+      expect(
+        screen.getByRole('button', {
+          name: /^Station C to Refinery F.*, downstream$/,
+        }),
+      ).toBeTruthy();
+      // An item outside the trace keeps its plain name.
+      expect(
+        screen.getByRole('button', {
+          name: /^Terminal E, terminal\. Danger: Emergency shutdown$/,
+        }),
+      ).toBeTruthy();
+
+      await user.tab(); // the tab stop: the first facility
+      await user.keyboard('t'); // trace from A instead
+      const live = document.querySelector('[aria-live="polite"]');
+      expect(live?.textContent).toBe(
+        'Tracing from Terminal A. Upstream: nothing. Downstream: 5 pipes, 5 facilities.',
+      );
+    });
+
+    it('T again on the traced item stops the trace', async () => {
+      const user = userEvent.setup();
+      const { container } = renderMap();
+      await user.tab(); // Terminal A
+      await user.keyboard('t');
+      expect(dimmed(container)).toEqual([]); // A feeds everything: nothing to dim
+      await user.keyboard('{ArrowRight}{ArrowRight}{ArrowDown}'); // A-B → B → B-E
+      await user.keyboard('t');
+      expect(dimmed(container)).toContain('C');
+      await user.keyboard('t');
+      expect(dimmed(container)).toEqual([]);
+      expect(document.querySelector('[aria-live="polite"]')?.textContent).toBe(
+        'Trace cleared.',
+      );
+    });
+
+    it('Escape clears the trace first, then the selection', async () => {
+      const user = userEvent.setup();
+      const onSelect = vi.fn();
+      const onTraceChange = vi.fn();
+      const { container } = renderMap({
+        defaultSelectedId: 'D',
+        defaultTracedId: 'E',
+        onSelect,
+        onTraceChange,
+      });
+      await user.tab(); // Tank Farm D (the selection): its tooltip opens
+      await user.keyboard('{Escape}'); // closes the tooltip
+      await user.keyboard('{Escape}'); // clears the trace…
+      expect(onTraceChange).toHaveBeenCalledWith(null);
+      expect(dimmed(container)).toEqual([]);
+      expect(onSelect).not.toHaveBeenCalled(); // …but keeps the selection
+      await user.keyboard('{Escape}');
+      expect(onSelect).toHaveBeenCalledWith(null);
+    });
+
+    it('is controlled by tracedId, and ignores Ctrl+T', async () => {
+      const user = userEvent.setup();
+      const onTraceChange = vi.fn();
+      const { container, rerender } = renderMap({
+        tracedId: 'B-E',
+        onTraceChange,
+      });
+      expect(dimmed(container)).toContain('C');
+      await user.tab();
+      await user.keyboard('{Control>}t{/Control}');
+      expect(onTraceChange).not.toHaveBeenCalled();
+      rerender(
+        <PipelineMap
+          network={DEMO_NETWORK}
+          products={DEMO_PRODUCTS}
+          aria-label="Demo network"
+          tracedId={null}
+        />,
+      );
+      expect(dimmed(container)).toEqual([]);
+    });
+
+    it('dimmed is an opacity class, and focus brings an item back to full strength', () => {
+      const { container } = renderMap({ defaultTracedId: 'C' });
+      const e = container.querySelector('[data-map-item="E"]');
+      expect(e?.getAttribute('class')).toContain(
+        'data-dimmed:not-focus-visible:opacity-25',
+      );
+    });
+  });
 });

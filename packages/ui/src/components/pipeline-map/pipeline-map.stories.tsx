@@ -5,6 +5,7 @@ import {
   PipelineMapFacilities,
   PipelineMapSegments,
 } from './pipeline-map';
+import { Button } from '../button/button';
 import { DEMO_NETWORK, DEMO_PRODUCTS } from './pipeline-map.fixtures';
 
 const meta = {
@@ -80,6 +81,56 @@ export const ControlledSelection: Story = {
 };
 
 /** Markers, line widths and gaps stay the same size in px; only the distances scale. */
+/**
+ * **Trace the flow.** Focus Station C and press `T`: everything that feeds it and
+ * everything it feeds stays bright, and the branch to Terminal E fades. `T` again
+ * stops; Escape clears the trace before the selection.
+ *
+ * The trace is its own state, separate from selection. Here the app controls both,
+ * so a button can trace whatever is selected (a mouse path until the context menu lands).
+ */
+export const TraceTheFlow: Story = {
+  render: (args) => {
+    function Example() {
+      const [selectedId, setSelectedId] = useState<string | null>('C');
+      const [tracedId, setTracedId] = useState<string | null>('C');
+      return (
+        <div className="flex flex-col gap-3 text-sm text-fg">
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              intent="outline"
+              size="sm"
+              disabled={selectedId === null}
+              onClick={() => setTracedId(selectedId)}
+            >
+              Trace selected
+            </Button>
+            <Button
+              intent="ghost"
+              size="sm"
+              disabled={tracedId === null}
+              onClick={() => setTracedId(null)}
+            >
+              Clear trace
+            </Button>
+            <span className="text-fg-muted">
+              {tracedId ? `Tracing from ${tracedId}` : 'No trace'}
+            </span>
+          </div>
+          <PipelineMap
+            {...args}
+            selectedId={selectedId}
+            onSelect={setSelectedId}
+            tracedId={tracedId}
+            onTraceChange={setTracedId}
+          />
+        </div>
+      );
+    }
+    return <Example />;
+  },
+};
+
 export const AtTwoWidths: Story = {
   render: (args) => (
     <div className="flex flex-col gap-4">
