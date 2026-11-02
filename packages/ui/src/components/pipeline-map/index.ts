@@ -41,6 +41,7 @@ export {
   type MapPadding,
   networkBounds,
   segmentLabel,
+  type PipelineMapHandle,
   type PipelineMapProps,
 } from './pipeline-map';
 export {
@@ -74,3 +75,8 @@ export {
   PipelineMapTable,
   type PipelineMapTableProps,
 } from './pipeline-map-table';
+export {
+  PipelineMapSearch,
+  searchOptions,
+  type PipelineMapSearchProps,
+} from './pipeline-map-search';

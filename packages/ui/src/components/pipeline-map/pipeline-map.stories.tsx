@@ -1,10 +1,12 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   PipelineMap,
   PipelineMapFacilities,
   PipelineMapSegments,
+  type PipelineMapHandle,
 } from './pipeline-map';
+import { PipelineMapSearch } from './pipeline-map-search';
 import { Button } from '../button/button';
 import { MapLegend } from './map-legend';
 import { PipelineMapTable } from './pipeline-map-table';
@@ -183,6 +185,41 @@ export const FollowABatch: Story = {
             network={DEMO_NETWORK}
             followedBatch={batch}
             onFollowBatch={setBatch}
+          />
+        </div>
+      );
+    }
+    return <Example />;
+  },
+};
+
+/**
+ * **Search and jump.** Type "tank" and press Enter: keyboard focus lands on Tank Farm
+ * D (with its tooltip), and it's selected. Arrow keys carry on from there.
+ *
+ * The search and the map don't know about each other. The page gets an id from the
+ * search and calls `mapRef.current.focusItem(id)` on the map's ref handle.
+ */
+export const SearchAndJump: Story = {
+  render: (args) => {
+    function Example() {
+      const mapRef = useRef<PipelineMapHandle>(null);
+      const [selectedId, setSelectedId] = useState<string | null>(null);
+      return (
+        <div className="flex flex-col gap-4">
+          <PipelineMapSearch
+            network={DEMO_NETWORK}
+            className="max-w-sm"
+            onPick={(id) => {
+              setSelectedId(id);
+              mapRef.current?.focusItem(id);
+            }}
+          />
+          <PipelineMap
+            {...args}
+            ref={mapRef}
+            selectedId={selectedId}
+            onSelect={setSelectedId}
           />
         </div>
       );

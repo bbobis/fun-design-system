@@ -1,0 +1,7 @@
+## 2026-11-02 — Pipeline Map interactive #4: search and jump
+
+- **Built:** `PipelineMapSearch`, a combobox of every facility and pipe with kind/status icons and a description line. Each option's `value` is the map id, and the box clears after a pick. `PipelineMap` now takes `ref` and gives back a `PipelineMapHandle` with `focusItem(id): boolean`. `searchOptions(network)` is exported for custom search UIs.
+- **Remember (the prediction): props describe state, refs trigger actions.** "Move focus to D" happens once, at a moment. As a `focusedId` prop, the map would have to notice the change, focus, and then the parent would have to reset the prop, or picking D twice would do nothing. A ref method has none of that: `mapRef.current?.focusItem('D')`. Use this rarely, for focus, scroll and play/pause; everything else should stay a prop.
+- **Remember: `useImperativeHandle` decides what the parent's ref gets.** `useImperativeHandle(ref, () => ({ focusItem }))` hands over a small object instead of the `<svg>`, which is like exposing an interface instead of the implementation class in Java. In **React 19** `ref` is an ordinary prop on function components, so there's no `forwardRef` wrapper. We `Omit` the svg's own `ref` from the props type, just like `filter` and `points`.
+- **Remember: check focus in a real browser.** jsdom said focus moved; Chromium confirmed it (the combobox doesn't pull focus back after Enter). Focus bugs often only show up in real browsers.
+- Docs: https://react.dev/reference/react/useImperativeHandle
