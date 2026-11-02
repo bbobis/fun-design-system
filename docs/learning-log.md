@@ -751,3 +751,10 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Remember: `motion-safe:` over `motion-reduce:animate-none`.** I moved Skeleton's pulse to `motion-safe:animate-pulse`; the result is the same and it now follows the recipe's motion rule. The old test asserted the old class, so I updated it to check the behavior: animated only when motion is OK, never unconditionally.
 - **Remember: a `wave` is just a moving background.** A gradient twice the element's width (`bg-size-[200%_100%]`), with `background-position` animated from 100% to −100%. It's one keyframe in `@theme`, reversed in right-to-left.
 - Docs: https://developer.mozilla.org/en-US/docs/Web/CSS/@media/prefers-reduced-motion
+
+## 2026-11-02 — MessageList (new): a mailbox list on React Aria GridList
+- **Built:** `MessageList`, with a checkbox per row, unread rows in bold with a dot, a preview line, a `<time>`, `openId` highlighting, `density` and an empty state. It also exports pure helpers, `selectBy` (all / none / read / unread) and `markRead`, each with its own tests. This is part 1 of the Mail page.
+- **Remember (the prediction): Space ticks, Enter opens, but only while nothing is ticked.** React Aria's checkbox lists treat "something is ticked" as a selection mode. In that mode a click ticks the row, Enter waits, and Escape clears the ticks. We chose to follow React Aria rather than add our own event code. A test covers each step.
+- **Remember: the row's name *is* `textValue`.** React Aria names a GridList row from `textValue` alone, so we put in it what a screen reader should say: "Ana Ruiz, INV-1042 paid, 9:41 AM, unread". "unread" goes **last**, because typing a letter jumps by the start of that name and people type the sender's initial. Chromium's tree confirms the name.
+- **Remember: the open row is shown, not announced.** The open message gets a bar and a fill. The Mail page (part 2) decides how to announce it, since it owns the reading pane.
+- Docs: https://react-spectrum.adobe.com/react-aria/GridList.html#selection-behavior

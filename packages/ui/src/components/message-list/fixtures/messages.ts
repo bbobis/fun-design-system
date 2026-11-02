@@ -1,0 +1,73 @@
+import type { MessageItem } from '../message-list';
+
+/** Story and test data: a small invoicing inbox, newest first. */
+export const sampleMessages: MessageItem[] = [
+  {
+    id: 'm1',
+    from: 'Ana Ruiz',
+    subject: 'INV-1042 paid',
+    preview: 'Thanks! Payment went out this morning, reference 88231.',
+    date: '9:41 AM',
+    dateTime: '2026-11-02T09:41',
+    unread: true,
+  },
+  {
+    id: 'm2',
+    from: 'Northwind Traders',
+    subject: 'Question about the tax line',
+    preview: 'Hi, the October invoice shows GST twice, can you check?',
+    date: '8:15 AM',
+    dateTime: '2026-11-02T08:15',
+    unread: true,
+  },
+  {
+    id: 'm3',
+    from: 'Sam Lee',
+    subject: 'New PO for December',
+    preview: 'Attached is PO-5521. Same terms as last time.',
+    date: 'Yesterday',
+    dateTime: '2026-11-01',
+  },
+  {
+    id: 'm4',
+    from: 'Acme Corp',
+    subject: 'Remittance advice',
+    preview: 'Please find attached our remittance for invoices 1031–1036.',
+    date: 'Oct 31',
+    dateTime: '2026-10-31',
+    unread: true,
+  },
+  {
+    id: 'm5',
+    from: 'Kim Park',
+    subject: 'Re: Late fee',
+    preview: 'Understood, we will pay the balance by Friday.',
+    date: 'Oct 30',
+    dateTime: '2026-10-30',
+  },
+  {
+    id: 'm6',
+    from: 'Globex Billing',
+    subject: 'Your statement is ready',
+    preview: 'Statement for account 2241 is available in the portal.',
+    date: 'Oct 29',
+    dateTime: '2026-10-29',
+  },
+  {
+    id: 'm7',
+    from: 'Initech',
+    subject: 'Dispute: INV-1027',
+    preview: 'We were charged for 12 licences but only use 10.',
+    date: 'Oct 28',
+    dateTime: '2026-10-28',
+    unread: true,
+  },
+  {
+    id: 'm8',
+    from: 'Wonka Foods',
+    subject: 'Change of billing address',
+    preview: 'From November, please send invoices to our new office.',
+    date: 'Oct 27',
+    dateTime: '2026-10-27',
+  },
+];

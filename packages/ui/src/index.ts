@@ -24,6 +24,7 @@ export * from './components/input';
 export * from './components/label';
 export * from './components/link';
 export * from './components/menu';
+export * from './components/message-list';
 export * from './components/multi-combobox';
 export * from './components/number-field';
 export * from './components/page-header';
