@@ -758,6 +758,19 @@ Short notes after each task: what was built, what to remember, one link to read.
 - **Remember: the row's name *is* `textValue`.** React Aria names a GridList row from `textValue` alone, so we put in it what a screen reader should say: "Ana Ruiz, INV-1042 paid, 9:41 AM, unread". "unread" goes **last**, because typing a letter jumps by the start of that name and people type the sender's initial. Chromium's tree confirms the name.
 - **Remember: the open row is shown, not announced.** The open message gets a bar and a fill. The Mail page (part 2) decides how to announce it, since it owns the reading pane.
 - Docs: https://react-spectrum.adobe.com/react-aria/GridList.html#selection-behavior
+
+## 2026-11-02 — Mail page pattern (part 2): folders, toolbar, reading pane
+- **Built:** `src/patterns/mail/`, a `Patterns/Mail` story built only from library parts:
+  - AppShell + SideNav folders with unread badges, switched through our `RouterProvider`
+  - a toolbar: page checkbox (all / some / none), a "Select by ▾" Menu, Mark as read / unread
+  - SearchField, an "Unread only" Switch, and a compact Pagination footer
+  - MessageList, plus a reading pane that becomes a phone view with a Back button
+  - Pure logic in `mail-logic.ts` with its own tests. It's a pattern, not a package export: apps copy it and swap in their API.
+- **Remember: say what a bulk action did.** Marking 9 messages read only changes bold text, so a screen reader hears nothing. A `role="status"` line says "9 conversations marked as read." without moving focus.
+- **Remember: when content *replaces* where focus was, move focus yourself.** On phones the pane replaces the list. Opening a message moves focus to the pane's `h2` (`tabIndex={-1}`, reachable from code but not a Tab stop). Back focuses the grid, which returns to the row it last had. Checked in Chromium at 390px.
+- **Gotcha (again): a leading space in `sr-only` text is dropped from the name.** The folder badge reads "Inbox, 20 unread" because the hidden text starts with a comma, and the visible "20" is `aria-hidden`.
+- Docs: https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Reference/Roles/status_role
+
 ## 2026-11-02 — Pipeline Map step 1: data types + pure geometry
 - **Built:** `pipeline-model.ts` (the `PipelineNetwork` types: facilities, segments, batches, tanks) and `pipeline-geometry.ts` with `segmentPath`, `strokeWidthFor` and `batchOffsets`, plus 13 unit tests. No React yet; only the types are exported.
 - **Remember (the prediction): data order and drawing order can disagree.** Batches arrive downstream-first (oldest first), but a path's offset 0 is its `from` end. So `batches[0]` sits at the **far** end: the walk starts at 1 and moves upstream. 500/300/200 m³ → A at 0.5–1, B at 0.2–0.5, C at 0–0.2.
