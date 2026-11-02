@@ -202,7 +202,36 @@ downward, the name lands on that pipe. Move it with `labelPlacement`:
 - The map adds room on an edge only when a label there points out of the map (for
   example `left` on the left-most facility), so other maps keep their size.
 
-## 5. Keyboard and screen readers
+## 5. Trace the flow
+
+A trace answers "what feeds this, and what does it feed?". Everything upstream and
+downstream of one facility or pipe stays bright; the rest fades.
+
+```tsx
+const [tracedId, setTracedId] = useState<string | null>(null);
+
+<PipelineMap
+  aria-label="Mainline"
+  network={network}
+  products={products}
+  tracedId={tracedId}            // or defaultTracedId when you don't need to know
+  onTraceChange={setTracedId}    // T on an item starts/stops; Escape clears
+/>
+<button onClick={() => setTracedId(selectedId)}>Trace selected</button>
+```
+
+- **Separate from selection.** You can trace Station C and select a pipe on the
+  other side. Escape clears the trace first, then the selection.
+- **From a pipe**, upstream starts at its `from` facility and downstream at its `to`.
+- **Faded = lower opacity**, not a different color, so it reads in grayscale. A focused
+  item always shows at full strength.
+- **Screen readers** hear a summary when a trace starts ("Tracing from Station C.
+  Upstream: 2 pipes, 2 facilities. Downstream: …"), and each traced item's name ends
+  with "upstream", "downstream" or "trace start".
+- Need the sets yourself (for a table filter, say)? `traceNetwork(network, id)` returns
+  `{ origin, upstream, downstream }`.
+
+## 6. Keyboard and screen readers
 
 | Key           | Does                                                                                   |
 | ------------- | -------------------------------------------------------------------------------------- |
@@ -210,7 +239,8 @@ downward, the name lands on that pipe. Move it with `labelPlacement`:
 | Arrow keys    | move along the network: facility → the pipe leaving that way → the facility at its end |
 | Home / End    | first / last facility                                                                  |
 | Enter / Space | select the focused item                                                                |
-| Escape        | closes the tooltip if one is open; the next Escape clears the selection                |
+| T             | traces the flow through the focused item (again to stop)                               |
+| Escape        | closes the tooltip if one is open, then clears the trace, then clears the selection    |
 
 - Hovering or focusing an item shows its details (batches, tank levels) in a tooltip.
   The same text is the item's screen-reader description.

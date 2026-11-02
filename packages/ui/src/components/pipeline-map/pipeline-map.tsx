@@ -1,6 +1,7 @@
 import {
   createContext,
   useContext,
+  useEffect,
   useLayoutEffect,
   useMemo,
   useRef,
@@ -12,9 +13,16 @@ import { usePress } from 'react-aria';
 import { cn } from '../../utils/cn';
 import { Tooltip } from '../tooltip/tooltip';
 import { BatchTrain } from './batch-train';
-import { FacilityNode } from './facility-node';
+import { FacilityNode, facilityLabel } from './facility-node';
 import { PipeSegment } from './pipe-segment';
 import { isArrowKey, nextInDirection } from './pipeline-navigation';
+import {
+  traceNetwork,
+  traceRole,
+  traceSummary,
+  type Trace,
+  type TraceRole,
+} from './pipeline-trace';
 import { tankFill } from './tank-gauge';
 import { segmentPoints, strokeWidthFor, toPathData } from './pipeline-geometry';
 import type {
@@ -118,6 +126,31 @@ export function segmentLabel(
   return `${from} to ${to}, ${segment.status}, ${numberFormat.format(segment.flowRate)} m³/h, ${count} ${count === 1 ? 'batch' : 'batches'}`;
 }
 
+/** A pipe's short name, "Station B to Station C". */
+function routeName(
+  segment: Segment,
+  facilitiesById: ReadonlyMap<string, Facility>,
+): string {
+  const from = facilitiesById.get(segment.from)?.label ?? segment.from;
+  const to = facilitiesById.get(segment.to)?.label ?? segment.to;
+  return `${from} to ${to}`;
+}
+
+/** Added to an item's accessible name while a trace is on, so arrowing through says where it sits. */
+const TRACE_WORDS: Record<TraceRole, string> = {
+  origin: 'trace start',
+  upstream: 'upstream',
+  downstream: 'downstream',
+};
+
+/**
+ * Faded while outside a trace: lower opacity is a contrast change, not a color, so it
+ * reads in grayscale too. A focused item stays at full strength, so the focus ring is
+ * never faint.
+ */
+const DIMMED =
+  'transition-opacity motion-reduce:transition-none data-dimmed:not-focus-visible:opacity-25';
+
 /** Tooltip body for a pipe: route, status and flow, then its batches (downstream first). */
 function SegmentDetails({
   segment,
@@ -172,6 +205,8 @@ type MapContextValue = {
   unitsPerPx: number;
   selectedId: string | null;
   select: (id: string | null) => void;
+  /** The current trace, or `null`. Items outside it are dimmed. */
+  trace: Trace | null;
   /** The one item that is in the tab order (roving tabindex). */
   tabStopId: string | null;
   /** Remember the item the user moved to, so Tab comes back to it. */
@@ -224,6 +259,16 @@ export type PipelineMapProps = Omit<
   /** Called with the new id when the user selects something, or `null` when they clear it (Escape). */
   onSelect?: (id: string | null) => void;
   /**
+   * The facility or pipe being traced (controlled). Everything upstream and downstream
+   * of it stays bright; the rest fades. `null` = no trace.
+   * Separate from selection: you can trace one thing and select another.
+   */
+  tracedId?: string | null;
+  /** The starting trace when uncontrolled. */
+  defaultTracedId?: string | null;
+  /** Called when the user starts a trace (`T` on an item) or clears it (`T` again, or Escape). */
+  onTraceChange?: (id: string | null) => void;
+  /**
    * The layers to draw, in paint order. Defaults to pipes, then facilities on top.
    * SVG has no z-index: what comes later covers what came before.
    */
@@ -237,13 +282,16 @@ export type PipelineMapProps = Omit<
  *
  * Keyboard: the map is **one Tab stop**. Arrow keys move along the network (facility →
  * the pipe leaving that way → the facility at its end), Home/End jump to the first and
- * last facility, Enter/Space select, Escape clears. Click works too. Hovering or
+ * last facility, Enter/Space select, `T` traces the flow through the focused item
+ * (again to stop), Escape clears. Click works too. Hovering or
  * focusing an item shows its details (batches, tank levels) in a tooltip, which is
  * also its screen-reader description.
  *
  * Escape does one thing at a time: if a tooltip is open, it only closes the tooltip
  * (React Aria catches that Escape on the document, before it reaches the map); the
- * next Escape clears the selection.
+ * next clears the trace, and the one after that clears the selection.
+ *
+ * A polite live region announces a trace ("Tracing from Station C. Upstream: …").
  *
  * Facility and segment ids must be unique across both lists.
  */
@@ -253,6 +301,9 @@ export function PipelineMap({
   selectedId: selectedProp,
   defaultSelectedId = null,
   onSelect,
+  tracedId: tracedProp,
+  defaultTracedId = null,
+  onTraceChange,
   children,
   className,
   onKeyDown,
@@ -276,6 +327,38 @@ export function PipelineMap({
     if (selectedProp === undefined) setOwn(id);
     onSelect?.(id);
   };
+
+  // The trace: same controlled/uncontrolled pattern as selection.
+  const [ownTrace, setOwnTrace] = useState<string | null>(defaultTracedId);
+  const tracedId = tracedProp !== undefined ? tracedProp : ownTrace;
+  const setTraced = (id: string | null) => {
+    if (tracedProp === undefined) setOwnTrace(id);
+    onTraceChange?.(id);
+  };
+  const trace = useMemo(
+    () => (tracedId === null ? null : traceNetwork(network, tracedId)),
+    [network, tracedId],
+  );
+
+  // Announce trace changes (not the first render: nothing changed yet).
+  const [announcement, setAnnouncement] = useState('');
+  const firstRender = useRef(true);
+  useEffect(() => {
+    if (firstRender.current) {
+      firstRender.current = false;
+      return;
+    }
+    if (!trace) {
+      setAnnouncement('Trace cleared.');
+      return;
+    }
+    const segment = network.segments.find((s) => s.id === trace.origin);
+    const name = segment
+      ? routeName(segment, facilitiesById)
+      : (facilitiesById.get(trace.origin)?.label ?? trace.origin);
+    setAnnouncement(traceSummary(trace, network, name));
+    // Keyed on the origin only: a new trace speaks, a data refresh doesn't.
+  }, [trace?.origin]);
 
   // Roving tabindex: exactly one item has tabIndex 0. It's the last item the user
   // moved to; before that, the selection; before that, the first facility.
@@ -306,6 +389,7 @@ export function PipelineMap({
         unitsPerPx,
         selectedId,
         select,
+        trace,
         tabStopId,
         setActiveId,
       }}
@@ -327,6 +411,11 @@ export function PipelineMap({
             e.preventDefault();
             const list = network.facilities;
             focusItem((e.key === 'Home' ? list[0] : list.at(-1))?.id ?? null);
+          } else if ((e.key === 't' || e.key === 'T') && currentId) {
+            if (e.ctrlKey || e.metaKey || e.altKey) return; // leave shortcuts alone
+            setTraced(tracedId === currentId ? null : currentId);
+          } else if (e.key === 'Escape' && tracedId !== null) {
+            setTraced(null);
           } else if (e.key === 'Escape' && selectedId !== null) {
             select(null);
           }
@@ -339,6 +428,10 @@ export function PipelineMap({
           </>
         )}
       </svg>
+      {/* Outside the svg: a live region inside role="group" svg is less reliable. */}
+      <span className="sr-only" aria-live="polite">
+        {announcement}
+      </span>
     </MapContext.Provider>
   );
 }
@@ -361,10 +454,13 @@ function SegmentItem({
     unitsPerPx,
     selectedId,
     select,
+    trace,
     tabStopId,
     setActiveId,
   } = useMap('PipelineMapSegments');
   const selected = selectedId === segment.id;
+  const role = trace ? traceRole(trace, segment.id) : null;
+  const label = segmentLabel(segment, facilitiesById);
   const ref = useRef<SVGGElement>(null);
   const { pressProps } = usePress({ ref, onPress: () => select(segment.id) });
   const d = toPathData(points);
@@ -384,11 +480,13 @@ function SegmentItem({
         tabIndex={tabStopId === segment.id ? 0 : -1}
         onFocus={() => setActiveId(segment.id)}
         data-map-item={segment.id}
-        aria-label={segmentLabel(segment, facilitiesById)}
+        aria-label={role ? `${label}, ${TRACE_WORDS[role]}` : label}
         aria-pressed={selected}
         data-segment-id={segment.id}
         data-selected={selected || undefined}
-        className="group cursor-pointer outline-hidden"
+        data-trace={role ?? undefined}
+        data-dimmed={(trace && !role) || undefined}
+        className={cn('group cursor-pointer outline-hidden', DIMMED)}
       >
         {/* A wide invisible stroke: an easier target than a 2px line. */}
         <path
@@ -463,10 +561,10 @@ export function PipelineMapSegments() {
 }
 
 function FacilityItem({ facility }: { facility: Facility }) {
-  const { unitsPerPx, selectedId, select, tabStopId, setActiveId } = useMap(
-    'PipelineMapFacilities',
-  );
+  const { unitsPerPx, selectedId, select, trace, tabStopId, setActiveId } =
+    useMap('PipelineMapFacilities');
   const selected = selectedId === facility.id;
+  const role = trace ? traceRole(trace, facility.id) : null;
   const ref = useRef<SVGGElement>(null);
   const { pressProps } = usePress({ ref, onPress: () => select(facility.id) });
   return (
@@ -484,7 +582,14 @@ function FacilityItem({ facility }: { facility: Facility }) {
         data-map-item={facility.id}
         aria-pressed={selected}
         data-facility-id={facility.id}
-        className="cursor-pointer"
+        data-trace={role ?? undefined}
+        data-dimmed={(trace && !role) || undefined}
+        // Only while tracing: replaces the node's own name to add where it sits. Passing
+        // `aria-label={undefined}` would erase the node's name (props spread over it).
+        {...(role && {
+          'aria-label': `${facilityLabel(facility)}, ${TRACE_WORDS[role]}`,
+        })}
+        className={cn('cursor-pointer', DIMMED)}
         position={facility.position}
         unitsPerPx={unitsPerPx}
         label={facility.label}
