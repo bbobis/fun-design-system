@@ -13,10 +13,13 @@ import {
 } from 'react';
 import { usePress } from 'react-aria';
 import { cn } from '../../utils/cn';
+import { cssVars } from '../../utils/css-vars';
+import { MenuItem, MenuSection, MenuSeparator } from '../menu/menu';
 import { Tooltip } from '../tooltip/tooltip';
 import { BatchTrain } from './batch-train';
 import { FacilityNode, facilityLabel } from './facility-node';
 import { PipeSegment } from './pipe-segment';
+import { MapContextMenu } from './pipeline-map-context-menu';
 import {
   batchSummary,
   findBatch,
@@ -233,6 +236,10 @@ type MapContextValue = {
   tabStopId: string | null;
   /** An item got focus: it becomes the tab stop (and the selection, if that follows focus). */
   onItemFocus: (id: string) => void;
+  /** Opens the context menu for an item (at the pointer, for a right-click). `undefined` when off. */
+  openMenu:
+    | ((id: string, point?: { x: number; y: number }) => void)
+    | undefined;
 };
 
 const MapContext = createContext<MapContextValue | null>(null);
@@ -263,6 +270,17 @@ function useWidth(ref: React.RefObject<Element | null>): number {
 }
 
 /* ---------- PipelineMap ---------- */
+
+/** One app action in the map's context menu. Data, not an element: see `contextMenu`. */
+export interface MapMenuAction {
+  /** Visible text, e.g. "Show details". Also what typing a letter matches. */
+  label: string;
+  /** Runs **after** the menu has closed and focus is back on the item. */
+  onAction: () => void;
+  /** `danger` for destructive actions. @default 'default' */
+  intent?: 'default' | 'danger';
+  disabled?: boolean;
+}
 
 /**
  * What you can do to a map from outside it, through its `ref`. For things a prop
@@ -342,6 +360,20 @@ export type PipelineMapProps = Omit<
    */
   selectionFollowsFocus?: boolean;
   /**
+   * A right-click / Shift+F10 / Menu-key menu on every facility and pipe. Off by default
+   * (right-click keeps the browser's own menu).
+   * - `true`: the built-in actions: Select, Trace flow from here, and (on a pipe)
+   *   follow one of its batches.
+   * - a function: the built-ins, then a separator, then the actions you return for
+   *   that id (`{ label: 'Show details', onAction }`).
+   *
+   * Actions are **data, not `MenuItem`s**, because the map decides *when* they run:
+   * after the menu closes and focus is back on the item. While the menu is open its
+   * popover traps focus, so an action that moved focus (to a details panel, say)
+   * would be undone. Running it afterwards lets it win.
+   */
+  contextMenu?: true | ((id: string) => readonly MapMenuAction[]);
+  /**
    * The layers to draw, in paint order. Defaults to pipes, then facilities on top.
    * SVG has no z-index: what comes later covers what came before.
    */
@@ -382,6 +414,7 @@ export function PipelineMap({
   defaultFollowedBatch = null,
   onFollowBatchChange,
   selectionFollowsFocus = false,
+  contextMenu,
   ref,
   children,
   className,
@@ -501,6 +534,50 @@ export function PipelineMap({
   // plain prop on function components, so no forwardRef is needed.
   useImperativeHandle(ref, () => ({ focusItem }));
 
+  // The context menu: which item, and where (a pointer point, or the item itself).
+  const [menu, setMenu] = useState<{
+    id: string;
+    point: { x: number; y: number } | null;
+  } | null>(null);
+  const pointRef = useRef<HTMLSpanElement>(null);
+  /** The picked action, waiting for the menu to close. */
+  const pending = useRef<(() => void) | null>(null);
+  const afterClose = (action: () => void) => () => {
+    pending.current = action;
+  };
+  const itemRef = useRef<Element | null>(null);
+  const openMenu = contextMenu
+    ? (id: string, point?: { x: number; y: number }) => {
+        itemRef.current =
+          svgRef.current?.querySelector(
+            `[data-map-item="${CSS.escape(id)}"]`,
+          ) ?? null;
+        setMenu({ id, point: point ?? null });
+      }
+    : undefined;
+  const closeMenu = () => {
+    const id = menu?.id ?? null;
+    setMenu(null);
+    // Next frame, once the popover (and its focus trap) is gone:
+    // 1. focus back on the item, like any menu (if focus fell to <body>);
+    // 2. then run the picked action, so one that moves focus on purpose wins.
+    requestAnimationFrame(() => {
+      const active = document.activeElement;
+      if (!active || active === document.body) focusItem(id);
+      const action = pending.current;
+      pending.current = null;
+      action?.();
+    });
+  };
+  const menuSegment = menu
+    ? network.segments.find((s) => s.id === menu.id)
+    : undefined;
+  const menuName = menu
+    ? menuSegment
+      ? routeName(menuSegment, facilitiesById)
+      : (facilitiesById.get(menu.id)?.label ?? menu.id)
+    : '';
+
   return (
     <MapContext.Provider
       value={{
@@ -515,6 +592,7 @@ export function PipelineMap({
         followed,
         follow,
         tabStopId,
+        openMenu,
         onItemFocus: (id) => {
           setActiveId(id);
           if (selectionFollowsFocus && id !== selectedId) select(id);
@@ -538,6 +616,13 @@ export function PipelineMap({
             e.preventDefault();
             const list = network.facilities;
             focusItem((e.key === 'Home' ? list[0] : list.at(-1))?.id ?? null);
+          } else if (
+            openMenu &&
+            currentId &&
+            (e.key === 'ContextMenu' || (e.shiftKey && e.key === 'F10'))
+          ) {
+            e.preventDefault(); // no browser menu
+            openMenu(currentId);
           } else if (
             (e.key === 'b' || e.key === 'B') &&
             currentId &&
@@ -572,6 +657,72 @@ export function PipelineMap({
       <span className="sr-only" aria-live="polite">
         {announcement}
       </span>
+      {/* A 0×0 marker at the pointer, for a right-click menu to open from. */}
+      {menu?.point && (
+        <span
+          ref={pointRef}
+          aria-hidden
+          className="pointer-events-none fixed top-(--y) left-(--x) size-0"
+          style={cssVars({
+            '--x': `${menu.point.x}px`,
+            '--y': `${menu.point.y}px`,
+          })}
+        />
+      )}
+      {menu && (
+        <MapContextMenu
+          anchorRef={menu.point ? pointRef : itemRef}
+          label={`Actions for ${menuName}`}
+          onClose={closeMenu}
+        >
+          <MenuItem
+            onAction={afterClose(() =>
+              select(selectedId === menu.id ? null : menu.id),
+            )}
+          >
+            {selectedId === menu.id ? 'Deselect' : 'Select'}
+          </MenuItem>
+          <MenuItem
+            onAction={afterClose(() =>
+              setTraced(tracedId === menu.id ? null : menu.id),
+            )}
+          >
+            {tracedId === menu.id ? 'Stop tracing' : 'Trace flow from here'}
+          </MenuItem>
+          {menuSegment && menuSegment.batches.length > 0 && (
+            <MenuSection title="Follow a batch">
+              {menuSegment.batches.map((b) => (
+                <MenuItem
+                  key={b.name}
+                  id={b.name}
+                  onAction={afterClose(() =>
+                    follow(followedName === b.name ? null : b.name),
+                  )}
+                >
+                  {followedName === b.name
+                    ? `Stop following ${b.name}`
+                    : `${b.name} · ${b.product}`}
+                </MenuItem>
+              ))}
+            </MenuSection>
+          )}
+          {typeof contextMenu === 'function' && (
+            <>
+              <MenuSeparator />
+              {contextMenu(menu.id).map((action) => (
+                <MenuItem
+                  key={action.label}
+                  intent={action.intent}
+                  disabled={action.disabled}
+                  onAction={afterClose(action.onAction)}
+                >
+                  {action.label}
+                </MenuItem>
+              ))}
+            </>
+          )}
+        </MapContextMenu>
+      )}
     </MapContext.Provider>
   );
 }
@@ -600,6 +751,7 @@ function SegmentItem({
     follow,
     tabStopId,
     onItemFocus,
+    openMenu,
   } = useMap('PipelineMapSegments');
   const selected = selectedId === segment.id;
   const role = trace ? traceRole(trace, segment.id) : null;
@@ -641,6 +793,13 @@ function SegmentItem({
         role="button"
         tabIndex={tabStopId === segment.id ? 0 : -1}
         onFocus={() => onItemFocus(segment.id)}
+        onContextMenu={
+          openMenu &&
+          ((e) => {
+            e.preventDefault();
+            openMenu(segment.id, { x: e.clientX, y: e.clientY });
+          })
+        }
         data-map-item={segment.id}
         aria-label={label}
         aria-pressed={selected}
@@ -732,8 +891,15 @@ export function PipelineMapSegments() {
 }
 
 function FacilityItem({ facility }: { facility: Facility }) {
-  const { unitsPerPx, selectedId, select, trace, tabStopId, onItemFocus } =
-    useMap('PipelineMapFacilities');
+  const {
+    unitsPerPx,
+    selectedId,
+    select,
+    trace,
+    tabStopId,
+    onItemFocus,
+    openMenu,
+  } = useMap('PipelineMapFacilities');
   const selected = selectedId === facility.id;
   const role = trace ? traceRole(trace, facility.id) : null;
   const ref = useRef<SVGGElement>(null);
@@ -750,6 +916,13 @@ function FacilityItem({ facility }: { facility: Facility }) {
         role="button"
         tabIndex={tabStopId === facility.id ? 0 : -1}
         onFocus={() => onItemFocus(facility.id)}
+        onContextMenu={
+          openMenu &&
+          ((e) => {
+            e.preventDefault();
+            openMenu(facility.id, { x: e.clientX, y: e.clientY });
+          })
+        }
         data-map-item={facility.id}
         aria-pressed={selected}
         data-facility-id={facility.id}

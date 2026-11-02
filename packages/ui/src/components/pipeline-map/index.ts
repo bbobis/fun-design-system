@@ -41,6 +41,7 @@ export {
   type MapPadding,
   networkBounds,
   segmentLabel,
+  type MapMenuAction,
   type PipelineMapHandle,
   type PipelineMapProps,
 } from './pipeline-map';

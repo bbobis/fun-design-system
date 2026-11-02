@@ -275,6 +275,65 @@ export const WithDetailsPanel: Story = {
   },
 };
 
+/**
+ * **Context menu.** Right-click a facility or pipe, or focus one and press Shift+F10
+ * (or the Menu key). Built-in: Select, Trace flow from here, and (on a pipe) follow one
+ * of its batches. This page adds "Show details", which moves focus to the panel, and
+ * "Copy id".
+ *
+ * Escape, or any pick, puts focus back on the item. "Show details" then moves it on,
+ * because that's what it's for.
+ */
+export const WithContextMenu: Story = {
+  render: (args) => {
+    function Example() {
+      const panelRef = useRef<HTMLElement>(null);
+      const [selectedId, setSelectedId] = useState<string | null>(null);
+      const [tracedId, setTracedId] = useState<string | null>(null);
+      const [batch, setBatch] = useState<string | null>(null);
+      return (
+        <div className="grid gap-6 lg:grid-cols-[1fr_18rem]">
+          <PipelineMap
+            {...args}
+            selectedId={selectedId}
+            onSelect={setSelectedId}
+            tracedId={tracedId}
+            onTraceChange={setTracedId}
+            followedBatch={batch}
+            onFollowBatchChange={setBatch}
+            contextMenu={(id) => [
+              {
+                label: 'Show details',
+                onAction: () => {
+                  setSelectedId(id);
+                  panelRef.current?.focus();
+                },
+              },
+              {
+                label: 'Copy id',
+                onAction: () => void navigator.clipboard?.writeText(id),
+              },
+            ]}
+          />
+          <PipelineMapDetails
+            ref={panelRef}
+            tabIndex={-1}
+            network={DEMO_NETWORK}
+            selectedId={selectedId}
+            onSelect={setSelectedId}
+            tracedId={tracedId}
+            onTraceChange={setTracedId}
+            followedBatch={batch}
+            onFollowBatch={setBatch}
+            className="rounded-lg border border-border p-4 focus-visible:outline-2 focus-visible:outline-focus-ring"
+          />
+        </div>
+      );
+    }
+    return <Example />;
+  },
+};
+
 export const AtTwoWidths: Story = {
   render: (args) => (
     <div className="flex flex-col gap-4">
