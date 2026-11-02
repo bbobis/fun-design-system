@@ -85,6 +85,17 @@
   --color-yellow-800: #704d00;
   --color-yellow-900: #382600;
 
+  /* Data-viz hues: categorical colors for things the brand palette can't tell apart
+   * (pipeline products). Kept off green, orange and red, which mean status.
+   * Validated as a set with the dataviz palette checker: every pair is distinguishable,
+   * including under color-blindness simulation, in both themes. Only 3 pass that bar. */
+  --color-viz-blue: #2a78d6;
+  --color-viz-blue-bright: #3a86e0;
+  --color-viz-magenta: #c0397a;
+  --color-viz-magenta-bright: #d55181;
+  --color-viz-gold: #b57800;
+  --color-viz-gold-bright: #c98500;
+
   --font-sans:
     'IBM Plex Sans Variable', 'IBM Plex Sans', ui-sans-serif, system-ui,
     -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial,
@@ -136,6 +147,11 @@
   --fds-line-neutral: var(
     --color-gray-400
   ); /* 4.4:1 on white, 4.2:1 on gray-900 */
+
+  /* products on a pipeline map: 3 hues (striped versions make 6). >= 3:1 on bg. */
+  --fds-product-1: var(--color-viz-blue);
+  --fds-product-2: var(--color-viz-magenta);
+  --fds-product-3: var(--color-viz-gold);
 
   /* status (soft, for alerts and badges) */
   --fds-warning-soft: var(--color-clementine-50);
@@ -192,6 +208,9 @@
   --fds-line-success: var(--color-leaf-500); /* 8.4:1 on gray-900 */
   --fds-line-warning: var(--color-clementine-500); /* 6.5:1 on gray-900 */
   /* line-neutral stays gray-400 */
+  --fds-product-1: var(--color-viz-blue-bright);
+  --fds-product-2: var(--color-viz-magenta-bright);
+  --fds-product-3: var(--color-viz-gold-bright);
 
   --fds-warning-soft: var(--color-clementine-900);
   --fds-on-warning-soft: var(--color-clementine-300);
@@ -246,6 +265,9 @@
   --color-line-success: var(--fds-line-success);
   --color-line-warning: var(--fds-line-warning);
   --color-line-neutral: var(--fds-line-neutral);
+  --color-product-1: var(--fds-product-1);
+  --color-product-2: var(--fds-product-2);
+  --color-product-3: var(--fds-product-3);
 
   --color-warning-soft: var(--fds-warning-soft);
   --color-on-warning-soft: var(--fds-on-warning-soft);
