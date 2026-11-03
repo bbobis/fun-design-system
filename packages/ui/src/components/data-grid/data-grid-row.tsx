@@ -86,6 +86,8 @@ type DataGridRowProps<TData extends RowData> = {
   verticalLines: boolean;
   /** Pinned columns and their offsets. */
   pinned: PinnedColumns;
+  /** Rows before this page (server mode), so `aria-rowindex` counts the whole result. */
+  rowIndexOffset: number;
   /**
    * The visible column ids in display order (joined). Not read here: it only changes
    * when a column is moved, hidden or shown, so memo knows to re-render the row.
@@ -126,6 +128,7 @@ export const DataGridRow = memo(function DataGridRow<TData extends RowData>({
   striped,
   verticalLines,
   pinned,
+  rowIndexOffset,
 }: DataGridRowProps<TData>) {
   // Odd *data* index: the virtualizer renders only rows in view, so DOM order (and
   // CSS :nth-child) shifts as you scroll; the index doesn't.
@@ -143,7 +146,7 @@ export const DataGridRow = memo(function DataGridRow<TData extends RowData>({
     <tr
       role="row"
       data-index={index}
-      aria-rowindex={index + 2}
+      aria-rowindex={index + 2 + rowIndexOffset}
       aria-selected={selectable ? selected : undefined}
       data-selected={selected || undefined}
       data-state={rowState}

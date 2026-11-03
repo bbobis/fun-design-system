@@ -29,3 +29,8 @@ export type {
   DataGridFilterKind,
   DataGridFilters,
 } from './column-filters';
+export {
+  initialQuery,
+  type DataGridQuery,
+  type DataGridServerOptions,
+} from './server-query';
