@@ -111,6 +111,14 @@ import {
 } from './column-filters';
 import { FilterPanel } from './filter-panel';
 import { RecordDrawer } from './record-drawer';
+import { Pagination } from '../pagination';
+import {
+  DEFAULT_PAGE_SIZES,
+  narrowQuery,
+  pageRange,
+  SEARCH_DEBOUNCE_MS,
+  type DataGridServerOptions,
+} from './server-query';
 import { TagGroup } from '../tag-group';
 import { loadColumnState, saveColumnState } from './column-storage';
 import {
@@ -243,6 +251,13 @@ export type DataGridProps<TData extends RowData> = {
   /** Starting filters when `filters` isn't controlled. */
   defaultFilters?: DataGridFilters;
   /**
+   * Server mode: `data` is one page from your server, and sorting, filtering, search
+   * and paging become a `DataGridQuery` for you to fetch with (`onQueryChange`). The
+   * grid stops doing that work in the browser and shows a pagination bar.
+   * `filters` / `onFiltersChange` are ignored: the filters live in `server.query`.
+   */
+  server?: DataGridServerOptions;
+  /**
    * Remember the user's layout (order, hidden, pinned, widths) in this browser, under
    * this name ("invoices"). Loaded on mount, saved on every change, forgotten on
    * "Reset columns". Ignored when `columnState` is controlled: then saving is yours
@@ -301,6 +316,7 @@ export function DataGrid<TData extends RowData>({
   filters: controlledFilters,
   onFiltersChange,
   defaultFilters = NO_FILTERS,
+  server,
   emptyMessage = 'No rows to show.',
   className,
 }: DataGridProps<TData>) {
@@ -343,8 +359,10 @@ export function DataGrid<TData extends RowData>({
 
   // ---- Column filters --------------------------------------------------------
   const [ownFilters, setOwnFilters] = useState(defaultFilters);
-  const filters = controlledFilters ?? ownFilters;
+  const filters = server?.query.filters ?? controlledFilters ?? ownFilters;
   const updateFilters = (next: DataGridFilters) => {
+    if (server)
+      return server.onQueryChange(narrowQuery(server.query, { filters: next }));
     if (!controlledFilters) setOwnFilters(next);
     onFiltersChange?.(next);
   };
@@ -363,7 +381,25 @@ export function DataGrid<TData extends RowData>({
   // uses the deferred copy, so typing never waits for the table.
   const [search, setSearch] = useState('');
   const deferredSearch = useDeferredValue(search);
-  const [sorting, setSorting] = useState<SortingState>([]);
+  const [ownSorting, setOwnSorting] = useState<SortingState>([]);
+  // Server mode: the sort is part of the query, and a new sort goes back to page 0.
+  const sorting =
+    (server?.query.sort as SortingState | undefined) ?? ownSorting;
+  const setSorting: OnChangeFn<SortingState> = (updater) => {
+    const next = typeof updater === 'function' ? updater(sorting) : updater;
+    if (server) server.onQueryChange(narrowQuery(server.query, { sort: next }));
+    else setOwnSorting(next);
+  };
+  // Server mode: the search becomes part of the query once typing pauses, so a word
+  // costs one request, not one per letter.
+  useEffect(() => {
+    if (!server || search === server.query.search) return;
+    const t = setTimeout(
+      () => server.onQueryChange(narrowQuery(server.query, { search })),
+      SEARCH_DEBOUNCE_MS,
+    );
+    return () => clearTimeout(t);
+  }, [server, search]);
   const [internalSelection, setInternalSelection] =
     useState<RowSelectionState>(EMPTY_SELECTION);
   const rowSelection = controlledSelection ?? internalSelection;
@@ -522,6 +558,10 @@ export function DataGrid<TData extends RowData>({
       ),
     },
     onSortingChange: setSorting,
+    // Server mode: the page is already sorted and filtered. These flags only switch
+    // the browser's work off; they never fetch anything.
+    manualSorting: Boolean(server),
+    manualFiltering: Boolean(server),
     onGlobalFilterChange: (updater) =>
       setSearch(
         (old) => (typeof updater === 'function' ? updater(old) : updater) ?? '',
@@ -631,7 +671,7 @@ export function DataGrid<TData extends RowData>({
   // New sort or search → back to the top, so the user sees the first results.
   useEffect(() => {
     virtualizer.scrollToOffset(0);
-  }, [sorting, deferredSearch, virtualizer]);
+  }, [sorting, deferredSearch, server?.query.pageIndex, virtualizer]);
 
   const handleBodyFocus = (event: FocusEvent<HTMLTableSectionElement>) => {
     const index =
@@ -1575,6 +1615,9 @@ export function DataGrid<TData extends RowData>({
   const selectedRowIds = Object.keys(rowSelection);
   const selectedCount = selectedRowIds.length;
   const isSearching = deferredSearch.length > 0;
+  const page = server ? pageRange(server.query, server.rowCount) : undefined;
+  /** The whole result's size: the server's total, or every row we have. */
+  const totalRows = server ? server.rowCount : data.length;
   const focusedCell = isEditing ? table.getFocusedCell() : undefined;
 
   const hideColumn = (id: string) => {
@@ -1748,7 +1791,7 @@ export function DataGrid<TData extends RowData>({
               </span>
             )}
             <span className="rounded-full bg-surface px-2 py-px text-xs font-medium text-fg-muted tabular-nums">
-              {data.length.toLocaleString()}
+              {totalRows.toLocaleString()}
             </span>
             {isEditing && (
               <span className="rounded-full bg-primary px-2 py-px text-xs font-medium text-on-primary">
@@ -1949,7 +1992,8 @@ export function DataGrid<TData extends RowData>({
         <table
           role={isEditing ? 'grid' : 'table'}
           aria-label={ariaLabel}
-          aria-rowcount={rows.length + 1}
+          aria-rowcount={(server ? server.rowCount : rows.length) + 1}
+          aria-busy={server?.loading || undefined}
           aria-colcount={columnCount}
           aria-multiselectable={isEditing || undefined}
           className={cn(
@@ -2152,9 +2196,11 @@ export function DataGrid<TData extends RowData>({
                 >
                   {isSearching && !isEditing
                     ? `No rows match "${deferredSearch}".`
-                    : isFiltering && !isEditing
-                      ? 'No rows match the filters.'
-                      : emptyMessage}
+                    : server?.loading
+                      ? 'Loading…'
+                      : isFiltering && !isEditing
+                        ? 'No rows match the filters.'
+                        : emptyMessage}
                 </td>
               </tr>
             ) : (
@@ -2168,6 +2214,12 @@ export function DataGrid<TData extends RowData>({
                     key={row.id}
                     row={row}
                     index={item.index}
+                    // Server mode: row 1 of page 2 is row 51 of the whole result.
+                    rowIndexOffset={
+                      server
+                        ? server.query.pageIndex * server.query.pageSize
+                        : 0
+                    }
                     start={item.start}
                     rowHeight={rowHeight}
                     // Passed as a prop so memo re-renders the row when selection changes.
@@ -2247,9 +2299,13 @@ export function DataGrid<TData extends RowData>({
       <div className="flex items-center justify-between gap-3 border-t border-border px-4 py-2 text-xs text-fg-muted">
         {/* role=status: screen readers announce the new count after each search. */}
         <p role="status" className="tabular-nums">
-          {(isSearching || isFiltering) && !isEditing
-            ? `${rows.length.toLocaleString()} of ${data.length.toLocaleString()} rows`
-            : `${(isEditing ? realRowCount : rows.length).toLocaleString()} rows`}
+          {server && page && !isEditing
+            ? server.loading
+              ? 'Loading…'
+              : `${page.from.toLocaleString()}–${page.to.toLocaleString()} of ${plural(server.rowCount, 'row')}`
+            : (isSearching || isFiltering) && !isEditing
+              ? `${rows.length.toLocaleString()} of ${data.length.toLocaleString()} rows`
+              : `${(isEditing ? realRowCount : rows.length).toLocaleString()} rows`}
           {isEditing &&
             newRows.size > 0 &&
             ` · ${plural(newRows.size, 'new row')}`}
@@ -2271,6 +2327,35 @@ export function DataGrid<TData extends RowData>({
         <p aria-live="polite" className="ms-auto truncate text-end">
           {isEditing ? announcement : ''}
         </p>
+        {server && page && (
+          // `inert` while editing: edits are tied to the rows on screen, so paging waits
+          // until Save or Discard. Inert also takes it out of the Tab order and the
+          // accessibility tree, which a CSS-only "disabled" look wouldn't.
+          <div
+            inert={isEditing}
+            className={cn('shrink-0', isEditing && 'opacity-50')}
+          >
+            <Pagination
+              aria-label={`${ariaLabel} pages`}
+              variant="compact"
+              // Ours is 1-based for people; the query is 0-based like Spring's `page`.
+              page={server.query.pageIndex + 1}
+              pageCount={page.pageCount}
+              onChange={(p) =>
+                server.onQueryChange({ ...server.query, pageIndex: p - 1 })
+              }
+              pageSize={server.query.pageSize}
+              pageSizeOptions={server.pageSizeOptions ?? DEFAULT_PAGE_SIZES}
+              onPageSizeChange={(pageSize, p) =>
+                server.onQueryChange({
+                  ...server.query,
+                  pageSize,
+                  pageIndex: p - 1,
+                })
+              }
+            />
+          </div>
+        )}
       </div>
     </div>
   );

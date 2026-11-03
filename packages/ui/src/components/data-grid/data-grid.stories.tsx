@@ -1,8 +1,10 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { RowSelectionState } from '@tanstack/react-table';
 import { Button } from '../button';
 import { DataGrid } from './data-grid';
+import { queryInvoices } from './fixtures/fake-server';
+import { initialQuery, type DataGridQuery } from './server-query';
 import type { DataGridColumnState } from './column-state';
 import type { ChangeSet, SaveResult } from './editing/contract';
 import { invoiceColumns } from './fixtures/invoice-columns';
@@ -165,6 +167,49 @@ export const Filters: Story = {
       total: { kind: 'number', min: 20000 },
     },
     className: 'h-[30rem] max-w-5xl',
+  },
+};
+
+/**
+ * **Server mode.** The grid only ever has one page (`data`); sorting, the column
+ * filters, search and paging become a `DataGridQuery`, and this story's fake server
+ * answers it after 300 ms (watch "Loading…"). Change a filter on page 5: you land on
+ * page 1. The query the grid sent is shown below.
+ */
+export const ServerMode: Story = {
+  render: function Render(args) {
+    const [query, setQuery] = useState<DataGridQuery>(() => initialQuery(50));
+    const [page, setPage] = useState(() => queryInvoices(tenThousand, query));
+    const [loading, setLoading] = useState(false);
+    useEffect(() => {
+      // A real app: fetch(`/api/invoices?${toSpringParams(query)}`, { signal }).
+      setLoading(true);
+      const t = setTimeout(() => {
+        setPage(queryInvoices(tenThousand, query));
+        setLoading(false);
+      }, 300);
+      // A newer query cancels the older answer, like an AbortController would.
+      return () => clearTimeout(t);
+    }, [query]);
+    return (
+      <div className="flex flex-col gap-3">
+        <DataGrid
+          {...args}
+          title="Invoices"
+          data={page.content}
+          server={{
+            query,
+            onQueryChange: setQuery,
+            rowCount: page.page.totalElements,
+            loading,
+          }}
+          className="h-[30rem] max-w-5xl"
+        />
+        <pre className="max-w-5xl overflow-auto rounded-md bg-surface p-3 text-xs text-fg-muted">
+          {JSON.stringify(query)}
+        </pre>
+      </div>
+    );
   },
 };
 
