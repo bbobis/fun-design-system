@@ -1,7 +1,10 @@
 import {
   cellSelectionFeature,
   columnFilteringFeature,
+  columnOrderingFeature,
+  columnPinningFeature,
   columnSizingFeature,
+  columnVisibilityFeature,
   createColumnHelper,
   createFilteredRowModel,
   createSortedRowModel,
@@ -95,6 +98,10 @@ export const dataGridFeatures = tableFeatures({
   filterFns: { includesString: filterFn_includesString },
   rowSelectionFeature,
   columnSizingFeature,
+  // The column menu: hide / show, move, pin to either edge.
+  columnVisibilityFeature,
+  columnOrderingFeature,
+  columnPinningFeature,
   // Active cell + roving tabindex in edit mode (and cell ranges, later).
   cellSelectionFeature,
   // Type-only slot: makes `meta` on every column typed as DataGridColumnMeta.

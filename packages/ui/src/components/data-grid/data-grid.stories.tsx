@@ -3,6 +3,7 @@ import { useState } from 'react';
 import type { RowSelectionState } from '@tanstack/react-table';
 import { Button } from '../button';
 import { DataGrid } from './data-grid';
+import type { DataGridColumnState } from './column-state';
 import type { ChangeSet, SaveResult } from './editing/contract';
 import { invoiceColumns } from './fixtures/invoice-columns';
 import { makeInvoices, type Invoice } from './fixtures/invoices';
@@ -83,6 +84,54 @@ export const Styles: Story = {
     gridLines: 'all',
     pinFirstColumn: true,
     className: 'h-[30rem] max-w-3xl',
+  },
+};
+
+/** A starting layout: Invoice pinned to the start, Total to the end, Record ID hidden. */
+const startingLayout: DataGridColumnState = {
+  // Accessor columns are identified by their field name.
+  order: invoiceColumns.map(
+    (c) => c.id ?? (c as { accessorKey?: string }).accessorKey ?? '',
+  ),
+  hidden: ['id'],
+  pinned: { start: ['number'], end: ['total'] },
+};
+
+/**
+ * The column menu. Hover a header (or Tab to it) for its ⌄ button: sort, pin to start
+ * or end, move left or right, hide. "Columns ▾" in the toolbar shows hidden columns
+ * again, or resets the layout.
+ *
+ * The layout is **controlled** here: the app keeps it in state (it could save it to
+ * localStorage or a server), and the JSON below is what `onColumnStateChange` sent.
+ */
+export const ColumnLayout: Story = {
+  render: function Render(args) {
+    const [layout, setLayout] = useState(startingLayout);
+    return (
+      <div className="flex flex-col gap-3">
+        <DataGrid
+          {...args}
+          title="Invoices"
+          data={tenThousand.slice(0, 200)}
+          enableRowSelection
+          columnState={layout}
+          onColumnStateChange={setLayout}
+          defaultColumnState={startingLayout}
+          className="h-[26rem] max-w-4xl"
+        />
+        <pre className="max-w-4xl overflow-auto rounded-md bg-surface p-3 text-xs text-fg-muted">
+          {JSON.stringify(
+            {
+              hidden: layout.hidden,
+              pinned: layout.pinned,
+            },
+            null,
+            1,
+          )}
+        </pre>
+      </div>
+    );
   },
 };
 

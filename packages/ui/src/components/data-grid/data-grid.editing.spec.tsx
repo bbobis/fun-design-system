@@ -291,10 +291,11 @@ describe('DataGrid edit mode', () => {
 
   it('freezes sorting while editing and restores it after Done', () => {
     setup();
+    // The sort button; the ⌄ column menu button comes after it.
     fireEvent.click(
-      within(screen.getByRole('columnheader', { name: /Customer/ })).getByRole(
-        'button',
-      ),
+      within(
+        screen.getByRole('columnheader', { name: /Customer/ }),
+      ).getAllByRole('button')[0],
     );
     enterEdit();
     expect(

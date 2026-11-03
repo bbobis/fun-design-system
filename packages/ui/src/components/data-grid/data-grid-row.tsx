@@ -83,8 +83,13 @@ type DataGridRowProps<TData extends RowData> = {
   striped: boolean;
   /** Lines between cells as well as between rows. */
   verticalLines: boolean;
-  /** Pinned columns and their offsets (`pinFirstColumn`). */
+  /** Pinned columns and their offsets. */
   pinned: PinnedColumns;
+  /**
+   * The visible column ids in display order (joined). Not read here: it only changes
+   * when a column is moved, hidden or shown, so memo knows to re-render the row.
+   */
+  columnLayout: string;
 };
 
 /**
@@ -121,7 +126,6 @@ export const DataGridRow = memo(function DataGridRow<TData extends RowData>({
   verticalLines,
   pinned,
 }: DataGridRowProps<TData>) {
-  const pinnedIds = pinned ? Object.keys(pinned) : [];
   // Odd *data* index: the virtualizer renders only rows in view, so DOM order (and
   // CSS :nth-child) shifts as you scroll; the index doesn't.
   const stripe = striped && index % 2 === 1;
@@ -157,29 +161,23 @@ export const DataGridRow = memo(function DataGridRow<TData extends RowData>({
       )}
       style={cssVars({ '--y': `${start}px`, '--row-h': `${rowHeight}px` })}
     >
-      {row.getAllCells().map((cell, cellIndex) => {
+      {/* Visible cells, start-pinned first and end-pinned last (TanStack orders them). */}
+      {row.getVisibleCells().map((cell, cellIndex) => {
         const column = cell.column;
         const meta = column.columnDef.meta;
         const isSelectColumn = column.id === SELECT_COLUMN_ID;
-        const pinIndex = pinnedIds.indexOf(column.id);
+        const pin = pinned?.[column.id];
         const base = cn(
           'relative flex w-(--w) shrink-0 items-center overflow-hidden whitespace-nowrap',
           meta?.align === 'end' && 'justify-end tabular-nums',
           meta?.mono && 'font-mono text-[0.8125rem]',
           isSelectColumn && 'justify-center',
           verticalLines && 'border-e border-border',
-          pinIndex >= 0 &&
-            pinnedCellClass({
-              first: pinIndex === 0,
-              last: pinIndex === pinnedIds.length - 1,
-              striped: stripe,
-            }),
+          pin && pinnedCellClass(pin, stripe),
         );
         const style = cssVars({
           '--w': `${column.getSize()}px`,
-          ...(pinIndex >= 0 && pinned
-            ? { '--pin': `${pinned[column.id]}px` }
-            : {}),
+          ...(pin ? { '--pin': `${pin.offset}px` } : {}),
         });
         const label =
           typeof column.columnDef.header === 'string'
@@ -293,7 +291,7 @@ export const DataGridRow = memo(function DataGridRow<TData extends RowData>({
               // Range: a light tint, plus an outline drawn by a ::before layer (borders on
               // the cell itself would shift the layout; one box-shadow is already the ring).
               inRange && [
-                pinIndex >= 0
+                pin
                   ? 'bg-[color-mix(in_oklab,var(--color-primary)_10%,var(--color-bg))]'
                   : 'bg-primary/10',
                 'before:pointer-events-none before:absolute before:inset-0 before:border-primary',

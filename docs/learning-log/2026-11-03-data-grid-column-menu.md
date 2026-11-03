@@ -1,0 +1,7 @@
+## 2026-11-03 — DataGrid column menu (F1)
+
+- **Built:** a ⌄ menu on each DataGrid header (Sort ↑/↓/clear, Pin to start / Pin to end / Unpin, Move left / right, Hide) and a toolbar "Columns ▾" checklist with "Reset columns". Pinning now works on both edges (`sticky start-(--pin)` / `sticky end-(--pin)`). New props: `columnState`, `onColumnStateChange`, `defaultColumnState`, `enableColumnMenu`. Read mode only: the layout is frozen while editing, like sort.
+- **Remember: our own state shape, translated at the edge.** `DataGridColumnState = { order, hidden, pinned: { start, end } }` is what apps see and save. `toTableState()` turns it into TanStack's `columnOrder` / `columnVisibility` / `columnPinning`. The library stays an implementation detail, and the moves are pure functions tested without React (`column-state.spec.ts`).
+- **Remember (the prediction): React keys keep focus through a reorder.** After "Move left" the header is the *same DOM node* (same `key`), only moved, so focus stays on its ⌄ button. After "Hide" the node is gone, so the grid moves focus to the neighbour's button on the next animation frame. React Aria's own restore runs on a frame too, and finds nothing to restore.
+- **Remember: TanStack orders pinned columns for you.** `getHeaderGroups()` and `row.getVisibleCells()` return start-pinned, then center, then end-pinned. The grid walks the same order (`getStartVisibleLeafColumns` + center + end) for arrow keys, ranges and paste.
+- Docs: https://tanstack.com/table/latest/docs/guide/column-pinning

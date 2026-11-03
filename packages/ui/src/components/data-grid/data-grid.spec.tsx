@@ -38,6 +38,11 @@ function bodyRows() {
   return within(body as HTMLElement).queryAllByRole('row');
 }
 
+/** The header's sort button (the ⌄ column menu button comes after it). */
+function sortButton(header: HTMLElement) {
+  return within(header).getAllByRole('button')[0];
+}
+
 /** Reads the visible text of a column in the rendered rows. */
 function columnText(colIndex: number) {
   return bodyRows().map(
@@ -72,7 +77,7 @@ describe('DataGrid', () => {
     const header = screen.getByRole('columnheader', { name: /Customer/ });
     expect(header.hasAttribute('aria-sort')).toBe(false);
 
-    fireEvent.click(within(header).getByRole('button'));
+    fireEvent.click(sortButton(header));
     expect(header.getAttribute('aria-sort')).toBe('ascending');
     const asc = columnText(1);
     expect(asc).toHaveLength(5); // guard: an empty list would "pass" any sort check
@@ -80,14 +85,14 @@ describe('DataGrid', () => {
       [...asc].sort((a, b) => (a ?? '').localeCompare(b ?? '')),
     );
 
-    fireEvent.click(within(header).getByRole('button'));
+    fireEvent.click(sortButton(header));
     expect(header.getAttribute('aria-sort')).toBe('descending');
   });
 
   it('sorts numbers numerically, not as text', () => {
     renderGrid({ data: small });
     const header = screen.getByRole('columnheader', { name: /^Items/ });
-    fireEvent.click(within(header).getByRole('button'));
+    fireEvent.click(sortButton(header));
     const items = columnText(16).map(Number);
     expect(items).toHaveLength(5);
     expect(items).toEqual([...items].sort((a, b) => a - b));

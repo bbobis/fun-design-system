@@ -81,9 +81,25 @@ import {
   ROW_ERROR_KEY,
   SELECT_COLUMN_ID,
   toEditorText,
+  pinEdgeClass,
+  type PinnedCell,
   type PinnedColumns,
 } from './data-grid-utils';
 import { PencilIcon, SearchIcon, SortIndicator } from './icons';
+import { ColumnsMenu, HeaderMenu } from './column-menu';
+import {
+  canMove,
+  defaultColumnState,
+  displayOrder,
+  moveColumn,
+  pinColumn,
+  pinSideOf,
+  reconcileColumnState,
+  setColumnHidden,
+  setVisibleColumns,
+  toTableState,
+  type DataGridColumnState,
+} from './column-state';
 import { SaveBar } from './editing/save-bar';
 import { parseTsv, toTsv } from './editing/tsv';
 import {
@@ -163,11 +179,32 @@ export type DataGridProps<TData extends RowData> = {
   /** `rows`: lines between rows. `all`: between cells too. @default 'rows' */
   gridLines?: 'rows' | 'all';
   /**
-   * Keep the first column (and the checkbox column, if any) in place while the rest
-   * scrolls sideways. For wide tables where the first column says which row is
-   * which (invoice number, customer). @default false
+   * Start with the first column (and the checkbox column, if any) pinned, so it stays
+   * in place while the rest scrolls sideways. For wide tables where the first column
+   * says which row is which (invoice number, customer). A shortcut for
+   * `defaultColumnState`; users can still unpin it from the column menu.
+   * @default false
    */
   pinFirstColumn?: boolean;
+  /**
+   * Show the column menu (⌄ on each header: sort, pin, move, hide) and the toolbar's
+   * "Columns ▾" checklist. Read mode only: the layout is frozen while editing.
+   * @default true
+   */
+  enableColumnMenu?: boolean;
+  /**
+   * The column layout (order, hidden, pinned), controlled. Use it to save a user's
+   * layout (to localStorage or your server) and give it back next time. Columns
+   * added or removed since it was saved are reconciled: new ones appear at the end.
+   */
+  columnState?: DataGridColumnState;
+  /** Called with the new layout after every move, pin, hide or reset. */
+  onColumnStateChange?: (state: DataGridColumnState) => void;
+  /**
+   * The starting layout when `columnState` isn't controlled, and what "Reset
+   * columns" goes back to. @default the columns as written (plus `pinFirstColumn`)
+   */
+  defaultColumnState?: DataGridColumnState;
   /** Shown when there are no rows, or no rows match the search. */
   emptyMessage?: ReactNode;
   /**
@@ -212,10 +249,36 @@ export function DataGrid<TData extends RowData>({
   striped = false,
   gridLines = 'rows',
   pinFirstColumn = false,
+  enableColumnMenu = true,
+  columnState: controlledColumnState,
+  onColumnStateChange,
+  defaultColumnState: initialColumnState,
   emptyMessage = 'No rows to show.',
   className,
 }: DataGridProps<TData>) {
   const rowHeight = ROW_HEIGHT[density];
+
+  // ---- Column layout (order, hidden, pinned) ---------------------------------
+  // Our own small state shape; toTableState() turns it into TanStack's three
+  // objects below. Controlled when `columnState` is passed, owned here otherwise.
+  const columnIds = useMemo(() => userColumns.map(columnIdOf), [userColumns]);
+  const resetState = useMemo(
+    () => initialColumnState ?? defaultColumnState(columnIds, pinFirstColumn),
+    [initialColumnState, columnIds, pinFirstColumn],
+  );
+  const [ownColumnState, setOwnColumnState] = useState(resetState);
+  const columnState = useMemo(
+    () =>
+      reconcileColumnState(controlledColumnState ?? ownColumnState, columnIds),
+    [controlledColumnState, ownColumnState, columnIds],
+  );
+  const updateColumnState = (next: DataGridColumnState) => {
+    if (!controlledColumnState) setOwnColumnState(next);
+    onColumnStateChange?.(next);
+  };
+  // After "Hide column" the header (and the menu button that had focus) is gone:
+  // this is the column whose menu button gets focus instead.
+  const focusMenuOf = useRef<string | null>(null);
   const searchId = useId();
 
   // Search text updates instantly in the input; the expensive filtering of 10k rows
@@ -368,6 +431,11 @@ export function DataGrid<TData extends RowData>({
       globalFilter: isEditing ? '' : deferredSearch,
       rowSelection,
       cellSelection,
+      // The checkbox column always leads, and sticks with the start-pinned columns.
+      ...toTableState(
+        columnState,
+        columns[0]?.id === SELECT_COLUMN_ID ? [SELECT_COLUMN_ID] : [],
+      ),
     },
     onSortingChange: setSorting,
     onGlobalFilterChange: (updater) =>
@@ -390,35 +458,55 @@ export function DataGrid<TData extends RowData>({
   });
 
   const rows = table.getRowModel().rows;
-  const leafColumns = table.getAllLeafColumns();
+  // The visible columns in the order they're drawn: start-pinned, scrolling,
+  // end-pinned. Arrow keys, ranges, copy and paste all walk this list.
+  const startColumns = table.getStartVisibleLeafColumns();
+  const endColumns = table.getEndVisibleLeafColumns();
+  const leafColumns = [
+    ...startColumns,
+    ...table.getCenterVisibleLeafColumns(),
+    ...endColumns,
+  ];
+  const columnLayout = leafColumns.map((c) => c.id).join('|');
   const headerGroups = table.getHeaderGroups();
   const columnCount = leafColumns.length;
   const totalWidth = table.getTotalSize();
-  // Pinned columns: the checkbox column (if shown) and the first data column, with the
-  // left offset each sticks at. Recomputed only when the columns or sizes change.
-  const pinKey = pinFirstColumn
-    ? leafColumns
-        .slice(0, 2)
-        .map((c) => `${c.id}:${c.getSize()}`)
-        .join('|')
-    : '';
+  // Pinned columns and the offset each sticks at, as a string so the memo below only
+  // reruns when pinning or a pinned column's width changes.
+  const pinKey = [startColumns, endColumns]
+    .map((cols) => cols.map((c) => `${c.id}:${c.getSize()}`).join('|'))
+    .join('#');
   const pinned = useMemo<PinnedColumns>(() => {
-    if (!pinKey) return null;
-    const result: Record<string, number> = {};
+    if (pinKey === '#') return null;
+    const [start, end] = pinKey
+      .split('#')
+      .map((part) =>
+        part
+          ? part.split('|').map((p) => p.split(':') as [string, string])
+          : [],
+      );
+    const result: Record<string, PinnedCell> = {};
     let offset = 0;
-    for (const part of pinKey.split('|')) {
-      const [id, size] = part.split(':');
-      result[id] = offset;
+    start.forEach(([id, size], i) => {
+      result[id] = {
+        side: 'start',
+        offset,
+        first: i === 0,
+        edge: i === start.length - 1,
+      };
       offset += Number(size);
-      if (id !== SELECT_COLUMN_ID) break; // pin up to the first data column
+    });
+    // End columns stick from the end edge: the last one sits at 0.
+    offset = 0;
+    for (let i = end.length - 1; i >= 0; i--) {
+      const [id, size] = end[i];
+      result[id] = { side: 'end', offset, first: false, edge: i === 0 };
+      offset += Number(size);
     }
     return result;
   }, [pinKey]);
-  const pinnedWidth = pinned
-    ? leafColumns
-        .filter((c) => c.id in pinned)
-        .reduce((w, c) => w + c.getSize(), 0)
-    : 0;
+  const pinnedWidth = startColumns.reduce((w, c) => w + c.getSize(), 0);
+  const pinnedEndWidth = endColumns.reduce((w, c) => w + c.getSize(), 0);
   const rowIndexById = useMemo(
     () => new Map(rows.map((row, i) => [row.id, i])),
     [rows],
@@ -1343,6 +1431,42 @@ export function DataGrid<TData extends RowData>({
   const isSearching = deferredSearch.length > 0;
   const focusedCell = isEditing ? table.getFocusedCell() : undefined;
 
+  const hideColumn = (id: string) => {
+    const shown = displayOrder(columnState);
+    const i = shown.indexOf(id);
+    focusMenuOf.current = shown[i + 1] ?? shown[i - 1] ?? null;
+    updateColumnState(setColumnHidden(columnState, id, true));
+  };
+  useEffect(() => {
+    const id = focusMenuOf.current;
+    if (!id) return;
+    focusMenuOf.current = null;
+    // React Aria puts focus back on the menu's button in an animation frame after it
+    // closes; that button is gone, so ours (the neighbour's) runs in the next one.
+    const frame = requestAnimationFrame(() =>
+      scrollRef.current
+        ?.querySelector<HTMLElement>(
+          // No CSS.escape in jsdom; escape quotes and backslashes like findCell does.
+          `[data-column-menu="${id.replace(/["\\]/g, '\\$&')}"] button`,
+        )
+        ?.focus(),
+    );
+    return () => cancelAnimationFrame(frame);
+  }, [columnLayout]);
+
+  /** The data columns for the "Columns" checklist, in display order (hidden ones too). */
+  const checklist = useMemo(() => {
+    const shown = displayOrder(columnState);
+    const ordered = [
+      ...shown,
+      ...columnState.order.filter((id) => !shown.includes(id)),
+    ];
+    return ordered.map((id) => ({
+      id,
+      label: headerLabel(table.getColumn(id)),
+    }));
+  }, [columnState, table]);
+
   const clearSelection = useCallback(() => {
     table.resetRowSelection(true);
     // The bar (and the button that was clicked) disappears; put focus somewhere
@@ -1391,6 +1515,17 @@ export function DataGrid<TData extends RowData>({
                 className="w-64 max-w-full border-border bg-surface ps-8"
               />
             </div>
+            {enableColumnMenu && (
+              <ColumnsMenu
+                columns={checklist}
+                visibleIds={displayOrder(columnState)}
+                onVisibleChange={(ids) =>
+                  updateColumnState(setVisibleColumns(columnState, ids))
+                }
+                onReset={() => updateColumnState(resetState)}
+                disabled={isEditing}
+              />
+            )}
             {editing && (
               <Button
                 ref={editButtonRef}
@@ -1432,9 +1567,16 @@ export function DataGrid<TData extends RowData>({
           'relative min-h-0 flex-1 scroll-pt-9 overflow-auto focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-focus-ring',
           // Like scroll-pt-9 for the sticky header: scrolling a cell into view keeps
           // it clear of the pinned columns, not hidden underneath them.
-          pinned && 'scroll-ps-(--pin-w)',
+          pinned && 'scroll-ps-(--pin-w) scroll-pe-(--pin-end-w)',
         )}
-        style={pinned ? cssVars({ '--pin-w': `${pinnedWidth}px` }) : undefined}
+        style={
+          pinned
+            ? cssVars({
+                '--pin-w': `${pinnedWidth}px`,
+                '--pin-end-w': `${pinnedEndWidth}px`,
+              })
+            : undefined
+        }
       >
         {/*
           Explicit roles: display:grid/flex on table elements makes some browsers drop
@@ -1474,11 +1616,17 @@ export function DataGrid<TData extends RowData>({
                   const meta = column.columnDef.meta;
                   const isFirstSort =
                     !isEditing && sorting[0]?.id === column.id;
+                  const pin = pinned?.[column.id];
+                  const showMenu =
+                    enableColumnMenu &&
+                    !isEditing &&
+                    column.id !== SELECT_COLUMN_ID &&
+                    !header.isPlaceholder;
                   return (
                     <th
                       key={header.id}
                       role="columnheader"
-                      aria-colindex={header.index + 1}
+                      aria-colindex={(colIndexById.get(column.id) ?? 0) + 1}
                       // ARIA allows aria-sort on one header only, so mark the primary sort.
                       aria-sort={
                         isFirstSort
@@ -1494,18 +1642,19 @@ export function DataGrid<TData extends RowData>({
                         meta?.align === 'end' && 'justify-end',
                         column.id === SELECT_COLUMN_ID && 'justify-center px-0',
                         gridLines === 'all' && 'border-e',
-                        pinned &&
-                          column.id in pinned && [
-                            'sticky start-(--pin) z-[1] bg-bg',
-                            isLastPinned(pinned, column.id) &&
-                              "after:pointer-events-none after:absolute after:inset-y-0 after:end-0 after:w-px after:bg-border-strong after:content-['']",
-                          ],
+                        // The menu button sits at the end: less padding there.
+                        showMenu && 'pe-1.5',
+                        pin && [
+                          pin.side === 'start'
+                            ? 'sticky start-(--pin) z-[1]'
+                            : 'sticky end-(--pin) z-[1]',
+                          'bg-bg',
+                          pin.edge && pinEdgeClass(pin.side),
+                        ],
                       )}
                       style={cssVars({
                         '--w': `${header.getSize()}px`,
-                        ...(pinned && column.id in pinned
-                          ? { '--pin': `${pinned[column.id]}px` }
-                          : {}),
+                        ...(pin ? { '--pin': `${pin.offset}px` } : {}),
                       })}
                     >
                       {header.isPlaceholder ? null : !isEditing &&
@@ -1545,6 +1694,41 @@ export function DataGrid<TData extends RowData>({
                             />
                           )}
                         </>
+                      )}
+                      {showMenu && (
+                        <HeaderMenu
+                          label={headerLabel(column)}
+                          columnId={column.id}
+                          sortable={column.getCanSort()}
+                          sorted={sorted}
+                          onSort={(direction) =>
+                            setSorting(
+                              direction
+                                ? [
+                                    {
+                                      id: column.id,
+                                      desc: direction === 'desc',
+                                    },
+                                  ]
+                                : [],
+                            )
+                          }
+                          pinned={pinSideOf(columnState, column.id)}
+                          onPin={(side) =>
+                            updateColumnState(
+                              pinColumn(columnState, column.id, side),
+                            )
+                          }
+                          canMoveLeft={canMove(columnState, column.id, -1)}
+                          canMoveRight={canMove(columnState, column.id, 1)}
+                          onMove={(step) =>
+                            updateColumnState(
+                              moveColumn(columnState, column.id, step),
+                            )
+                          }
+                          canHide={displayOrder(columnState).length > 1}
+                          onHide={() => hideColumn(column.id)}
+                        />
                       )}
                     </th>
                   );
@@ -1609,6 +1793,7 @@ export function DataGrid<TData extends RowData>({
                     striped={striped}
                     verticalLines={gridLines === 'all'}
                     pinned={pinned}
+                    columnLayout={columnLayout}
                   />
                 );
               })
@@ -1718,8 +1903,10 @@ function parseOptions(meta: DataGridColumnMeta | undefined) {
   return meta?.searchOptions ? [] : meta?.options;
 }
 
-/** The pinned column that borders the scrolling ones (it gets the edge line). */
-function isLastPinned(pinned: NonNullable<PinnedColumns>, id: string) {
-  const ids = Object.keys(pinned);
-  return ids[ids.length - 1] === id;
+/** A column definition's id: its `id`, or the field it reads (`accessor('field')`). */
+function columnIdOf<TData extends RowData>(
+  def: DataGridColumnDef<TData>,
+): string {
+  const d = def as { id?: string; accessorKey?: string };
+  return d.id ?? d.accessorKey ?? '';
 }
