@@ -90,6 +90,7 @@ import {
   type PinnedColumns,
 } from './data-grid-utils';
 import {
+  ExpandIcon,
   FunnelIcon,
   PencilIcon,
   SearchIcon,
@@ -109,6 +110,7 @@ import {
   type DataGridFilters,
 } from './column-filters';
 import { FilterPanel } from './filter-panel';
+import { RecordDrawer } from './record-drawer';
 import { TagGroup } from '../tag-group';
 import { loadColumnState, saveColumnState } from './column-storage';
 import {
@@ -1657,6 +1659,72 @@ export function DataGrid<TData extends RowData>({
     }));
   }, [columnState, table]);
 
+  // ---- Record drawer (editing.recordDrawer) ----------------------------------
+  const [drawerRowId, setDrawerRowId] = useState<string | null>(null);
+  const activeRowId = focusedCell?.row.id;
+  /** Why "Edit row" can't open the active row, or nothing when it can. */
+  const drawerBlocked = !activeRowId
+    ? 'Select a cell in the row first'
+    : activeRowId === NEW_ROW_ID
+      ? 'Type in this row to add it first'
+      : isRowDeleted(activeRowId)
+        ? 'This row will be deleted'
+        : isRowLocked(activeRowId)
+          ? 'This row is locked'
+          : undefined;
+  /** The data columns, editable ones as fields and the rest as read-only text. */
+  const drawerColumns = table
+    .getAllLeafColumns()
+    .filter((c) => c.id !== SELECT_COLUMN_ID);
+  const drawerFields = (rowId: string) =>
+    drawerColumns
+      .filter((c) => c.columnDef.meta?.editor)
+      .map((c) => ({
+        id: c.id,
+        label: headerLabel(c),
+        meta: c.columnDef.meta ?? {},
+        value: shownValue(rowId, c.id),
+      }));
+  const drawerReadOnly = (rowId: string) =>
+    drawerColumns
+      .filter((c) => !c.columnDef.meta?.editor)
+      .map((c) => ({
+        id: c.id,
+        label: headerLabel(c),
+        text: toEditorText(shownValue(rowId, c.id)),
+      }));
+  /** The grid's own rules for one row, applied to the drawer's values. */
+  const validateDrawer =
+    (rowId: string) => (values: Readonly<Record<string, unknown>>) =>
+      validateRows(
+        [rowId],
+        () => ({
+          ...(originalRow(rowId) as object),
+          ...draft[rowId],
+          ...values,
+        }),
+        drawerColumns.map((c) => ({
+          id: c.id,
+          label: headerLabel(c),
+          meta: c.columnDef.meta,
+        })),
+      )[rowId] ?? {};
+  const applyDrawer = (rowId: string, changes: Record<string, unknown>) => {
+    const n = applyValues(
+      `edit row ${rowLabel(rowId)}`,
+      Object.entries(changes).map(([columnId, value]) => ({
+        rowId,
+        columnId,
+        value,
+      })),
+    );
+    announce(
+      n
+        ? `Changed ${plural(n, 'field')} in ${rowLabel(rowId)}.`
+        : 'Nothing changed.',
+    );
+  };
+
   const clearSelection = useCallback(() => {
     table.resetRowSelection(true);
     // The bar (and the button that was clicked) disappears; put focus somewhere
@@ -1739,6 +1807,25 @@ export function DataGrid<TData extends RowData>({
                 )}
               </Button>
             )}
+            {isEditing && editing?.recordDrawer && (
+              <Button
+                size="sm"
+                intent="secondary"
+                // Not `disabled`: a disabled button can't be focused to read why.
+                aria-disabled={drawerBlocked ? true : undefined}
+                title={drawerBlocked}
+                onClick={() => {
+                  if (drawerBlocked || !activeRowId) {
+                    if (drawerBlocked) announce(`${drawerBlocked}.`);
+                    return;
+                  }
+                  setDrawerRowId(activeRowId);
+                }}
+              >
+                <ExpandIcon className="size-3.5" />
+                Edit row
+              </Button>
+            )}
             {editing && (
               <Button
                 ref={editButtonRef}
@@ -1800,6 +1887,19 @@ export function DataGrid<TData extends RowData>({
             </Button>
           )}
         </div>
+      )}
+      {drawerRowId && (
+        <RecordDrawer
+          open
+          onOpenChange={(open) => {
+            if (!open) setDrawerRowId(null);
+          }}
+          title={`Edit ${rowLabel(drawerRowId)}`}
+          fields={drawerFields(drawerRowId)}
+          readOnly={drawerReadOnly(drawerRowId)}
+          validate={validateDrawer(drawerRowId)}
+          onApply={(changes) => applyDrawer(drawerRowId, changes)}
+        />
       )}
       {filterColumn && (
         <FilterPanel

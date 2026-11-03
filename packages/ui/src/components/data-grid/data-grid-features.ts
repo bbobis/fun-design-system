@@ -64,6 +64,11 @@ export type DataGridColumnMeta = {
    * Columns without an editor are read-only.
    */
   editor?: DataGridEditorKind;
+  /**
+   * `text` editor only: long text. The cell still edits one line; the record drawer
+   * (`editing.recordDrawer`) shows a multi-line box for it.
+   */
+  multiline?: boolean;
   /** Choices for the `select` and `combobox` editors. Also what pasted text must match. */
   options?: readonly string[];
   /**

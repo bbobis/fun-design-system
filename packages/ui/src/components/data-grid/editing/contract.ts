@@ -93,6 +93,13 @@ export type DataGridEditing<TData extends RowData> = {
    * @default false
    */
   allowDelete?: boolean;
+  /**
+   * Shows an "Edit row" button while editing: the active cell's row opens as a form in
+   * a side drawer (long text with `meta.multiline`, every column at once). Apply puts
+   * the changes in the draft as one undo step.
+   * @default false
+   */
+  recordDrawer?: boolean;
 };
 
 /** One row the server says changed since the user's version (`SaveResult` kind `conflict`). */
