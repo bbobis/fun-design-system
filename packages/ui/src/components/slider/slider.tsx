@@ -116,7 +116,7 @@ function ValueLabels({
     state.getThumbValueLabel = (i: number) =>
       getValueLabel(state.values[i] ?? 0);
   }
-  return <>{children}</>;
+  return children;
 }
 
 /**
