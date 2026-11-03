@@ -1,3 +1,4 @@
+export * from './components/alarm-list';
 export * from './components/alert';
 export * from './components/announcement-bar';
 export * from './components/app-shell';
