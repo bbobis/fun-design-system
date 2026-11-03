@@ -1,0 +1,7 @@
+## 2026-11-03 — DataGrid record drawer (F5)
+
+- **Built:** `editing.recordDrawer` adds **Edit row** while editing. The active cell's row opens in our `Drawer` as a form: each editable column gets the form version of its cell editor (`Input`, or `TextArea` with the new `meta.multiline`; `NumberField`; `Select`; `Combobox`; `DatePicker`; `Checkbox`), the other columns show as text, and the grid's own `required` / `validate` messages appear live. **Apply** puts the changed fields in the draft as one undo step; **Cancel** throws the form away.
+- **Remember (the prediction): a modal hides everything behind it.** React Aria's `Modal` makes the page outside it unreachable: Tab stays inside (a focus trap), and screen readers can't see the grid (it's hidden with `aria-hidden` / `inert`; a test checks the grid's role is gone). When it closes, focus goes back to the button that opened it, "Edit row". That's the WAI-ARIA dialog pattern, and the Drawer gets it for free.
+- **Remember: one gesture, one undo step, wherever it comes from.** The drawer doesn't write rows itself: it hands its changes to the grid's existing `applyValues`, the same door typing and paste use. So Ctrl+Z, the Save bar, validation and Discard all treat a drawer edit like any other.
+- **Refactor:** the combobox's server search (debounce + `AbortController`) moved from the cell editor into a `useServerSearch` hook, so the drawer's Combobox searches the same way. One copy of the tricky part.
+- Docs: https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/

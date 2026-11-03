@@ -17,6 +17,7 @@ import {
   useFilter,
 } from 'react-aria-components';
 import { cn } from '../../../utils/cn';
+import { useServerSearch } from './use-server-search';
 import {
   AutoHighlightFirst,
   ChevronIcon,
@@ -49,7 +50,6 @@ const box =
   'flex h-full w-full min-w-0 items-center bg-bg text-sm text-fg outline-2 -outline-offset-2 outline-primary';
 
 /** How long to wait after the last keystroke before searching the server. */
-const SEARCH_DELAY_MS = 250;
 
 /**
  * Searchable list editor (`meta.editor: 'combobox'`). Typing filters the list; Enter,
@@ -92,40 +92,8 @@ export function ComboboxCellEditor({
     el.setSelectionRange(el.value.length, el.value.length);
   }, []);
 
-  // Server search: debounce the request (not the typing) and cancel the previous one.
-  const [results, setResults] = useState<readonly string[] | null>(null);
-  const [loading, setLoading] = useState(searchOptions !== undefined);
-  const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
-  const request = useRef<AbortController>(undefined);
-  const search = (query: string) => {
-    if (!searchOptions) return;
-    clearTimeout(timer.current);
-    setLoading(true);
-    timer.current = setTimeout(() => {
-      request.current?.abort();
-      const ctrl = new AbortController();
-      request.current = ctrl;
-      searchOptions(query, ctrl.signal).then(
-        (found) => {
-          if (ctrl.signal.aborted) return;
-          setResults(found);
-          setLoading(false);
-        },
-        () => {
-          if (!ctrl.signal.aborted) setLoading(false);
-        },
-      );
-    }, SEARCH_DELAY_MS);
-  };
-  useEffect(() => {
-    search(seed ?? '');
-    return () => {
-      clearTimeout(timer.current);
-      request.current?.abort();
-    };
-    // Once, on mount: later searches come from typing.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // Server search: debounced, and the previous request is cancelled (see the hook).
+  const { results, loading, search } = useServerSearch(searchOptions, seed);
 
   // The search text. Starts empty (show every choice) or as the typed letter.
   const [query, setQuery] = useState(seed ?? '');

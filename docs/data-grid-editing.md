@@ -18,6 +18,7 @@ backend. The grid owns the draft (unsaved edits); your app owns the network.
     allowAdd: true, // optional: "Type here to add a row…"
     newRow: () => ({ status: 'Draft' }), // optional: defaults for new rows
     allowDelete: true, // optional: "Delete rows" while editing
+    recordDrawer: true, // optional: "Edit row" opens the row as a form
   }}
 />
 ```
@@ -177,7 +178,14 @@ Locked rows are skipped; a new row deleted before it was ever saved sends nothin
 made to a row before deleting it are dropped. After a successful save, remove the rows
 from `data`.
 
-There is deliberately **no shortcut**: Excel's Ctrl+− is the browser's zoom out, and a
+**Editing a whole row (`recordDrawer`).** **Edit row** opens the active cell's row as a
+form in a side drawer: one field per editable column (`meta.multiline` text gets a
+multi-line box), the other columns as text, and the same `required` / `validate`
+messages as the grid. **Apply** puts the changes in the draft as one undo step; nothing
+is saved until **Save all**. Locked, deleted and not-yet-added rows can't be opened (the
+button says why).
+
+There is deliberately **no shortcut** for deleting: Excel's Ctrl+− is the browser's zoom out, and a
 grid that swallows it breaks zoom for the people who rely on it most.
 
 ## 5. Keyboard and mouse

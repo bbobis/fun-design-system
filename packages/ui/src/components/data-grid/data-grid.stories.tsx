@@ -284,6 +284,7 @@ const isPaid = (row: Invoice) => row.status === 'Paid';
  * **Issued** opens a date editor (Alt+↓ for the calendar) and **Category** a searchable
  * list: both are popover editors. Select cells in a few rows and press **Delete N rows**:
  * they're struck through until Save (Ctrl+Z or **Restore** brings them back).
+ * **Edit row** opens the active row as a form in a side drawer.
  */
 export const Editable: Story = {
   render: () => {
@@ -302,6 +303,7 @@ export const Editable: Story = {
             isRowLocked: isPaid,
             allowAdd: true,
             allowDelete: true,
+            recordDrawer: true,
             newRow: (): Partial<Invoice> => ({
               status: 'Draft',
               terms: 'Net 30',
