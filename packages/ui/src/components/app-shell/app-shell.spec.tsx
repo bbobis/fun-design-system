@@ -30,6 +30,27 @@ function App() {
 }
 
 describe('AppShell', () => {
+  it('announcement: after the skip link, before the top bar', () => {
+    render(
+      <AppShell
+        brand={<a href="/">Acme</a>}
+        sidebar={<nav aria-label="Main" />}
+        announcement={<section aria-label="Announcement">Maintenance</section>}
+      >
+        <h1>Invoices</h1>
+      </AppShell>,
+    );
+    const bar = screen.getByRole('region', { name: 'Announcement' });
+    const header = screen.getByRole('banner');
+    const skip = screen.getByRole('link', { name: 'Skip to main content' });
+    expect(
+      skip.compareDocumentPosition(bar) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      bar.compareDocumentPosition(header) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
   it('has header, nav and main landmarks', () => {
     render(<App />);
     expect(screen.getByRole('banner')).toBeTruthy();
