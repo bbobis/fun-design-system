@@ -1,14 +1,16 @@
 import {
   createContext,
   useContext,
-  useEffect,
-  useRef,
-  useState,
   type ComponentProps,
   type ReactNode,
-  type SVGProps,
 } from 'react';
 import { cn } from '../../utils/cn';
+import { useCopy } from '../../utils/use-copy';
+import {
+  CopyStateIcon,
+  CopyStatus,
+  copyStateClass,
+} from '../copy-field/copy-parts';
 
 export type DescriptionListLayout = 'horizontal' | 'vertical' | 'grid';
 export type DescriptionListSize = 'sm' | 'md';
@@ -169,31 +171,9 @@ export function DescriptionItem({
   );
 }
 
-type CopyState = 'idle' | 'copied' | 'failed';
-
-/**
- * Copies `text`. `navigator.clipboard` only exists on https (and localhost), can be
- * blocked by the browser or by an iframe's permissions, and returns a Promise that
- * may reject: so failure is a real state, shown and announced, not ignored.
- */
+/** The copy button after a value. Logic and pieces shared with CopyField. */
 function CopyButton({ text, label }: { text: string; label: string }) {
-  const [state, setState] = useState<CopyState>('idle');
-  const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
-  useEffect(() => () => clearTimeout(timer.current), []);
-
-  const onCopy = async () => {
-    clearTimeout(timer.current);
-    try {
-      if (!navigator.clipboard) throw new Error('Clipboard not available');
-      await navigator.clipboard.writeText(text);
-      setState('copied');
-    } catch {
-      setState('failed');
-    }
-    // Back to the copy icon after 2 s (the message stays long enough to be read).
-    timer.current = setTimeout(() => setState('idle'), 2000);
-  };
-
+  const { state, copy } = useCopy();
   return (
     <>
       <button
@@ -201,62 +181,16 @@ function CopyButton({ text, label }: { text: string; label: string }) {
         // Names the button with its label, so a list of copy buttons isn't
         // "Copy, Copy, Copy" in a screen reader's list of buttons.
         aria-label={`Copy ${label}`}
-        onClick={() => void onCopy()}
+        onClick={() => void copy(text)}
         className={cn(
           '-my-0.5 flex size-6 shrink-0 items-center justify-center rounded text-fg-muted hover:bg-surface hover:text-fg',
           'focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-solid focus-visible:outline-focus-ring',
-          state === 'copied' && 'text-success hover:text-success',
-          state === 'failed' && 'text-danger hover:text-danger',
+          copyStateClass(state),
         )}
       >
-        {state === 'copied' ? (
-          <CheckIcon className="size-3.5" />
-        ) : state === 'failed' ? (
-          <AlertIcon className="size-3.5" />
-        ) : (
-          <CopyIcon className="size-3.5" />
-        )}
+        <CopyStateIcon state={state} className="size-3.5" />
       </button>
-      {/* Always in the DOM, so screen readers notice when its text changes. */}
-      <span role="status" className="sr-only">
-        {state === 'copied'
-          ? 'Copied'
-          : state === 'failed'
-            ? 'Couldn’t copy. Select the text and copy it yourself.'
-            : ''}
-      </span>
+      <CopyStatus state={state} />
     </>
   );
 }
-
-function Svg(props: SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      aria-hidden="true"
-      viewBox="0 0 16 16"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.5}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      {...props}
-    />
-  );
-}
-const CopyIcon = (p: SVGProps<SVGSVGElement>) => (
-  <Svg {...p}>
-    <rect x="5.25" y="5.25" width="8" height="8.5" rx="1.5" />
-    <path d="M10.75 5.25V3.75a1.5 1.5 0 0 0-1.5-1.5h-5a1.5 1.5 0 0 0-1.5 1.5v6a1.5 1.5 0 0 0 1.5 1.5h1.5" />
-  </Svg>
-);
-const CheckIcon = (p: SVGProps<SVGSVGElement>) => (
-  <Svg {...p} strokeWidth={2}>
-    <path d="m3.5 8.5 3 3 6-7" />
-  </Svg>
-);
-const AlertIcon = (p: SVGProps<SVGSVGElement>) => (
-  <Svg {...p}>
-    <circle cx="8" cy="8" r="6.25" />
-    <path d="M8 4.75v3.75M8 11h.01" />
-  </Svg>
-);
