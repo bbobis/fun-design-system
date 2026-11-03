@@ -45,12 +45,13 @@ export const invoiceColumns = col.columns([
   col.accessor('customer', {
     header: 'Customer',
     size: 200,
-    meta: { editor: 'text', required: true },
+    meta: { editor: 'text', required: true, filter: 'text' },
   }),
   col.accessor('status', {
     header: 'Status',
-    size: 110,
-    meta: { editor: 'select', options: invoiceStatuses },
+    // Room for the label, the funnel and the ⌄ button when it's filtered.
+    size: 130,
+    meta: { editor: 'select', options: invoiceStatuses, filter: 'list' },
     cell: (info) => (
       <Badge tone={tone[info.getValue()]}>{info.getValue()}</Badge>
     ),
@@ -61,7 +62,7 @@ export const invoiceColumns = col.columns([
     // ISO strings sort correctly as plain text: '2026-01-31' < '2026-10-04'.
     sortFn: 'text',
     cell: (i) => formatDay(i.getValue()),
-    meta: { align: 'end', editor: 'date' },
+    meta: { align: 'end', editor: 'date', filter: 'date' },
   }),
   col.accessor('due', {
     header: 'Due',
@@ -93,10 +94,15 @@ export const invoiceColumns = col.columns([
     header: 'Total',
     size: 120,
     cell: (i) => money.format(i.getValue()),
-    meta: { align: 'end' },
+    meta: { align: 'end', filter: 'number' },
   }),
   col.accessor('currency', { header: 'Cur.', size: 70, meta: { mono: true } }),
-  col.accessor('region', { header: 'Region', size: 100 }),
+  col.accessor('region', {
+    header: 'Region',
+    size: 100,
+    // No `options`: the filter lists the regions found in the data.
+    meta: { filter: 'list' },
+  }),
   col.accessor('country', { header: 'Country', size: 110 }),
   col.accessor('city', {
     header: 'City',

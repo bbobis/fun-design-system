@@ -90,3 +90,11 @@ export function CheckIcon(props: SVGProps<SVGSVGElement>) {
     </svg>
   );
 }
+
+export function FunnelIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 16 16" fill="currentColor" {...props}>
+      <path d="M2 3h12l-4.5 5.5V13l-3-1.5v-3z" />
+    </svg>
+  );
+}

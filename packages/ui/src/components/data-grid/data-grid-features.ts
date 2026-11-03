@@ -18,8 +18,14 @@ import {
   sortFn_text,
   tableFeatures,
   type ColumnDef,
+  type Row,
   type RowData,
 } from '@tanstack/react-table';
+import {
+  matchesFilter,
+  type DataGridFilter,
+  type DataGridFilterKind,
+} from './column-filters';
 
 /**
  * The in-cell editors:
@@ -66,6 +72,14 @@ export type DataGridColumnMeta = {
    * can't check it against a list it doesn't have); use `validate` to check it.
    */
   searchOptions?: DataGridSearchOptions;
+  /**
+   * Adds "Filter…" to the column menu, with a panel for this kind of value:
+   * - `text`: contains (ignoring case)
+   * - `number`: between a min and a max
+   * - `date`: between two days (ISO `'YYYY-MM-DD'` values)
+   * - `list`: tick values; from `options`, or the distinct values in the data
+   */
+  filter?: DataGridFilterKind;
   /** The cell can't be left empty in a row the user edited or added. */
   required?: boolean;
   /**
@@ -95,7 +109,12 @@ export const dataGridFeatures = tableFeatures({
   columnFilteringFeature,
   globalFilteringFeature,
   filteredRowModel: createFilteredRowModel(),
-  filterFns: { includesString: filterFn_includesString },
+  filterFns: {
+    includesString: filterFn_includesString,
+    // Every column filter goes through our own pure function (column-filters.ts).
+    dataGrid: (row: Row<any, any>, columnId: string, filter: DataGridFilter) =>
+      matchesFilter(row.getValue(columnId), filter),
+  },
   rowSelectionFeature,
   columnSizingFeature,
   // The column menu: hide / show, move, pin to either edge.

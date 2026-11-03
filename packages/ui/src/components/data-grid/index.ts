@@ -24,3 +24,8 @@ export {
   type DataGridColumnState,
   type DataGridPinSide,
 } from './column-state';
+export type {
+  DataGridFilter,
+  DataGridFilterKind,
+  DataGridFilters,
+} from './column-filters';
