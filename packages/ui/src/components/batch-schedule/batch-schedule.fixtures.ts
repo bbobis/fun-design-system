@@ -1,0 +1,137 @@
+import type { ScheduledBatch, ScheduleLine } from './schedule-model';
+
+/** Same product codes (and so colors) as the Pipeline Map demo. */
+export const DEMO_SCHEDULE_PRODUCTS = ['SYN', 'DIL', 'SWT', 'CON'];
+
+export const DEMO_LINES: ScheduleLine[] = [
+  { id: 'L1-AB', label: 'Line 1 · A → B' },
+  { id: 'L1-BC', label: 'Line 1 · B → C' },
+  { id: 'L2-AD', label: 'Line 2 · A → D' },
+];
+
+/** A week from Mon Nov 2, 2026, times in UTC (Edmonton is UTC−7 in November). */
+export const DEMO_BATCHES: ScheduledBatch[] = [
+  {
+    id: 'b110',
+    name: '26-110',
+    product: 'DIL',
+    line: 'L1-AB',
+    start: '2026-10-31T13:00:00Z',
+    end: '2026-11-02T19:00:00Z',
+    volume: 41000,
+    status: 'complete',
+  },
+  {
+    id: 'b112',
+    name: '26-112',
+    product: 'SYN',
+    line: 'L1-AB',
+    start: '2026-11-02T19:00:00Z',
+    end: '2026-11-04T07:00:00Z',
+    volume: 32000,
+    status: 'active',
+  },
+  {
+    id: 'b114',
+    name: '26-114',
+    product: 'SWT',
+    line: 'L1-AB',
+    start: '2026-11-04T07:00:00Z',
+    end: '2026-11-05T19:00:00Z',
+    volume: 28500,
+    status: 'at-risk',
+  },
+  {
+    id: 'b116',
+    name: '26-116',
+    product: 'CON',
+    line: 'L1-AB',
+    start: '2026-11-05T19:00:00Z',
+    end: '2026-11-07T13:00:00Z',
+    volume: 36000,
+    status: 'planned',
+  },
+  {
+    id: 'b118',
+    name: '26-118',
+    product: 'SYN',
+    line: 'L1-AB',
+    start: '2026-11-07T13:00:00Z',
+    end: '2026-11-10T07:00:00Z',
+    volume: 52000,
+    status: 'planned',
+  },
+
+  {
+    id: 'b111',
+    name: '26-111',
+    product: 'DIL',
+    line: 'L1-BC',
+    start: '2026-11-01T19:00:00Z',
+    end: '2026-11-03T13:00:00Z',
+    volume: 41000,
+    status: 'active',
+  },
+  {
+    id: 'b113',
+    name: '26-113',
+    product: 'SYN',
+    line: 'L1-BC',
+    start: '2026-11-03T13:00:00Z',
+    end: '2026-11-05T01:00:00Z',
+    volume: 32000,
+    status: 'planned',
+  },
+  // Overlaps 26-113: a tie-in delivery, so it gets a second lane.
+  {
+    id: 'b113t',
+    name: '26-113T',
+    product: 'SYN',
+    line: 'L1-BC',
+    start: '2026-11-04T07:00:00Z',
+    end: '2026-11-04T19:00:00Z',
+    volume: 6000,
+    status: 'planned',
+  },
+  {
+    id: 'b115',
+    name: '26-115',
+    product: 'SWT',
+    line: 'L1-BC',
+    start: '2026-11-05T01:00:00Z',
+    end: '2026-11-06T13:00:00Z',
+    volume: 28500,
+    status: 'planned',
+  },
+
+  {
+    id: 'b201',
+    name: '26-201',
+    product: 'SWT',
+    line: 'L2-AD',
+    start: '2026-11-02T07:00:00Z',
+    end: '2026-11-03T19:00:00Z',
+    volume: 24000,
+    status: 'active',
+  },
+  {
+    id: 'b203',
+    name: '26-203',
+    product: 'DIL',
+    line: 'L2-AD',
+    start: '2026-11-04T07:00:00Z',
+    end: '2026-11-06T07:00:00Z',
+    volume: 40000,
+    status: 'planned',
+  },
+  {
+    id: 'b205',
+    name: '26-205',
+    product: 'XYL',
+    line: 'L2-AD',
+    start: '2026-11-06T07:00:00Z',
+    end: '2026-11-07T07:00:00Z',
+    volume: 9000,
+    status: 'planned',
+  },
+];
