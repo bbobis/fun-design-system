@@ -1,4 +1,5 @@
 export * from './components/alert';
+export * from './components/announcement-bar';
 export * from './components/app-shell';
 export * from './components/avatar';
 export * from './components/badge';

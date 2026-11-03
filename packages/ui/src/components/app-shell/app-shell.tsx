@@ -40,6 +40,11 @@ export type AppShellProps = {
   /** The page: usually a `PageHeader` and then the content. */
   children: ReactNode;
   /**
+   * A site-wide `AnnouncementBar` above the top bar. It scrolls away with the page;
+   * the top bar stays stuck to the top.
+   */
+  announcement?: ReactNode;
+  /**
    * The `id` of `<main>`, which the skip link jumps to. Change it only if the page
    * already uses `main` for something else.
    * @default 'main'
@@ -81,6 +86,7 @@ export function AppShell({
   actions,
   sidebar,
   children,
+  announcement,
   mainId = 'main',
   sidebarCollapsed,
   defaultSidebarCollapsed = false,
@@ -114,6 +120,8 @@ export function AppShell({
       >
         Skip to main content
       </a>
+
+      {announcement}
 
       <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center gap-2 border-b border-border bg-bg px-3 lg:px-4">
         <DialogTrigger isOpen={drawerOpen} onOpenChange={setDrawerOpen}>
