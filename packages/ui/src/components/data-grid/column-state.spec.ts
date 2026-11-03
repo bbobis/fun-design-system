@@ -6,6 +6,9 @@ import {
   pinColumn,
   reconcileColumnState,
   setColumnHidden,
+  setColumnWidth,
+  MAX_COLUMN_WIDTH,
+  MIN_COLUMN_WIDTH,
   setVisibleColumns,
   toTableState,
 } from './column-state';
@@ -79,8 +82,23 @@ describe('column state', () => {
       columnOrder: ['__select', 'a', 'b', 'c', 'd'],
       columnVisibility: { c: false },
       columnPinning: { start: ['__select', 'b'], end: [] },
+      columnSizing: {},
     });
     // Nothing pinned at the start: the checkbox column scrolls like the rest.
     expect(toTableState(base, ['__select']).columnPinning.start).toEqual([]);
+  });
+
+  it('widths: rounded, kept between min and max, same object when unchanged', () => {
+    const s = setColumnWidth(base, 'a', 180.6);
+    expect(s.widths).toEqual({ a: 181 });
+    expect(setColumnWidth(s, 'a', 181)).toBe(s);
+    expect(setColumnWidth(base, 'a', 5).widths?.a).toBe(MIN_COLUMN_WIDTH);
+    expect(setColumnWidth(base, 'a', 5000).widths?.a).toBe(MAX_COLUMN_WIDTH);
+    expect(toTableState(s).columnSizing).toEqual({ a: 181 });
+  });
+
+  it('reconcile drops the widths of columns that no longer exist', () => {
+    const s = setColumnWidth(setColumnWidth(base, 'a', 100), 'gone', 200);
+    expect(reconcileColumnState(s, ids).widths).toEqual({ a: 100 });
   });
 });

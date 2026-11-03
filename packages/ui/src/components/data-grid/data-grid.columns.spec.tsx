@@ -61,6 +61,8 @@ describe('DataGrid column menu', () => {
       'Sort descending',
       'Pin to start',
       'Pin to end',
+      'Resize column',
+      'Fit to content',
       'Move left',
       'Move right',
       'Hide column',

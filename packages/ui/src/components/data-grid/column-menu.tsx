@@ -19,6 +19,10 @@ export type HeaderMenuProps = {
   /** False for the last visible column: a grid with no columns can't get them back. */
   canHide: boolean;
   onHide: () => void;
+  /** "Resize column": focus the edge handle for arrow-key resizing. */
+  onResizeStart: () => void;
+  /** "Fit to content". */
+  onFit: () => void;
 };
 
 /**
@@ -41,6 +45,8 @@ export function HeaderMenu({
   onMove,
   canHide,
   onHide,
+  onResizeStart,
+  onFit,
 }: HeaderMenuProps) {
   return (
     <span
@@ -127,6 +133,20 @@ export function HeaderMenu({
         </MenuSection>
         <MenuSeparator />
         <MenuSection title="Column">
+          <MenuItem
+            id="resize"
+            icon={<ResizeIcon className="size-4" />}
+            onAction={onResizeStart}
+          >
+            Resize column
+          </MenuItem>
+          <MenuItem
+            id="fit"
+            icon={<FitIcon className="size-4" />}
+            onAction={onFit}
+          >
+            Fit to content
+          </MenuItem>
           <MenuItem
             id="move-left"
             icon={<ArrowIcon className="size-4 -rotate-90" />}
@@ -251,5 +271,15 @@ const EyeOffIcon = (p: SVGProps<SVGSVGElement>) => (
 const XIcon = (p: SVGProps<SVGSVGElement>) => (
   <Svg {...p}>
     <path d="m4.5 4.5 7 7m0-7-7 7" />
+  </Svg>
+);
+const ResizeIcon = (p: SVGProps<SVGSVGElement>) => (
+  <Svg {...p}>
+    <path d="M8 2.5v11M2.5 8h3m-1.5-2-2 2 2 2m9.5-2h-3m1.5-2 2 2-2 2" />
+  </Svg>
+);
+const FitIcon = (p: SVGProps<SVGSVGElement>) => (
+  <Svg {...p}>
+    <path d="M2.5 3v10m11-10v10M5 8h6M6.5 6.5 5 8l1.5 1.5m3-3L11 8 9.5 9.5" />
   </Svg>
 );

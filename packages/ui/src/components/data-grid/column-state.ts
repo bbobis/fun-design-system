@@ -17,7 +17,30 @@ export type DataGridColumnState = {
     readonly start: readonly string[];
     readonly end: readonly string[];
   };
+  /**
+   * Widths in px the user set by resizing. Columns not listed use their `size`.
+   * Optional, so layouts saved before resizing existed still load.
+   */
+  widths?: Readonly<Record<string, number>>;
 };
+
+/** The narrowest a user can make a column: room for a few characters and the ⌄ button. */
+export const MIN_COLUMN_WIDTH = 48;
+/** The widest: past this, a column is better shown in a detail view. */
+export const MAX_COLUMN_WIDTH = 800;
+
+/** Sets a column's width, rounded and kept between the min and max. */
+export function setColumnWidth(
+  state: DataGridColumnState,
+  id: string,
+  px: number,
+): DataGridColumnState {
+  const width = Math.round(
+    Math.min(MAX_COLUMN_WIDTH, Math.max(MIN_COLUMN_WIDTH, px)),
+  );
+  if (state.widths?.[id] === width) return state;
+  return { ...state, widths: { ...state.widths, [id]: width } };
+}
 
 /** The layout as the columns were written: nothing hidden, nothing pinned. */
 export function defaultColumnState(
@@ -48,12 +71,19 @@ export function reconcileColumnState(
     order.every((id, i) => id === state.order[i]) &&
     keep(state.hidden).length === state.hidden.length &&
     keep(state.pinned.start).length === state.pinned.start.length &&
-    keep(state.pinned.end).length === state.pinned.end.length;
+    keep(state.pinned.end).length === state.pinned.end.length &&
+    keep(Object.keys(state.widths ?? {})).length ===
+      Object.keys(state.widths ?? {}).length;
   if (same) return state;
   return {
     order,
     hidden: keep(state.hidden),
     pinned: { start: keep(state.pinned.start), end: keep(state.pinned.end) },
+    ...(state.widths && {
+      widths: Object.fromEntries(
+        Object.entries(state.widths).filter(([id]) => known.has(id)),
+      ),
+    }),
   };
 }
 
@@ -173,5 +203,6 @@ export function toTableState(
       start: hasStart ? [...extraStart, ...state.pinned.start] : [],
       end: [...state.pinned.end],
     },
+    columnSizing: { ...state.widths },
   };
 }

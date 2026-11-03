@@ -232,6 +232,8 @@ export const DataGridRow = memo(function DataGridRow<TData extends RowData>({
               key={cell.id}
               role="cell"
               aria-colindex={cellIndex + 1}
+              // "Fit to content" finds a column's cells by this.
+              data-column-id={column.id}
               className={cn(base, !isSelectColumn && 'px-3')}
               style={style}
             >
@@ -258,6 +260,7 @@ export const DataGridRow = memo(function DataGridRow<TData extends RowData>({
             aria-colindex={cellIndex + 1}
             aria-readonly={readOnly || undefined}
             data-cell-key={cellKey(row.id, column.id)}
+            data-column-id={column.id}
             data-focused={focused || undefined}
             // Roving tabindex: only the active cell is in the tab order.
             tabIndex={focused ? 0 : -1}
