@@ -23,6 +23,7 @@ export * from './components/event-calendar';
 export * from './components/field';
 export * from './components/file-upload';
 export * from './components/heading';
+export * from './components/inline-edit';
 export * from './components/input';
 export * from './components/label';
 export * from './components/link';
