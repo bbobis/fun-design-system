@@ -23,6 +23,11 @@ export type HeaderMenuProps = {
   onResizeStart: () => void;
   /** "Fit to content". */
   onFit: () => void;
+  /** The column has `meta.filter`: show "Filter…". */
+  filterable: boolean;
+  filtered: boolean;
+  onFilter: () => void;
+  onClearFilter: () => void;
 };
 
 /**
@@ -47,6 +52,10 @@ export function HeaderMenu({
   onHide,
   onResizeStart,
   onFit,
+  filterable,
+  filtered,
+  onFilter,
+  onClearFilter,
 }: HeaderMenuProps) {
   return (
     <span
@@ -59,7 +68,7 @@ export function HeaderMenu({
         'opacity-0 group-focus-within:opacity-100 group-hover:opacity-100 pointer-coarse:opacity-100',
         'has-[[aria-expanded=true]]:opacity-100',
         // Keep it visible while the column is changed from the default, as a hint.
-        (sorted || pinned !== 'center') && 'opacity-100',
+        (sorted || filtered || pinned !== 'center') && 'opacity-100',
       )}
     >
       <Menu
@@ -102,6 +111,27 @@ export function HeaderMenu({
           </MenuSection>
         )}
         {sortable && <MenuSeparator />}
+        {filterable && (
+          <MenuSection title="Filter">
+            <MenuItem
+              id="filter"
+              icon={<FilterIcon className="size-4" />}
+              onAction={onFilter}
+            >
+              {filtered ? 'Edit filter…' : 'Filter…'}
+            </MenuItem>
+            {filtered && (
+              <MenuItem
+                id="clear-filter"
+                icon={<XIcon className="size-4" />}
+                onAction={onClearFilter}
+              >
+                Clear filter
+              </MenuItem>
+            )}
+          </MenuSection>
+        )}
+        {filterable && <MenuSeparator />}
         <MenuSection title="Pin">
           {pinned !== 'start' && (
             <MenuItem
@@ -281,5 +311,10 @@ const ResizeIcon = (p: SVGProps<SVGSVGElement>) => (
 const FitIcon = (p: SVGProps<SVGSVGElement>) => (
   <Svg {...p}>
     <path d="M2.5 3v10m11-10v10M5 8h6M6.5 6.5 5 8l1.5 1.5m3-3L11 8 9.5 9.5" />
+  </Svg>
+);
+const FilterIcon = (p: SVGProps<SVGSVGElement>) => (
+  <Svg {...p}>
+    <path d="M2.5 3.5h11L9.25 8.5v4l-2.5-1.25V8.5z" />
   </Svg>
 );

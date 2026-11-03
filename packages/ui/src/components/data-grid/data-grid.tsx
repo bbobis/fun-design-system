@@ -87,9 +87,20 @@ import {
   type PinnedCell,
   type PinnedColumns,
 } from './data-grid-utils';
-import { PencilIcon, SearchIcon, SortIndicator } from './icons';
+import { FunnelIcon, PencilIcon, SearchIcon, SortIndicator } from './icons';
 import { ColumnsMenu, HeaderMenu } from './column-menu';
 import { ColumnResizer } from './column-resizer';
+import {
+  describeFilter,
+  distinctValues,
+  isActiveFilter,
+  NO_FILTERS,
+  setFilter,
+  toColumnFilters,
+  type DataGridFilters,
+} from './column-filters';
+import { FilterPanel } from './filter-panel';
+import { TagGroup } from '../tag-group';
 import { loadColumnState, saveColumnState } from './column-storage';
 import {
   canMove,
@@ -129,6 +140,7 @@ type Overrides<TData> = {
 const ROW_HEIGHT = { compact: 32, standard: 40, comfortable: 48 } as const;
 const EMPTY_SELECTION: RowSelectionState = {};
 const NO_SORTING: SortingState = [];
+const NO_COLUMN_FILTERS: { id: string; value: unknown }[] = [];
 
 /** What `renderBulkActions` receives. */
 export type DataGridBulkActionsContext = {
@@ -211,6 +223,15 @@ export type DataGridProps<TData extends RowData> = {
    */
   defaultColumnState?: DataGridColumnState;
   /**
+   * Column filters, controlled: `{ status: { kind: 'list', values: ['Paid'] } }`.
+   * Columns get a "Filter…" panel with `meta.filter`. Leave unset to let the grid own them.
+   */
+  filters?: DataGridFilters;
+  /** Called with all filters after the user applies, clears or removes one. */
+  onFiltersChange?: (filters: DataGridFilters) => void;
+  /** Starting filters when `filters` isn't controlled. */
+  defaultFilters?: DataGridFilters;
+  /**
    * Remember the user's layout (order, hidden, pinned, widths) in this browser, under
    * this name ("invoices"). Loaded on mount, saved on every change, forgotten on
    * "Reset columns". Ignored when `columnState` is controlled: then saving is yours
@@ -266,6 +287,9 @@ export function DataGrid<TData extends RowData>({
   onColumnStateChange,
   defaultColumnState: initialColumnState,
   stateKey,
+  filters: controlledFilters,
+  onFiltersChange,
+  defaultFilters = NO_FILTERS,
   emptyMessage = 'No rows to show.',
   className,
 }: DataGridProps<TData>) {
@@ -305,6 +329,23 @@ export function DataGrid<TData extends RowData>({
   // After "Hide column" the header (and the menu button that had focus) is gone:
   // this is the column whose menu button gets focus instead.
   const focusMenuOf = useRef<string | null>(null);
+
+  // ---- Column filters --------------------------------------------------------
+  const [ownFilters, setOwnFilters] = useState(defaultFilters);
+  const filters = controlledFilters ?? ownFilters;
+  const updateFilters = (next: DataGridFilters) => {
+    if (!controlledFilters) setOwnFilters(next);
+    onFiltersChange?.(next);
+  };
+  const activeFilterIds = Object.keys(filters).filter((id) =>
+    isActiveFilter(filters[id]),
+  );
+  const isFiltering = activeFilterIds.length > 0;
+  // TanStack's shape, memoized: a new array every render would re-filter 10k rows.
+  const columnFilters = useMemo(() => toColumnFilters(filters), [filters]);
+  /** The column whose "Filter…" panel is open, and the header it hangs from. */
+  const [filterColumn, setFilterColumn] = useState<string | null>(null);
+  const filterAnchor = useRef<Element | null>(null);
   const searchId = useId();
 
   // Search text updates instantly in the input; the expensive filtering of 10k rows
@@ -415,7 +456,11 @@ export function DataGrid<TData extends RowData>({
   ]);
 
   const columns = useMemo(() => {
-    if (!enableRowSelection || isEditing) return userColumns;
+    // Filterable columns use our one filter function (see data-grid-features.ts).
+    const dataColumns = userColumns.map((c) =>
+      c.meta?.filter ? { ...c, filterFn: 'dataGrid' as const } : c,
+    );
+    if (!enableRowSelection || isEditing) return dataColumns;
     const col = createDataGridColumnHelper<TData>();
     const selectColumn = col.display({
       id: SELECT_COLUMN_ID,
@@ -443,7 +488,7 @@ export function DataGrid<TData extends RowData>({
         />
       ),
     });
-    return [selectColumn as DataGridColumnDef<TData>, ...userColumns];
+    return [selectColumn as DataGridColumnDef<TData>, ...dataColumns];
   }, [enableRowSelection, isEditing, userColumns]);
 
   const table = useTable({
@@ -455,6 +500,8 @@ export function DataGrid<TData extends RowData>({
       // In edit mode the frozen ids already carry the sort and search order.
       sorting: isEditing ? NO_SORTING : sorting,
       globalFilter: isEditing ? '' : deferredSearch,
+      // Like search: the frozen edit-mode rows already carry the filter.
+      columnFilters: isEditing ? NO_COLUMN_FILTERS : columnFilters,
       rowSelection,
       cellSelection,
       // The checkbox column always leads, and sticks with the start-pinned columns.
@@ -1496,6 +1543,23 @@ export function DataGrid<TData extends RowData>({
     requestAnimationFrame(() =>
       requestAnimationFrame(() => headerPart('resizer', id)?.focus()),
     );
+  /** "Filter…": open the panel under the column's header. */
+  const openFilter = (id: string) =>
+    // Like startResize: after React Aria has put focus back on the ⌄ button, so the
+    // panel remembers that button and returns focus to it when it closes.
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => {
+        filterAnchor.current =
+          scrollRef.current?.querySelector(
+            `th[data-column-id="${escapeAttr(id)}"]`,
+          ) ?? null;
+        setFilterColumn(id);
+      }),
+    );
+  /** A list filter's choices: the column's `options`, or the values in the data. */
+  const filterOptions = (id: string) =>
+    table.getColumn(id)?.columnDef.meta?.options ??
+    distinctValues(data.map((row) => fieldValue(row, id)));
   const resizeColumn = (id: string, px: number) =>
     updateColumnState(setColumnWidth(columnState, id, px));
   /**
@@ -1613,6 +1677,55 @@ export function DataGrid<TData extends RowData>({
         </div>
       )}
 
+      {isFiltering && (
+        <div className="flex flex-wrap items-center gap-2 border-t border-border px-4 py-2">
+          <TagGroup
+            label="Filters"
+            hideLabel
+            size="sm"
+            items={activeFilterIds.map((id) => ({
+              id,
+              label: `${headerLabel(table.getColumn(id))}: ${describeFilter(
+                filters[id],
+              )}`,
+            }))}
+            // While editing, filters are frozen like search: no removing.
+            onRemove={
+              isEditing
+                ? undefined
+                : (ids) => {
+                    let next = filters;
+                    for (const id of ids) next = setFilter(next, id, null);
+                    updateFilters(next);
+                  }
+            }
+          />
+          {!isEditing && (
+            <Button
+              intent="ghost"
+              size="sm"
+              onClick={() => updateFilters(NO_FILTERS)}
+            >
+              Clear all
+            </Button>
+          )}
+        </div>
+      )}
+      {filterColumn && (
+        <FilterPanel
+          label={headerLabel(table.getColumn(filterColumn))}
+          kind={table.getColumn(filterColumn)?.columnDef.meta?.filter ?? 'text'}
+          value={filters[filterColumn]}
+          options={filterOptions(filterColumn)}
+          open
+          onOpenChange={(open) => {
+            if (!open) setFilterColumn(null);
+          }}
+          triggerRef={filterAnchor}
+          onApply={(f) => updateFilters(setFilter(filters, filterColumn, f))}
+        />
+      )}
+
       {/*
         The scroll container. In read mode it is focusable so keyboard users can scroll
         it with arrows. In edit mode the active cell is the tab stop instead.
@@ -1686,6 +1799,18 @@ export function DataGrid<TData extends RowData>({
                       key={header.id}
                       role="columnheader"
                       data-column-id={column.id}
+                      // An explicit name: from its content it would also take in the
+                      // controls ("Status Resize Status column"), and screen readers
+                      // repeat a header's name for every cell under it.
+                      aria-label={
+                        column.id === SELECT_COLUMN_ID
+                          ? undefined
+                          : `${headerLabel(column)}${
+                              isActiveFilter(filters[column.id]) && !isEditing
+                                ? ', filtered'
+                                : ''
+                            }`
+                      }
                       aria-colindex={(colIndexById.get(column.id) ?? 0) + 1}
                       // ARIA allows aria-sort on one header only, so mark the primary sort.
                       aria-sort={
@@ -1755,6 +1880,10 @@ export function DataGrid<TData extends RowData>({
                           )}
                         </>
                       )}
+                      {isActiveFilter(filters[column.id]) && !isEditing && (
+                        // Decoration: the header's aria-label says "filtered".
+                        <FunnelIcon className="size-3 shrink-0 text-fg" />
+                      )}
                       {showMenu && (
                         <HeaderMenu
                           label={headerLabel(column)}
@@ -1790,6 +1919,12 @@ export function DataGrid<TData extends RowData>({
                           onHide={() => hideColumn(column.id)}
                           onResizeStart={() => startResize(column.id)}
                           onFit={() => fitColumn(column.id)}
+                          filterable={Boolean(meta?.filter)}
+                          filtered={isActiveFilter(filters[column.id])}
+                          onFilter={() => openFilter(column.id)}
+                          onClearFilter={() =>
+                            updateFilters(setFilter(filters, column.id, null))
+                          }
                         />
                       )}
                       {showMenu && (
@@ -1827,7 +1962,9 @@ export function DataGrid<TData extends RowData>({
                 >
                   {isSearching && !isEditing
                     ? `No rows match "${deferredSearch}".`
-                    : emptyMessage}
+                    : isFiltering && !isEditing
+                      ? 'No rows match the filters.'
+                      : emptyMessage}
                 </td>
               </tr>
             ) : (
@@ -1920,7 +2057,7 @@ export function DataGrid<TData extends RowData>({
       <div className="flex items-center justify-between gap-3 border-t border-border px-4 py-2 text-xs text-fg-muted">
         {/* role=status: screen readers announce the new count after each search. */}
         <p role="status" className="tabular-nums">
-          {isSearching && !isEditing
+          {(isSearching || isFiltering) && !isEditing
             ? `${rows.length.toLocaleString()} of ${data.length.toLocaleString()} rows`
             : `${(isEditing ? realRowCount : rows.length).toLocaleString()} rows`}
           {isEditing &&

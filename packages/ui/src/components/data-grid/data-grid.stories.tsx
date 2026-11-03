@@ -151,6 +151,23 @@ export const RememberedLayout: Story = {
   },
 };
 
+/**
+ * Column filters. Customer (text), Status and Region (lists), Issued (dates) and
+ * Total (min – max) have `meta.filter`: open a column's ⌄ menu and pick "Filter…".
+ * Active filters show as chips above the grid (Delete or Backspace removes one) and
+ * a funnel on the header; the footer counts "N of 10,000 rows".
+ */
+export const Filters: Story = {
+  args: {
+    title: 'Invoices',
+    defaultFilters: {
+      status: { kind: 'list', values: ['Overdue', 'Pending'] },
+      total: { kind: 'number', min: 20000 },
+    },
+    className: 'h-[30rem] max-w-5xl',
+  },
+};
+
 /** Side by side: compact (default), standard and comfortable. */
 export const Densities: Story = {
   render: () => (

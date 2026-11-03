@@ -59,6 +59,7 @@ describe('DataGrid column menu', () => {
     expect(items).toEqual([
       'Sort ascending',
       'Sort descending',
+      'Filter…',
       'Pin to start',
       'Pin to end',
       'Resize column',
@@ -208,5 +209,11 @@ describe('DataGrid column menu', () => {
     renderGrid({ enableColumnMenu: false });
     expect(screen.queryByRole('button', { name: /column options/ })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Columns' })).toBeNull();
+  });
+
+  it('a header is named by its label only, not by the buttons inside it', () => {
+    renderGrid();
+    // Screen readers repeat this name for every cell in the column.
+    expect(screen.getByRole('columnheader', { name: 'Customer' })).toBeTruthy();
   });
 });
