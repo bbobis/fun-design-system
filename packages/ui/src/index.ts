@@ -3,6 +3,7 @@ export * from './components/announcement-bar';
 export * from './components/app-shell';
 export * from './components/avatar';
 export * from './components/badge';
+export * from './components/batch-schedule';
 export * from './components/bento';
 export * from './components/breadcrumbs';
 export * from './components/button';
