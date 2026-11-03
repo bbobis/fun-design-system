@@ -14,6 +14,13 @@ export type ChangeSetOperation =
       changes: Record<string, unknown>;
     }
   | {
+      /** The user deleted this saved row (`editing.allowDelete`). */
+      op: 'delete';
+      id: RowId;
+      /** The row version the user saw, so the server can refuse a stale delete. */
+      version?: number | string;
+    }
+  | {
       op: 'create';
       /** Temporary client id ("tmp_1"); the server returns the real id. Used from PR D. */
       tempId: string;
@@ -79,6 +86,13 @@ export type DataGridEditing<TData extends RowData> = {
   allowAdd?: boolean;
   /** Starting values for a new row (e.g. `{ status: 'Draft' }`). Sent with the row. */
   newRow?: () => Partial<TData>;
+  /**
+   * Shows a "Delete rows" button while editing. Deleted rows stay on screen, struck
+   * through, until Save sends them as `delete` operations; Undo brings them back.
+   * Locked rows can't be deleted.
+   * @default false
+   */
+  allowDelete?: boolean;
 };
 
 /** One row the server says changed since the user's version (`SaveResult` kind `conflict`). */

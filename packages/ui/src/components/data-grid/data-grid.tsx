@@ -50,6 +50,8 @@ import type {
 import {
   applyDraft,
   countChanges,
+  DELETED_ROW_KEY,
+  isDeletedRow,
   EMPTY_DRAFT,
   sameValue,
   setDraftValue,
@@ -87,7 +89,14 @@ import {
   type PinnedCell,
   type PinnedColumns,
 } from './data-grid-utils';
-import { FunnelIcon, PencilIcon, SearchIcon, SortIndicator } from './icons';
+import {
+  FunnelIcon,
+  PencilIcon,
+  SearchIcon,
+  SortIndicator,
+  TrashIcon,
+  UndoIcon,
+} from './icons';
 import { ColumnsMenu, HeaderMenu } from './column-menu';
 import { ColumnResizer } from './column-resizer';
 import {
@@ -692,9 +701,13 @@ export function DataGrid<TData extends RowData>({
     if (ids.length) setNewRows(new Map(newRowsRef.current));
     return ids;
   };
+  /** Marked for deletion in this edit session (still shown, struck through). */
+  const isRowDeleted = (rowId: string) =>
+    isEditing && isDeletedRow(draft[rowId]);
   const canEdit = (rowId: string, columnId: string) =>
     Boolean(table.getColumn(columnId)?.columnDef.meta?.editor) &&
-    !isRowLocked(rowId);
+    !isRowLocked(rowId) &&
+    !isRowDeleted(rowId);
   /** What the cell shows now: the draft value if there is one (even null), else saved. */
   const shownValue = (rowId: string, columnId: string) => {
     const rowDraft = draft[rowId];
@@ -843,6 +856,55 @@ export function DataGrid<TData extends RowData>({
     announce(`Redid ${step.entry.label}.`);
   };
 
+  // ---- Deleting rows (editing.allowDelete) ------------------------------------
+  /** The real rows in the selected range (or the active cell's row). */
+  const rowsInRange = () => {
+    if (!bounds) return [];
+    const ids: string[] = [];
+    for (let r = bounds.r1; r <= bounds.r2; r++) {
+      const id = rows[r]?.id;
+      if (id && id !== NEW_ROW_ID) ids.push(id);
+    }
+    return ids;
+  };
+  const rangeRows = rowsInRange();
+  /** What the button acts on: locked rows can't be deleted, so they don't count. */
+  const deleteTargets = rangeRows.filter((id) => !isRowLocked(id));
+  /** Every selected row is already deleted: the button restores instead. */
+  const restoring =
+    deleteTargets.length > 0 && deleteTargets.every((id) => isRowDeleted(id));
+  /**
+   * Marks the selected rows deleted, or restores them. A delete is a draft value
+   * (`__deleted: true`), so it is one history entry: Ctrl+Z brings the rows back.
+   */
+  const toggleDeleteRows = () => {
+    const skipped = rangeRows.length - deleteTargets.length;
+    const n = applyValues(
+      `${restoring ? 'restore' : 'delete'} ${plural(deleteTargets.length, 'row')}`,
+      deleteTargets.map((rowId) => ({
+        rowId,
+        columnId: DELETED_ROW_KEY,
+        // Restoring removes the mark (back to the saved row's "no such field").
+        value: restoring ? undefined : true,
+      })),
+    );
+    const done = restoring
+      ? `Restored ${plural(n, 'row')}.`
+      : n
+        ? `${plural(n, 'row')} will be deleted when you save.`
+        : '';
+    announce(
+      [done, skipped ? `${plural(skipped, 'locked row')} skipped.` : '']
+        .filter(Boolean)
+        .join(' ') || 'Nothing to delete here.',
+    );
+    // The button keeps focus otherwise; the work is in the grid.
+    refocusActiveCell();
+  };
+  const deletedCount = isEditing
+    ? Object.values(draft).filter((d) => isDeletedRow(d)).length
+    : 0;
+
   const clearRange = (label: string) => {
     if (!bounds) return;
     const items = cellsIn(bounds)
@@ -905,7 +967,8 @@ export function DataGrid<TData extends RowData>({
       meta: c.columnDef.meta,
     }));
     const client = validateRows(
-      Object.keys(draft),
+      // A row that's being deleted doesn't need valid values.
+      Object.keys(draft).filter((id) => !isDeletedRow(draft[id])),
       (id) => ({
         ...(rowsById.get(id) ?? newRowsRef.current.get(id)),
         ...draft[id],
@@ -998,6 +1061,10 @@ export function DataGrid<TData extends RowData>({
     }
     // Lock on the *saved* row: changing Status to "Paid" in the draft shouldn't lock
     // the row halfway through an edit.
+    if (isRowDeleted(rowId)) {
+      announce('This row will be deleted. Restore it to edit it.');
+      return;
+    }
     if (isRowLocked(rowId)) {
       announce('This row is locked.');
       return;
@@ -1649,6 +1716,29 @@ export function DataGrid<TData extends RowData>({
                 disabled={isEditing}
               />
             )}
+            {isEditing && editing?.allowDelete && (
+              <Button
+                size="sm"
+                intent="secondary"
+                disabled={deleteTargets.length === 0 || saving}
+                onClick={toggleDeleteRows}
+              >
+                {restoring ? (
+                  <>
+                    <UndoIcon className="size-3.5" />
+                    Restore {plural(deleteTargets.length, 'row')}
+                  </>
+                ) : (
+                  <>
+                    <TrashIcon className="size-3.5" />
+                    Delete{' '}
+                    {deleteTargets.length > 0
+                      ? plural(deleteTargets.length, 'row')
+                      : 'rows'}
+                  </>
+                )}
+              </Button>
+            )}
             {editing && (
               <Button
                 ref={editButtonRef}
@@ -2063,6 +2153,7 @@ export function DataGrid<TData extends RowData>({
           {isEditing &&
             newRows.size > 0 &&
             ` · ${plural(newRows.size, 'new row')}`}
+          {deletedCount > 0 && ` · ${deletedCount.toLocaleString()} to delete`}
           {selectedCount > 0 &&
             !isEditing &&
             ` · ${selectedCount.toLocaleString()} selected`}

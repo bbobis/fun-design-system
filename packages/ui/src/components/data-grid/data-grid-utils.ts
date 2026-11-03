@@ -113,6 +113,7 @@ export function pinnedCellClass(pin: PinnedCell, striped: boolean) {
       'group-data-selected/row:shadow-[inset_2px_0_0_var(--color-primary)]',
       'group-data-[state=changed]/row:shadow-[inset_3px_0_0_var(--color-primary)]',
       'group-data-[state=error]/row:shadow-[inset_3px_0_0_var(--color-danger)]',
+      'group-data-[state=deleted]/row:shadow-[inset_3px_0_0_var(--color-danger)]',
     ],
     pin.edge && pinEdgeClass(pin.side),
   ];
