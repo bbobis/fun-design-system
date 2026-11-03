@@ -19,3 +19,8 @@ export {
   type DataGridFeatures,
   type DataGridSearchOptions,
 } from './data-grid-features';
+export {
+  defaultColumnState,
+  type DataGridColumnState,
+  type DataGridPinSide,
+} from './column-state';

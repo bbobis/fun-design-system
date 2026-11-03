@@ -67,40 +67,59 @@ export function isEmptyValue(value: unknown): boolean {
   return value == null || value === '';
 }
 
-/**
- * Pinned columns (`pinFirstColumn`): column id → its left offset in px. Cells read
- * the offset as `--pin`. `null` when nothing is pinned.
- */
-export type PinnedColumns = Readonly<Record<string, number>> | null;
+/** How one pinned column sticks. */
+export type PinnedCell = {
+  /** Which edge it sticks to. */
+  side: 'start' | 'end';
+  /** Its distance from that edge in px (the widths of the pinned columns outside it). */
+  offset: number;
+  /** The very first start-pinned column: it redraws the row's rail (see below). */
+  first: boolean;
+  /** Borders the scrolling columns: it draws the edge line. */
+  edge: boolean;
+};
 
 /**
- * Classes for a pinned cell. It sticks to the start edge while the rest scrolls under
- * it, so it needs a **solid** background: the row's own fills are see-through
+ * Pinned columns: column id → how it sticks. Cells read the offset as `--pin`.
+ * `null` when nothing is pinned.
+ */
+export type PinnedColumns = Readonly<Record<string, PinnedCell>> | null;
+
+/**
+ * Classes for a pinned cell. It sticks to an edge while the rest scrolls under it,
+ * so it needs a **solid** background: the row's own fills are see-through
  * (`bg-primary/10`, `bg-surface/60`), which would show the scrolled cells through it.
  * Each row state therefore gets an opaque mix with the page color here.
  */
-export function pinnedCellClass(opts: {
-  last: boolean;
-  first: boolean;
-  striped: boolean;
-}) {
+export function pinnedCellClass(pin: PinnedCell, striped: boolean) {
   return [
-    'sticky start-(--pin) z-[1] bg-bg',
-    opts.striped &&
+    // Static class names per side: Tailwind can't see `${side}-(--pin)`.
+    pin.side === 'start'
+      ? 'sticky start-(--pin) z-[1]'
+      : 'sticky end-(--pin) z-[1]',
+    'bg-bg',
+    striped &&
       'bg-[color-mix(in_oklab,var(--color-surface)_60%,var(--color-bg))]',
     'group-hover/row:bg-surface',
     'group-data-selected/row:bg-[color-mix(in_oklab,var(--color-primary)_10%,var(--color-bg))]',
     'group-data-selected/row:group-hover/row:bg-[color-mix(in_oklab,var(--color-primary)_15%,var(--color-bg))]',
     // The row's selected / changed / error rails are drawn on the row, under this
     // opaque cell, so the first pinned cell draws them again.
-    opts.first && [
+    pin.first && [
       'group-data-selected/row:shadow-[inset_2px_0_0_var(--color-primary)]',
       'group-data-[state=changed]/row:shadow-[inset_3px_0_0_var(--color-primary)]',
       'group-data-[state=error]/row:shadow-[inset_3px_0_0_var(--color-danger)]',
     ],
-    // The edge between pinned and scrolling cells. A pseudo-element inside the cell
-    // (cells clip their overflow, so it can't sit outside).
-    opts.last &&
-      "after:pointer-events-none after:absolute after:inset-y-0 after:end-0 after:w-px after:bg-border-strong after:content-['']",
+    pin.edge && pinEdgeClass(pin.side),
   ];
+}
+
+/**
+ * The line between pinned and scrolling cells: on the inner side of the group. A
+ * pseudo-element inside the cell (cells clip their overflow, so it can't sit outside).
+ */
+export function pinEdgeClass(side: 'start' | 'end') {
+  return side === 'start'
+    ? "after:pointer-events-none after:absolute after:inset-y-0 after:end-0 after:w-px after:bg-border-strong after:content-['']"
+    : "after:pointer-events-none after:absolute after:inset-y-0 after:start-0 after:w-px after:bg-border-strong after:content-['']";
 }
