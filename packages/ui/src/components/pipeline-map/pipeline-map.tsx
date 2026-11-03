@@ -485,7 +485,9 @@ export function PipelineMap({
       ? routeName(segment, facilitiesById)
       : (facilitiesById.get(trace.origin)?.label ?? trace.origin);
     setAnnouncement(traceSummary(trace, network, name));
-    // Keyed on the origin only: a new trace speaks, a data refresh doesn't.
+    // Keyed on the origin only: a new trace speaks, a data refresh doesn't. Adding
+    // trace / network / facilitiesById would re-announce on every data refresh.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trace?.origin]);
 
   // Announce following. The ref remembers the last name (to say what stopped) and
@@ -512,6 +514,9 @@ export function PipelineMap({
           : `${followedName} isn't in the pipes at this time.`,
       );
     }
+    // Keyed on the name and whether it's in the pipes: `followed` is a new object on
+    // every data refresh, and depending on it would repeat the announcement.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [followedName, found]);
 
   // Announce filter changes too: the legend says "SYN, pressed", this says what it did.
@@ -523,7 +528,9 @@ export function PipelineMap({
       return;
     }
     setAnnouncement(filterSummary(network, filter));
-    // Keyed on the filter's contents, not its object identity (a new {} each render).
+    // Keyed on the filter's contents, not its object identity (a new {} each render);
+    // network changes alone shouldn't announce the filter again.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filterKey]);
 
   // Roving tabindex: exactly one item has tabIndex 0. It's the last item the user
