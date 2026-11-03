@@ -23,6 +23,7 @@ export * from './components/disclosure';
 export * from './components/empty-state';
 export * from './components/event-calendar';
 export * from './components/field';
+export * from './components/gauge';
 export * from './components/file-upload';
 export * from './components/heading';
 export * from './components/inline-edit';
