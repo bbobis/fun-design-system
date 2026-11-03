@@ -13,6 +13,7 @@ import {
   type PinnedColumns,
 } from './data-grid-utils';
 import { CheckIcon } from './icons';
+import { isDeletedRow } from './editing/draft';
 import {
   CellEditor,
   type CellEditorHandle,
@@ -129,11 +130,15 @@ export const DataGridRow = memo(function DataGridRow<TData extends RowData>({
   // Odd *data* index: the virtualizer renders only rows in view, so DOM order (and
   // CSS :nth-child) shifts as you scroll; the index doesn't.
   const stripe = striped && index % 2 === 1;
-  const rowState = rowErrors
-    ? 'error'
-    : rowDraft || isNew
-      ? 'changed'
-      : undefined;
+  // Marked for deletion (editing.allowDelete): struck through until Save.
+  const deleted = isDeletedRow(rowDraft);
+  const rowState = deleted
+    ? 'deleted'
+    : rowErrors
+      ? 'error'
+      : rowDraft || isNew
+        ? 'changed'
+        : undefined;
   return (
     <tr
       role="row"
@@ -157,6 +162,10 @@ export const DataGridRow = memo(function DataGridRow<TData extends RowData>({
         // errors (the states are exclusive, so the two rules never fight).
         'data-[state=changed]:shadow-[inset_3px_0_0_var(--color-primary)]',
         'data-[state=error]:shadow-[inset_3px_0_0_var(--color-danger)]',
+        // Deleted: struck through and muted, so it reads without color too; the red
+        // rail matches the other edit states. text-decoration reaches every cell.
+        'data-[state=deleted]:text-fg-muted data-[state=deleted]:line-through',
+        'data-[state=deleted]:shadow-[inset_3px_0_0_var(--color-danger)]',
         'data-locked:text-fg-muted',
       )}
       style={cssVars({ '--y': `${start}px`, '--row-h': `${rowHeight}px` })}
@@ -244,7 +253,7 @@ export const DataGridRow = memo(function DataGridRow<TData extends RowData>({
 
         const focused = focusedColumnId === column.id;
         const isEditor = editingColumnId === column.id;
-        const readOnly = locked || !meta?.editor;
+        const readOnly = locked || deleted || !meta?.editor;
         const dirty = rowDraft !== undefined && column.id in rowDraft;
         const inRange = cellIndex >= rangeStart && cellIndex <= rangeEnd;
         const error =
@@ -327,7 +336,13 @@ export const DataGridRow = memo(function DataGridRow<TData extends RowData>({
                 />
               </span>
             ) : (
-              content
+              <>
+                {/* Screen readers: the strike-through isn't announced, so say it. */}
+                {deleted && cellIndex === 0 && (
+                  <span className="sr-only">Deleted, </span>
+                )}
+                {content}
+              </>
             )}
             {error && (
               <>

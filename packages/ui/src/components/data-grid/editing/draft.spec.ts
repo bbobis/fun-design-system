@@ -1,7 +1,9 @@
 import {
   applyDraft,
   countChanges,
+  DELETED_ROW_KEY,
   EMPTY_DRAFT,
+  isDeletedRow,
   setDraftValue,
   toChangeSet,
 } from './draft';
@@ -80,5 +82,34 @@ describe('draft', () => {
         { op: 'create', tempId: 'tmp_1', values: { total: 0, name: 'New Co' } },
       ],
     });
+  });
+
+  it('a deleted row is a draft flag: one change, whatever else was edited in it', () => {
+    let d = setDraftValue(EMPTY_DRAFT, 'b', 'total', 99, 20);
+    d = setDraftValue(d, 'b', DELETED_ROW_KEY, true, undefined);
+    expect(isDeletedRow(d.b)).toBe(true);
+    expect(countChanges(d)).toBe(1);
+    // Restoring removes the flag (back to "no such field"), and the edit is still there.
+    d = setDraftValue(d, 'b', DELETED_ROW_KEY, undefined, undefined);
+    expect(isDeletedRow(d.b)).toBe(false);
+    expect(d.b).toEqual({ total: 99 });
+  });
+
+  it('deleted rows become delete operations, with the version; edits in them are dropped', () => {
+    let d = setDraftValue(EMPTY_DRAFT, 'b', 'total', 99, 20);
+    d = setDraftValue(d, 'b', DELETED_ROW_KEY, true, undefined);
+    const byId = new Map(rows.map((r) => [r.id, r]));
+    expect(toChangeSet(d, byId, (_id, r) => r.version)).toEqual({
+      operations: [{ op: 'delete', id: 'b', version: 7 }],
+    });
+  });
+
+  it('a new row deleted before it was saved sends nothing', () => {
+    let d = setDraftValue(EMPTY_DRAFT, 'tmp_1', 'name', 'New Co', undefined);
+    d = setDraftValue(d, 'tmp_1', DELETED_ROW_KEY, true, undefined);
+    const newRows = new Map([['tmp_1', { total: 0 }]]);
+    expect(toChangeSet(d, new Map(), undefined, newRows).operations).toEqual(
+      [],
+    );
   });
 });

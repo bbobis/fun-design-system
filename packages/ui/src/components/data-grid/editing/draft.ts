@@ -10,6 +10,18 @@ export type Draft = Readonly<Record<RowId, Readonly<Record<string, unknown>>>>;
 
 export const EMPTY_DRAFT: Draft = {};
 
+/**
+ * A deleted row is marked in the draft like an edited cell: `{ __deleted: true }`.
+ * So delete and restore go through the same history as any edit (Undo works), and a
+ * failed save keeps them, with no second kind of state to keep in sync.
+ */
+export const DELETED_ROW_KEY = '__deleted';
+
+/** Is this row marked for deletion in the draft? */
+export const isDeletedRow = (
+  rowDraft: Readonly<Record<string, unknown>> | undefined,
+) => rowDraft?.[DELETED_ROW_KEY] === true;
+
 /** Equal for our purposes: same primitive, or two Dates with the same time. */
 export function sameValue(a: unknown, b: unknown): boolean {
   if (a instanceof Date && b instanceof Date)
@@ -38,10 +50,11 @@ export function setDraftValue(
   return next;
 }
 
-/** Number of changed cells. */
+/** Number of changes: one per changed cell, and one per deleted row (its edits don't count). */
 export function countChanges(draft: Draft): number {
   let n = 0;
-  for (const row of Object.values(draft)) n += Object.keys(row).length;
+  for (const row of Object.values(draft))
+    n += isDeletedRow(row) ? 1 : Object.keys(row).length;
   return n;
 }
 
@@ -65,7 +78,8 @@ export function applyDraft<TData extends RowData>(
 
 /**
  * Builds the backend-neutral payload for `onSave`. Rows in `newRows` (temp id →
- * default values) become `create` operations with their defaults plus what the user
+ * default values) become `create` operations; rows marked deleted become `delete`
+ * operations (or nothing, for a new row that was never saved). The rest: with their defaults plus what the user
  * typed; every other changed row is an `update` with only its changed fields.
  */
 export function toChangeSet<TData extends RowData>(
@@ -77,6 +91,18 @@ export function toChangeSet<TData extends RowData>(
   const operations: ChangeSet['operations'] = [];
   for (const [id, changes] of Object.entries(draft)) {
     const defaults = newRows.get(id);
+    if (isDeletedRow(changes)) {
+      // A new row deleted before it was ever saved: nothing to tell the server.
+      if (defaults) continue;
+      const row = rowsById.get(id);
+      const version = row && getRowVersion ? getRowVersion(id, row) : undefined;
+      operations.push({
+        op: 'delete',
+        id,
+        ...(version === undefined ? {} : { version }),
+      });
+      continue;
+    }
     if (defaults) {
       operations.push({
         op: 'create',

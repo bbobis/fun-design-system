@@ -241,9 +241,12 @@ function applyChanges(rows: Invoice[], changes: ChangeSet): Invoice[] {
       op.op === 'update' ? [[op.id, op.changes] as const] : [],
     ),
   );
-  const updated = rows.map((row) =>
-    byId.has(row.id) ? { ...row, ...byId.get(row.id) } : row,
+  const deleted = new Set(
+    changes.operations.flatMap((op) => (op.op === 'delete' ? [op.id] : [])),
   );
+  const updated = rows
+    .filter((row) => !deleted.has(row.id))
+    .map((row) => (byId.has(row.id) ? { ...row, ...byId.get(row.id) } : row));
   // New rows get a real id and number, as a server would assign.
   const created = changes.operations.flatMap((op, i) =>
     op.op === 'create'
@@ -279,7 +282,8 @@ const isPaid = (row: Invoice) => row.status === 'Paid';
  * Type in the last row (or paste past it) to add invoices. Customer and Subtotal are
  * required, Subtotal must be above 0: break a rule to see the error states.
  * **Issued** opens a date editor (Alt+↓ for the calendar) and **Category** a searchable
- * list: both are popover editors.
+ * list: both are popover editors. Select cells in a few rows and press **Delete N rows**:
+ * they're struck through until Save (Ctrl+Z or **Restore** brings them back).
  */
 export const Editable: Story = {
   render: () => {
@@ -297,6 +301,7 @@ export const Editable: Story = {
           editing={{
             isRowLocked: isPaid,
             allowAdd: true,
+            allowDelete: true,
             newRow: (): Partial<Invoice> => ({
               status: 'Draft',
               terms: 'Net 30',

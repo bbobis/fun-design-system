@@ -17,6 +17,7 @@ backend. The grid owns the draft (unsaved edits); your app owns the network.
     isRowLocked: (r) => r.status === 'Paid', // optional
     allowAdd: true, // optional: "Type here to add a row…"
     newRow: () => ({ status: 'Draft' }), // optional: defaults for new rows
+    allowDelete: true, // optional: "Delete rows" while editing
   }}
 />
 ```
@@ -88,6 +89,7 @@ type ChangeSet = {
         changes: Record<string, unknown>;
       }
     | { op: 'create'; tempId: string; values: Record<string, unknown> }
+    | { op: 'delete'; id: string; version?: number | string } // allowDelete
   >;
 };
 
@@ -168,6 +170,16 @@ When `onSave` returns `kind: 'conflict'`, the Save bar shows one row at a time:
 
 Both choices adopt the new version. They last until the app passes new `data`.
 
+**Deleting rows (`allowDelete`).** Select cells in the rows to delete and press **Delete
+N rows** in the toolbar. The rows stay on screen, struck through, until Save; Ctrl+Z (or
+**Restore N rows**) brings them back. Save sends one `delete` per row, with its version.
+Locked rows are skipped; a new row deleted before it was ever saved sends nothing; edits
+made to a row before deleting it are dropped. After a successful save, remove the rows
+from `data`.
+
+There is deliberately **no shortcut**: Excel's Ctrl+− is the browser's zoom out, and a
+grid that swallows it breaks zoom for the people who rely on it most.
+
 ## 5. Keyboard and mouse
 
 | Keys                        | Navigation (on a cell)                               | Editing (in the cell's input) |
@@ -209,7 +221,8 @@ only at the row's first/last cell. There's never a keyboard trap.
 ## 6. What the grid guarantees
 
 - Sorting and search are frozen while editing, so rows never jump under the cursor.
-- Locked rows and non-editable columns are skipped by paste, fill and clear.
+- Locked rows and non-editable columns are skipped by paste, fill and clear. So are
+  rows marked for deletion, which also skip validation.
 - One gesture (a 200-cell paste) is one undo step.
 - `beforeunload` warns about unsaved changes, and only while there are some.
 - Every message ("Saved 3 changes", "Customer is required") is shown in the footer and
