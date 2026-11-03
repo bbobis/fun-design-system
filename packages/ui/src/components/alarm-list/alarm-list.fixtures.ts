@@ -1,0 +1,78 @@
+import type { Alarm } from './alarm-model';
+
+/** "Now" for the demos and tests: Tue Nov 3, 2026, 10:30 UTC. */
+export const DEMO_NOW = '2026-11-03T10:30:00Z';
+
+export const DEMO_ALARMS: Alarm[] = [
+  {
+    id: 'a1',
+    priority: 1,
+    tag: 'PT-2042',
+    message: 'Discharge pressure high-high',
+    location: 'Station B · Pump 2',
+    raisedAt: '2026-11-03T10:27:00Z',
+    state: 'active',
+    acknowledged: false,
+  },
+  {
+    id: 'a2',
+    priority: 2,
+    tag: 'TT-2051',
+    message: 'Motor temperature high',
+    location: 'Station B · Pump 2',
+    raisedAt: '2026-11-03T10:12:00Z',
+    state: 'active',
+    acknowledged: false,
+  },
+  {
+    id: 'a3',
+    priority: 3,
+    tag: 'LT-3103',
+    message: 'Tank 3 level high',
+    location: 'Terminal C · Tank farm',
+    raisedAt: '2026-11-03T09:48:00Z',
+    state: 'active',
+    acknowledged: true,
+  },
+  {
+    id: 'a4',
+    priority: 2,
+    tag: 'FT-1010',
+    message: 'Flow deviation',
+    location: 'Line 1 · A → B',
+    raisedAt: '2026-11-03T08:05:00Z',
+    state: 'cleared',
+    acknowledged: false,
+  },
+  {
+    id: 'a5',
+    priority: 4,
+    tag: 'ZS-1204',
+    message: 'Valve position mismatch',
+    location: 'Station A · MOV-12',
+    raisedAt: '2026-11-03T07:40:00Z',
+    state: 'active',
+    acknowledged: true,
+  },
+  {
+    id: 'a6',
+    priority: 1,
+    tag: 'LT-3102',
+    message: 'Tank 2 level low-low',
+    location: 'Terminal C · Tank farm',
+    raisedAt: '2026-11-03T10:29:30Z',
+    state: 'active',
+    acknowledged: false,
+  },
+  {
+    id: 'a7',
+    priority: 3,
+    tag: 'PT-1001',
+    message: 'Suction pressure low',
+    location: 'Station A · Pump 1',
+    raisedAt: '2026-11-03T09:00:00Z',
+    state: 'active',
+    acknowledged: true,
+    shelvedUntil: '2026-11-03T11:00:00Z',
+  },
+];
