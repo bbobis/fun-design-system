@@ -1,0 +1,7 @@
+## 2026-11-03 — EquipmentStatus
+
+- **Built:** `EquipmentStatus` for pumps, valves and meters: running ● / stopped ○ / starting ◐ / stopping ◑ / fault (octagon ✕) / maintenance (padlock) / comms lost (dashed ring "?"). Three variants: `badge`, `inline` (tables), `icon` (schematics, with a Tooltip). `since` + `now` add the time in state ("Fault · 12 min", read as "for 12 minutes"). Plain HTML, no React Aria needed except the Tooltip.
+- **Remember: shape first, color last (ISA-101).** Every state has its own shape *and* word, so it reads in grayscale. Running and stopped are both *normal* (a stopped standby pump is fine), so they stay gray; only fault (red) and comms lost (amber) get color. A test checks all 7 glyphs are different.
+- **Remember: comms lost is its own state.** Showing the last known value ("Running") when the link is down tells the operator something nobody knows. The dashed ring says "we don't know", and the time in state says for how long.
+- **Remember (the prediction): `role="img"` + `aria-label`, not `title`.** `aria-label` on a plain `<span>` is not allowed (ARIA 1.2 prohibits naming generic elements), and `title` is unreliable: many screen readers skip it, and it never shows on keyboard focus or touch. `role="img"` makes the glyph a real thing with a name: "Pump 2: Comms lost, for 12 minutes".
+- Docs: https://www.w3.org/WAI/ARIA/apg/practices/names-and-descriptions/

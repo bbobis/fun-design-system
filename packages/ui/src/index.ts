@@ -22,6 +22,7 @@ export * from './components/dialog';
 export * from './components/drawer';
 export * from './components/disclosure';
 export * from './components/empty-state';
+export * from './components/equipment-status';
 export * from './components/event-calendar';
 export * from './components/field';
 export * from './components/gauge';
