@@ -1,0 +1,7 @@
+## 2026-11-03 — StationCard (Station overview)
+
+- **Built:** `StationCard`, one pump station at a glance: a health line rolled up by `stationHealth()` ("Abnormal: 1 fault · 3 active alarms · 2 unacknowledged"), equipment as `EquipmentStatus` icons (worst first, "+N more"), 0–3 small `Gauge`s, and active alarm counts using AlarmList's ◆ ▲ ■ ● marks (`PriorityMark` moved to its own file so both share it). Stories: an Overview grid and a Station detail page (gauges + equipment table + `AlarmList`).
+- **Remember (the prediction): name vs description.** The card link's *name* is just "Station B", so tabbing through 10 stations stays quick. The health line is attached with `aria-describedby`, so screen readers say "Station B, link, Abnormal: 1 fault…". The name says *what* it is; the description adds *details*. In tests, `getByRole('link', { name, description })` checks both.
+- **Remember: a composite is mostly a pure function.** The interesting logic (worst state wins, shelved alarms don't count, cleared-but-unacknowledged still needs attention) lives in `stationHealth()`, tested without rendering anything. The component just lays out parts we already had.
+- **Gotcha:** Card parts space themselves with `not-first:mt-4`. A decorative stripe as the *first* child pushed the header down, so it goes last.
+- Docs: https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Reference/Attributes/aria-describedby

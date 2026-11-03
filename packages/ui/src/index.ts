@@ -50,6 +50,7 @@ export * from './components/skeleton';
 export * from './components/slider';
 export * from './components/split-panes';
 export * from './components/stat';
+export * from './components/station-card';
 export * from './components/stepper';
 export * from './components/switch';
 export * from './components/tabs';
