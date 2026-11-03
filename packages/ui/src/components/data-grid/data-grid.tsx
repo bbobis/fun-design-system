@@ -70,7 +70,9 @@ import { DataGridRow, type CellApi } from './data-grid-row';
 import {
   cellKey,
   clamp,
+  contentWidth,
   cssVars,
+  escapeAttr,
   escapeHtml,
   fieldValue,
   findCell,
@@ -87,6 +89,8 @@ import {
 } from './data-grid-utils';
 import { PencilIcon, SearchIcon, SortIndicator } from './icons';
 import { ColumnsMenu, HeaderMenu } from './column-menu';
+import { ColumnResizer } from './column-resizer';
+import { loadColumnState, saveColumnState } from './column-storage';
 import {
   canMove,
   defaultColumnState,
@@ -96,6 +100,7 @@ import {
   pinSideOf,
   reconcileColumnState,
   setColumnHidden,
+  setColumnWidth,
   setVisibleColumns,
   toTableState,
   type DataGridColumnState,
@@ -205,6 +210,13 @@ export type DataGridProps<TData extends RowData> = {
    * columns" goes back to. @default the columns as written (plus `pinFirstColumn`)
    */
   defaultColumnState?: DataGridColumnState;
+  /**
+   * Remember the user's layout (order, hidden, pinned, widths) in this browser, under
+   * this name ("invoices"). Loaded on mount, saved on every change, forgotten on
+   * "Reset columns". Ignored when `columnState` is controlled: then saving is yours
+   * (e.g. to a user-settings API, so it follows them to other devices).
+   */
+  stateKey?: string;
   /** Shown when there are no rows, or no rows match the search. */
   emptyMessage?: ReactNode;
   /**
@@ -253,6 +265,7 @@ export function DataGrid<TData extends RowData>({
   columnState: controlledColumnState,
   onColumnStateChange,
   defaultColumnState: initialColumnState,
+  stateKey,
   emptyMessage = 'No rows to show.',
   className,
 }: DataGridProps<TData>) {
@@ -266,7 +279,20 @@ export function DataGrid<TData extends RowData>({
     () => initialColumnState ?? defaultColumnState(columnIds, pinFirstColumn),
     [initialColumnState, columnIds, pinFirstColumn],
   );
-  const [ownColumnState, setOwnColumnState] = useState(resetState);
+  const [ownColumnState, setOwnColumnState] = useState(
+    () =>
+      (stateKey && !controlledColumnState && loadColumnState(stateKey)) ||
+      resetState,
+  );
+  // Remember it (`stateKey`). The reset layout itself isn't stored, so a later change
+  // to the app's default columns reaches users who never customised theirs.
+  useEffect(() => {
+    if (!stateKey || controlledColumnState) return;
+    saveColumnState(
+      stateKey,
+      ownColumnState === resetState ? null : ownColumnState,
+    );
+  }, [stateKey, controlledColumnState, ownColumnState, resetState]);
   const columnState = useMemo(
     () =>
       reconcileColumnState(controlledColumnState ?? ownColumnState, columnIds),
@@ -467,7 +493,11 @@ export function DataGrid<TData extends RowData>({
     ...table.getCenterVisibleLeafColumns(),
     ...endColumns,
   ];
-  const columnLayout = leafColumns.map((c) => c.id).join('|');
+  // Ids and widths: rows are memoized, and this is how they learn a column moved,
+  // hid or changed width (their cells read the widths from the columns).
+  const columnLayout = leafColumns
+    .map((c) => `${c.id}:${c.getSize()}`)
+    .join('|');
   const headerGroups = table.getHeaderGroups();
   const columnCount = leafColumns.length;
   const totalWidth = table.getTotalSize();
@@ -1446,13 +1476,42 @@ export function DataGrid<TData extends RowData>({
     const frame = requestAnimationFrame(() =>
       scrollRef.current
         ?.querySelector<HTMLElement>(
-          // No CSS.escape in jsdom; escape quotes and backslashes like findCell does.
-          `[data-column-menu="${id.replace(/["\\]/g, '\\$&')}"] button`,
+          `[data-column-menu="${escapeAttr(id)}"] button`,
         )
         ?.focus(),
     );
     return () => cancelAnimationFrame(frame);
   }, [columnLayout]);
+
+  /** The header's ⌄ button or edge handle, found in the DOM (they're per column). */
+  const headerPart = (part: 'menu' | 'resizer', id: string) =>
+    scrollRef.current?.querySelector<HTMLElement>(
+      part === 'menu'
+        ? `[data-column-menu="${escapeAttr(id)}"] button`
+        : `[data-column-resizer="${escapeAttr(id)}"]`,
+    );
+  const startResize = (id: string) =>
+    // React Aria gives focus back to the ⌄ button one frame after the menu closes;
+    // move it to the handle on the frame after that, or it would be taken back.
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => headerPart('resizer', id)?.focus()),
+    );
+  const resizeColumn = (id: string, px: number) =>
+    updateColumnState(setColumnWidth(columnState, id, px));
+  /**
+   * Width to fit the header and the cells on screen (rows scrolled away aren't in
+   * the DOM, so they can't be measured: like a spreadsheet fitting the visible rows).
+   */
+  const fitColumn = (id: string) => {
+    const els = scrollRef.current?.querySelectorAll<HTMLElement>(
+      `[data-column-id="${escapeAttr(id)}"]`,
+    );
+    let widest = 0;
+    for (const el of els ?? [])
+      widest = Math.max(widest, contentWidth(el) ?? 0);
+    // +2: sub-pixel text widths round, and a 1px shortfall shows an ellipsis.
+    if (widest > 0) resizeColumn(id, Math.ceil(widest) + 2);
+  };
 
   /** The data columns for the "Columns" checklist, in display order (hidden ones too). */
   const checklist = useMemo(() => {
@@ -1626,6 +1685,7 @@ export function DataGrid<TData extends RowData>({
                     <th
                       key={header.id}
                       role="columnheader"
+                      data-column-id={column.id}
                       aria-colindex={(colIndexById.get(column.id) ?? 0) + 1}
                       // ARIA allows aria-sort on one header only, so mark the primary sort.
                       aria-sort={
@@ -1728,6 +1788,18 @@ export function DataGrid<TData extends RowData>({
                           }
                           canHide={displayOrder(columnState).length > 1}
                           onHide={() => hideColumn(column.id)}
+                          onResizeStart={() => startResize(column.id)}
+                          onFit={() => fitColumn(column.id)}
+                        />
+                      )}
+                      {showMenu && (
+                        <ColumnResizer
+                          label={headerLabel(column)}
+                          columnId={column.id}
+                          width={header.getSize()}
+                          onResize={(px) => resizeColumn(column.id, px)}
+                          onFit={() => fitColumn(column.id)}
+                          onDone={() => headerPart('menu', column.id)?.focus()}
                         />
                       )}
                     </th>

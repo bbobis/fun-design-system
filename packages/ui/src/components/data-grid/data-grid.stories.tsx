@@ -135,6 +135,22 @@ export const ColumnLayout: Story = {
   },
 };
 
+/**
+ * Resize and remember. Drag a column's edge (double-click it to fit the content), or
+ * use "Resize column" in the ⌄ menu and press ←/→ (Shift for bigger steps), Enter to
+ * finish. `stateKey="storybook-invoices"` saves the layout in this browser: change
+ * it, reload the page, and it's still there. "Columns ▾ → Reset columns" forgets it.
+ */
+export const RememberedLayout: Story = {
+  args: {
+    title: 'Invoices',
+    data: tenThousand.slice(0, 200),
+    stateKey: 'storybook-invoices',
+    pinFirstColumn: true,
+    className: 'h-[26rem] max-w-4xl',
+  },
+};
+
 /** Side by side: compact (default), standard and comfortable. */
 export const Densities: Story = {
   render: () => (

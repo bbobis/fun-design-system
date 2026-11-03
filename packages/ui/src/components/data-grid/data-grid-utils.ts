@@ -18,11 +18,15 @@ export { cssVars } from '../../utils/css-vars';
 export const cellKey = (rowId: string, columnId: string) =>
   `${rowId}:${columnId}`;
 
+/** Escapes quotes and backslashes for a `[attr="…"]` selector (jsdom has no CSS.escape). */
+export const escapeAttr = (value: string) => value.replace(/["\\]/g, '\\$&');
+
 /** Finds a rendered cell by key (null if its row is virtualized away). */
 export function findCell(root: HTMLElement | null, key: string) {
-  // Escape quotes and backslashes for the attribute selector (jsdom has no CSS.escape).
-  const safe = key.replace(/["\\]/g, '\\$&');
-  return root?.querySelector<HTMLElement>(`[data-cell-key="${safe}"]`) ?? null;
+  return (
+    root?.querySelector<HTMLElement>(`[data-cell-key="${escapeAttr(key)}"]`) ??
+    null
+  );
 }
 
 export function escapeHtml(text: string) {
@@ -122,4 +126,21 @@ export function pinEdgeClass(side: 'start' | 'end') {
   return side === 'start'
     ? "after:pointer-events-none after:absolute after:inset-y-0 after:end-0 after:w-px after:bg-border-strong after:content-['']"
     : "after:pointer-events-none after:absolute after:inset-y-0 after:start-0 after:w-px after:bg-border-strong after:content-['']";
+}
+
+/**
+ * How wide an element's content is when nothing clips it, padding included. A Range
+ * around the contents measures the laid-out text even inside `truncate` (the clipped
+ * part still has a box). `null` where layout isn't available (jsdom, no Range rects).
+ */
+export function contentWidth(el: HTMLElement): number | null {
+  const range = document.createRange();
+  range.selectNodeContents(el);
+  if (typeof range.getBoundingClientRect !== 'function') return null;
+  const style = getComputedStyle(el);
+  return (
+    range.getBoundingClientRect().width +
+    (parseFloat(style.paddingLeft) || 0) +
+    (parseFloat(style.paddingRight) || 0)
+  );
 }
